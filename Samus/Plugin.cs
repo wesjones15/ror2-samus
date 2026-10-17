@@ -13,7 +13,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Samus from Melee","0.2.3")]
+    [BepInPlugin(Guid,"Samus from Melee","0.2.4")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -23,41 +23,56 @@ namespace Samus
         internal static volatile bool AssetsReady,AssetsBusy;
         internal static ConfigEntry<float> MetresPerUnit,JumpScale;
         internal static ConfigEntry<bool> HoldCharge;
+        string nativePath,configuredDisc,pluginDirectory;
+        bool nativeStarted,destroyed;
         void Awake()
         {
             CommonLog.Log=Logger;Log=Logger;
-            if(Config.Bind("Debug","StartupTrace",true,"Log original Steam startup checks and hidden exceptions while investigating startup compatibility.").Value)
-                StartupDiagnostics.Install();
             string here=Path.GetDirectoryName(Info.Location);
             var assets=Config.Bind("Paths","AssetsDir","","Extracted Melee cache. Empty uses assets_dir.txt or assets beside the plugin. Never distribute it.");
             var disc=Config.Bind("Paths","Disc","","Your Melee GALE01 revision 2 ISO/GCM/CISO, used to extract missing assets at first launch.");
             MetresPerUnit=Config.Bind("Sim","MetresPerUnit",0.1f,new ConfigDescription("World metres per Melee unit. Movement, reach and model share this scale.",new AcceptableValueRange<float>(0.03f,0.3f)));
             JumpScale=Config.Bind("Sim","JumpScale",1f,new ConfigDescription("Takeoff speed multiplier. 1 uses Melee tuning; increase for RoR2 traversal.",new AcceptableValueRange<float>(0.5f,3f)));
             HoldCharge=Config.Bind("Controls","HoldCharge",false,"False: tap neutral special to charge, tap again to fire; jump/B stores. True: hold and release to fire.");
-            try { Native.Load(Path.Combine(here,"ssbm.dll")); }
-            catch(Exception e) { Logger.LogError("Samus disabled: "+e.Message);return; }
             string hint=Path.Combine(here,"assets_dir.txt");
             AssetsDir=Path.GetFullPath(!string.IsNullOrWhiteSpace(assets.Value)?assets.Value:
                 File.Exists(hint)?File.ReadAllText(hint).Trim():Path.Combine(here,"assets"));
-            AssetsReady=Native.ssbm_assets_complete(NativeLib.CString(AssetsDir))==1;
-            if(!AssetsReady) {
-                string image=FindDisc(disc.Value,here);AssetsBusy=true;
-                new Thread(()=> {
-                    try {
-                        if(image==null) throw new FileNotFoundException("Set Paths.Disc to your Melee GALE01 rev 2 disc image.");
-                        if(Native.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir))!=1) throw new IOException(Native.Error);
-                        AssetsReady=Native.ssbm_assets_complete(NativeLib.CString(AssetsDir))==1;
-                        if(!AssetsReady) throw new IOException("Extraction finished without a complete Samus cache. Set Paths.Disc and restart to retry.");
-                        Log.LogInfo("Samus assets extracted from your disc.");
-                    } catch(Exception e) { Log.LogError("Samus assets unavailable: "+e.Message); }
-                    finally { AssetsBusy=false; }
-                }) { IsBackground=true,Name="Samus first-run extraction" }.Start();
-            }
+            nativePath=Path.Combine(here,"ssbm.dll");configuredDisc=disc.Value;pluginDirectory=here;
+            // Register content while RoR2 collects providers, but do no native
+            // loading/extraction or Steam reflection/hooks during bootstrap.
+            // Displays/portraits/drivers already wait for AssetsReady/AssetsBusy.
+            AssetsReady=false;AssetsBusy=true;
+            RoR2Application.onLoad+=InitializeAssets;
             ContentProvider.Register(Guid,AddContent);
             Language.onCurrentLanguageChanged+=Tokens;
             ItemHooks.Install();GlyphOverride.Install();Skins.Install();
             RunAudio.Initialize(SamusAudio.StopAll);
-            Logger.LogInfo("Samus 0.2.3 / libssbm ABI "+Native.AbiVersion+" loaded. Source effects, native articles and shared Melee movement/entry.");
+            Logger.LogInfo("Samus 0.2.4 registered; native initialization waits for RoR2 startup completion.");
+        }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        void InitializeAssets()
+        {
+            RoR2Application.onLoad-=InitializeAssets;
+            if(nativeStarted||destroyed)return;nativeStarted=true;
+            Logger.LogInfo("Samus late native initialization: RoR2 startup completed.");
+            try {
+                Native.Load(nativePath);
+                AssetsReady=Native.ssbm_assets_complete(NativeLib.CString(AssetsDir))==1;
+                if(!AssetsReady) {
+                    new Thread(()=> {
+                        try {
+                            string image=FindDisc(configuredDisc,pluginDirectory);
+                            if(image==null) throw new FileNotFoundException("Set Paths.Disc to your Melee GALE01 rev 2 disc image.");
+                            if(Native.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir))!=1) throw new IOException(Native.Error);
+                            AssetsReady=Native.ssbm_assets_complete(NativeLib.CString(AssetsDir))==1;
+                            if(!AssetsReady) throw new IOException("Extraction finished without a complete Samus cache. Set Paths.Disc and restart to retry.");
+                            Log.LogInfo("Samus assets extracted from your disc.");
+                        } catch(Exception e) { Log.LogError("Samus assets unavailable: "+e.Message); }
+                        finally { AssetsBusy=false; }
+                    }) { IsBackground=true,Name="Samus first-run extraction" }.Start();
+                } else AssetsBusy=false;
+                Logger.LogInfo("Samus 0.2.4 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
+                } catch(Exception e) {AssetsReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
         }
         static string FindDisc(string configured,string here)
         {
@@ -102,7 +117,7 @@ namespace Samus
             l.SetStringByToken("SSBM_SAMUS_DESCRIPTION","Samus brings her Melee Power Suit to Petrichor V.\n\nRT attacks; combine a quick direction or LB/RB with RT for charged smashes. LT uses Charge Shot; a direction selects missiles, LB selects Screw Attack, and RB drops bombs. A jumps, LS click sprints, X interacts, and B stores charge.\n\nOffline prototype: original attack timing, sound and complete item integration are still in progress.");
             l.SetStringByToken("SSBM_SAMUS_OUTRO","..and so she left, mission complete.");l.SetStringByToken("SSBM_SAMUS_FAIL","..and so she vanished, beyond the blast zone.");Skills.Tokens(l);Skins.Tokens(l);
         }
-        void OnDestroy(){Language.onCurrentLanguageChanged-=Tokens;Skins.Uninstall();}
+        void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;Skins.Uninstall();}
     }
     public sealed class SamusMain:BaseCharacterMain { }
 }

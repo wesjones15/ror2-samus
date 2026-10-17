@@ -40,7 +40,10 @@ launches. This is the same first-run strategy as Mario and Olimar; no external
 extractor or setup script is needed or included.
 
 The plugin searches nearby folders and `SSBM_DISC` when Paths.Disc is empty.
-Extraction runs on a worker thread. A missing DLL, invalid ABI or failed asset
+Native loading and cache/extraction work begin at RoR2Application.onLoad, after
+game startup; content providers register earlier and wait for asset readiness.
+Samus no longer hooks or reflects Steam initialization. The old Debug.StartupTrace
+config entry is ignored. Extraction runs on a worker thread. A missing DLL, invalid ABI or failed asset
 load logs an error; an initialized body that fails returns to Commando behavior.
 
 | Action | Xbox | Keyboard/mouse |

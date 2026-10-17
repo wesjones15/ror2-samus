@@ -1,3 +1,13 @@
+# 0.2.4 startup compatibility patch
+
+- Remove Samus's Steam constructor/initialization diagnostic hooks entirely.
+- Defer native DLL loading, cache checks and extraction until RoR2Application.onLoad.
+  Content still registers during bootstrap; body/display/portrait wait for assets.
+- Check the built plugin's IL on every package build: no Steam type references or
+  native calls reachable from Awake. The previous release is a failing control.
+- Recurrent Steamworks startup failure is under investigation; a game launch is
+  required to validate this ordering correction. Steam validation is unchanged.
+
 # 0.2.3 prototype
 
 - Decode the original shared entry colour overlay from PlCo and feed the common
