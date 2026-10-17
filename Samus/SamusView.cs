@@ -11,6 +11,8 @@ namespace Samus
         internal ModelView Models { get; private set; }
         internal Quaternion LocalRotation=Quaternion.identity;
         internal Vector3 LocalPosition;
+        readonly float[] overlay=new float[4];
+        byte drawFlags;
         internal SamusView(uint costume)
             :this(Native.ssbm_view_new(NativeLib.CString(Plugin.AssetsDir),Math.Min(costume,4))) {}
         internal SamusView(uint article,uint state)
@@ -24,7 +26,10 @@ namespace Samus
             Models=ModelView.Create(this,"Melee Samus",translucentOpacity:1f);
             if(Models==null){Dispose();throw new InvalidOperationException("Samus ModelView creation failed");}
         }
-        internal void Pose(IntPtr sim,float dt){if(Native.ssbm_view_update(Handle,sim,dt)!=1)throw new InvalidOperationException(Native.Error);}
+        internal void Pose(IntPtr sim,float dt){if(Native.ssbm_view_update(Handle,sim,dt)!=1)throw new InvalidOperationException(Native.Error);
+            drawFlags=Native.HasOverlay&&Native.ssbm_sim_overlay(sim,overlay)==1?(byte)1:(byte)0;
+            if(drawFlags!=0)Models.FlashColor=new Color(overlay[0],overlay[1],overlay[2],overlay[3]);
+        }
         internal void IdlePose(){if(Native.ssbm_view_pose(Handle,NativeLib.CString("Wait"),0)!=1)throw new InvalidOperationException(Native.Error);}
         internal void ObjectPose(float frame){if(Native.ssbm_object_update(Handle,frame)!=1)throw new InvalidOperationException(Native.Error);}
         public uint ModelCount()=>1;
@@ -33,7 +38,7 @@ namespace Samus
         public uint Indices(uint id,int[] output,uint max)=>Native.ssbm_view_indices(Handle,output,max);
         public uint Uvs(uint id,float[] output,uint max)=>Native.ssbm_view_uvs(Handle,output,max);
         public bool Texture(uint id,out ViewTexture info,byte[] rgba,uint len)=>Native.ssbm_view_texture(Handle,id,out info,rgba,len)==1;
-        public uint Draws(ViewDraw[] output,uint max){if(output!=null&&max>0)output[0]=new ViewDraw { key=1,pos=new ViewVec3(LocalPosition.x,LocalPosition.y,LocalPosition.z),rot_x=LocalRotation.x,rot_y=LocalRotation.y,rot_z=LocalRotation.z,rot_w=LocalRotation.w,alpha=1 };return 1;}
+        public uint Draws(ViewDraw[] output,uint max){if(output!=null&&max>0)output[0]=new ViewDraw { key=1,flags=drawFlags,pos=new ViewVec3(LocalPosition.x,LocalPosition.y,LocalPosition.z),rot_x=LocalRotation.x,rot_y=LocalRotation.y,rot_z=LocalRotation.z,rot_w=LocalRotation.w,alpha=1 };return 1;}
         public IntPtr Positions(out uint count)=>Native.ssbm_view_positions(Handle,out count);
         public IntPtr Normals(out uint count)=>Native.ssbm_view_normals(Handle,out count);
         public IntPtr Colors(out uint count)=>Native.ssbm_view_colors(Handle,out count);

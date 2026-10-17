@@ -1,3 +1,9 @@
+# Unreleased
+
+- Decode the original shared entry colour overlay from PlCo and feed the common
+  model renderer. Blend directional fall poses locally with source response.
+- Rust/native checks and C# compile pass; these additions are not yet deployed.
+
 # 0.2.2 prototype
 
 - Resolve special GFX bone IDs 0x8D/0x8E and useUnkBone indirection. Check all

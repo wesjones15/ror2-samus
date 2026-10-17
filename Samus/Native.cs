@@ -8,6 +8,7 @@ namespace Samus
     {
         public const uint AbiVersion = 4;
         const string Dll = "ssbm";
+        public static bool HasOverlay {get;private set;}
         [StructLayout(LayoutKind.Sequential)] public struct Vec3
         {
             public float x, y, z;
@@ -45,6 +46,10 @@ namespace Samus
         {
             if (!NativeLib.Load(path, out string error)) throw new InvalidOperationException(error);
             if (ssbm_abi_version() != AbiVersion) throw new InvalidOperationException("Samus native ABI mismatch");
+            // Added exports preserve ABI-4 layout compatibility. Older matching
+            // ABI-4 pairs can omit this presentation-only capability safely.
+            try {ssbm_sim_overlay(IntPtr.Zero,null);HasOverlay=true;}
+            catch(EntryPointNotFoundException){HasOverlay=false;}
             var sizes = new uint[14]; uint count=ssbm_struct_sizes(sizes,(uint)sizes.Length);
             error=NativeLib.CompareSizes(sizes,count,new[] {
                 ("Vec3",NativeLib.Size<Vec3>()),("Pad",NativeLib.Size<Pad>()),("State",NativeLib.Size<State>()),
@@ -55,6 +60,7 @@ namespace Samus
             if (error!=null) throw new InvalidOperationException(error);
         }
         public static string Error => NativeLib.Utf8(ssbm_last_error());
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_overlay(IntPtr sim,[Out]float[] rgba);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_charge_visual(IntPtr sim,[Out]float[] matrix);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_hit_feedback(IntPtr audio,uint element,uint kind,uint severity);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_projectile_new(byte[] dir,uint kind,uint state,float charge,Vec3 direction);

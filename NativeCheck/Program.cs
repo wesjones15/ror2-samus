@@ -57,6 +57,10 @@ static class Program
             var platform=Native.ssbm_entry_platform_new(NativeLib.CString(assets));Check(platform!=IntPtr.Zero,"entry platform: "+Native.Error);
             try {
                 Check(Native.ssbm_sim_begin_entry(sim,NativeLib.CString(assets))==1,"entry start: "+Native.Error);
+                if(Native.HasOverlay) {
+                    var tint=new float[4];Check(Native.ssbm_sim_overlay(sim,tint)==1&&tint[3]>0,"source entry overlay absent");
+                    foreach(float channel in tint)Check(float.IsFinite(channel)&&channel>=0&&channel<=1,"entry overlay channel outside bounds");
+                }
                 bool entrySound=false;var entryPcm=new float[1066];
                 var entryPad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=15,buttons=2|4};
                 for(int f=0;f<60;f++) {
