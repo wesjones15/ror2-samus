@@ -1,6 +1,7 @@
 # 0.2.6 dash movement and start prompt
 
 - Use RoR2's vanilla interaction UI and bound-button glyph with Start as the arrival prompt.
+- Stage deployments in pikmin-main/target/BepInEx/plugins/MeleeSamus/ for manual installation.
 - Move Dash Attack's source translation into collision-resolved native movement so Samus keeps the distance after returning to idle.
 - Verify dash retention at 30/60/144 FPS, wall collision and native C# input; inspect mid-attack and completed poses in the viewer. Unity playtest remains pending.
 

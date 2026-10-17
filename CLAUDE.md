@@ -15,5 +15,6 @@
   callback delegates; prevent C# exceptions from crossing unmanaged callbacks.
 - Keep a runnable .NET native-boundary harness, build against the installed DLC4
   assemblies and commit each verified working increment.
-- User preference: replace the installed DLL pair directly after checking the
-  game is closed. Do not create DLL backups or retain rollback DLL copies.
+- User preference: stage all future deploys in ../target/BepInEx/plugins/MeleeSamus/.
+  The user moves the files into the game install. No game-close request is needed.
+  Keep one staged DLL pair; do not create rollback DLL copies.

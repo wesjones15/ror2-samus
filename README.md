@@ -85,8 +85,9 @@ Skill slots hold host charges: attacks, Charge Shot, missiles/bombs, Screw Attac
 Cooldowns and damage coefficients are RoR2 adaptations. Four alternate disc
 costumes unlock persistently after stage 1, 2, 3 and 4 teleporter events as Samus.
 
-Build from this workspace with `./build.ps1`; `-Deploy` explicitly installs the
-two built DLLs and a local assets path into RoR2Dir. Default builds only the ZIP.
+Build from this workspace with `./build.ps1`; `-Deploy` stages the two built DLLs
+in `../target/BepInEx/plugins/MeleeSamus/` for manual copying into the game folder.
+RoR2Dir supplies build references only. Default builds only the ZIP.
 The release ZIP contains only Samus.dll, ssbm.dll, README.md, CHANGELOG.md and the
 checksum manifest release.json. Its explicit allowlist excludes executables,
 setup scripts, extracted assets and Nintendo/game data. A clean build needs no

@@ -67,12 +67,15 @@ Compress-Archive -Path (Join-Path $packageRoot '*') -DestinationPath $zip -Force
 $checksum=(Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
 "$checksum  $name.zip" | Set-Content -LiteralPath ($zip+'.sha256') -Encoding ascii
 if($Deploy) {
-    if(Get-Process -Name 'Risk of Rain 2' -ErrorAction SilentlyContinue) { throw 'Close Risk of Rain 2 before deploying DLLs.' }
-    $destination=Join-Path $gameRoot 'BepInEx\plugins\MeleeSamus'
+    # The user copies staged files into their chosen game installation.
+    $destination=Join-Path $repoRoot '..\target\BepInEx\plugins\MeleeSamus'
     New-Item -ItemType Directory -Force -Path $destination | Out-Null
-    Copy-Item -LiteralPath (Join-Path $pluginRoot 'Samus.dll'),(Join-Path $pluginRoot 'ssbm.dll') -Destination $destination
-    # Local development only; deliberately outside the release package.
-    Set-Content -LiteralPath (Join-Path $destination 'assets_dir.txt') -Value (Join-Path $libraryRoot 'assets') -Encoding utf8
-    Write-Host "Deployed Samus to $destination"
+    foreach($dll in @('Samus.dll','ssbm.dll')) {
+        $source=Join-Path $pluginRoot $dll
+        $target=Join-Path $destination $dll
+        Copy-Item -LiteralPath $source -Destination $target -Force
+        if((Get-FileHash -LiteralPath $source).Hash -ne (Get-FileHash -LiteralPath $target).Hash) {throw "Staged checksum mismatch: $dll"}
+    }
+    Write-Host "Staged Samus for manual installation at $destination"
 }
 Write-Host "Built and audited $zip"
