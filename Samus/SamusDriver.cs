@@ -24,6 +24,7 @@ namespace Samus
         bool active,failed,permitDamage;float scale;
         Native.HitboxSample[] hitboxes=new Native.HitboxSample[64];
         readonly Combat.HitTracker hits=new Combat.HitTracker();
+        readonly HashSet<string> presentationErrors=new HashSet<string>();
         SamusAudio audio;
         internal DiscParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
@@ -64,8 +65,8 @@ namespace Samus
                 uint extra=(uint)Math.Max(0,body.maxJumpCount-2);
                 Native.ssbm_sim_tuning(sim,new Native.Tuning { speed_scale=body.moveSpeed/Mathf.Max(0.1f,body.baseMoveSpeed),jump_scale=Plugin.JumpScale.Value*NativeBody.JumpScale(body),extra_jumps=extra,hold_charge=Plugin.HoldCharge.Value?1u:0u,smash_max_frames=60 });
                 Native.ssbm_sim_step(sim,in host,in p,Time.fixedDeltaTime);
-                Effects?.Step(sim,Time.fixedDeltaTime);
-                Particles?.Step(Time.fixedDeltaTime);
+                Present(()=>Effects?.Step(sim,Time.fixedDeltaTime));
+                Present(()=>Particles?.Step(Time.fixedDeltaTime));
                 uint count=Native.ssbm_sim_hitboxes(sim,null,0);
                 if(count>1024)throw new InvalidOperationException("Native hitbox sample budget exceeded");
                 if(count>hitboxes.Length)hitboxes=new Native.HitboxSample[count];
@@ -121,11 +122,15 @@ namespace Samus
                 var facing=new Vector3(state.facing.x,0,state.facing.z);
                 var rotation=facing.sqrMagnitude>0.0001f?Quaternion.LookRotation(facing):Quaternion.identity;
                 view.Models.Update(scale,d=>(at,rotation));
-                Particles?.Draw();
-                Effects?.Draw();
+                Present(()=>Particles?.Draw());
+                Present(()=>Effects?.Draw());
             }catch(Exception e){Fallback(e.ToString());}
         }
         Native.Vec3 ToSim(Vector3 v)=>new Native.Vec3(v.x/scale,v.y/scale,v.z/scale);
+        void Present(Action draw)
+        {
+            try{draw();}catch(Exception e){if(presentationErrors.Add(e.Message))Plugin.Log.LogError("Samus presentation failed; character simulation remains active: "+e);}
+        }
         bool RecoveryGround(Vector3 sample,float rise,float drop,out Vector3 feet)=>WorldProbe.StandingGround(sample,rise,drop,1.8f,0.3f,out feet);
         void Recover(Vector3 feet)
         {
