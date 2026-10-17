@@ -19,9 +19,9 @@
     "particles": {
       "paths": ["EfSsData.dat", "EfCoData.dat"],
       "source_references": ["melee/ef/efasync.c: effect data loading", "sysdolphin/baselib: particle/emitter subsystem"],
-      "status": "decoded",
-      "verification": ["Samus/shared embedded banks decode 614 emitter definitions and 44 texture groups, including texture frames/palettes."],
-      "notes": "Source particle command interpreter, emitter playback and billboard rendering remain in progress."
+      "status": "wired",
+      "verification": ["Samus/shared embedded banks decode 614 emitter definitions and 44 texture groups, including texture frames/palettes.", "All 22 Samus emitters execute their command streams and transfer billboard/texture snapshots through NativeCheck; impact preview rendered in the viewer."],
+      "notes": "Missile/charge particle rendering wired. Shared/fighter GFX dispatch, complete shape/attachment/trail/mirror/alpha-compare semantics and in-game verification remain in progress."
     },
     "animations": {
       "paths": ["PlSsAJ.dat", "PlSs.dat", "PlCo.dat"],

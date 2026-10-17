@@ -35,7 +35,7 @@ static class Program
         }
         if(Native.ssbm_assets_complete(NativeLib.CString(assets))!=1) {
             // Clean release builds, like Mario/Olimar, need neither a disc nor a cache.
-            Console.WriteLine("PASS: ABI + 12 layouts; SKIP: asset-dependent checks (no complete local cache)");
+            Console.WriteLine("PASS: ABI 3 + 13 layouts; SKIP: asset-dependent checks (no complete local cache)");
             return;
         }
         var host=new Native.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
@@ -63,6 +63,27 @@ static class Program
             }
             Check(gotHitboxes&&hits==0,"disc melee hitboxes must replace the placeholder hit callback");
             Check(gotSound,"disc attack sound cue did not reach the native PCM mixer");
+            var particles=Native.ssbm_particles_new(NativeLib.CString(assets));Check(particles!=IntPtr.Zero,Native.Error);
+            try {
+                var identity=new float[]{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+                for(uint id=2000;id<2022;id++) {
+                    Check(Native.ssbm_particles_spawn(particles,id,identity,1)==1,Native.Error);
+                    bool drawn=false;
+                    for(int frame=0;frame<30;frame++) {
+                        Check(Native.ssbm_particles_step(particles,1.0/60)==1,Native.Error);
+                        uint n=Native.ssbm_particles_draws(particles,null,0);if(n==0)continue;
+                        var sprites=new Native.Sprite[n];Check(Native.ssbm_particles_draws(particles,sprites,n)==n,Native.Error);
+                        foreach(var sprite in sprites) {
+                            Check(float.IsFinite(sprite.position.x)&&float.IsFinite(sprite.size)&&float.IsFinite(sprite.r),"invalid particle snapshot");
+                            Check(Native.ssbm_particles_texture(particles,sprite.texture,out var info,null,0)==1,Native.Error);
+                            var rgba=new byte[info.width*info.height*4];
+                            Check(Native.ssbm_particles_texture(particles,sprite.texture,out info,rgba,(uint)rgba.Length)==1,Native.Error);
+                        }
+                        drawn=true;
+                    }
+                    Check(drawn,"emitter never produced a billboard: "+id);Native.ssbm_particles_stop(particles,1);
+                }
+            } finally { Native.ssbm_particles_free(particles); }
             for(uint kind=0;kind<4;kind++)for(uint articleState=0;articleState<(kind==0?2:kind==1?9:kind==2?4:1);articleState++) {
                 var article=Native.ssbm_article_new(NativeLib.CString(assets),kind,articleState);Check(article!=IntPtr.Zero,"article: "+Native.Error);
                 try { Check(Native.ssbm_object_update(article,10)==1,Native.Error);Native.ssbm_view_model(article,out var model);Check(model.vertex_count>0&&model.index_count>0,"empty article model"); }
@@ -83,7 +104,7 @@ static class Program
                 Native.ssbm_view_free(view);view=IntPtr.Zero;
             }
             Check(Native.ssbm_view_new(NativeLib.CString(assets),99)==IntPtr.Zero,"bad costume not rejected");
-            Console.WriteLine("PASS: ABI + 12 layouts, real DLL callbacks, jump/landing, posed disc hitboxes, 5 costumes, mesh arrays and texture transfers");
+            Console.WriteLine("PASS: ABI 3 + 13 layouts, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
         } finally { if(view!=IntPtr.Zero)Native.ssbm_view_free(view);Native.ssbm_sim_free(sim); }
     }
 }

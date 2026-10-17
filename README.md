@@ -65,15 +65,19 @@ jump pads, stun/freeze and falling off the stage. Finish a teleporter and check 
 costume unlock after restarting. Diagnostics are in BepInEx/LogOutput.log.
 
 Disc subaction commands now drive normal/Screw Attack hit windows and posed bone
-hitboxes; gait clocks use fixed ticks and disc speed scaling. ABI 2 adds the posed
-hitbox transfer. These changes pass native checks but await RoR2 playtesting.
+hitboxes; gait clocks use fixed ticks and disc speed scaling. ABI 3 transfers posed
+hitboxes and particle snapshots. These changes pass native checks but await RoR2 playtesting.
 
 Disc sound cues now feed an SSM/SEM decoder and native stereo mixer, streamed
 through the shared Windows PCM queue. Playback follows action commands, supports
 sound-slot replacement/stop and follows the game's volume/pause/run lifecycle.
 In-game listening verification and remaining source audio routing are pending.
 
-Known limits: effects/particles, remaining movement transitions and full TEV
+All 22 Samus particle streams execute in native checks. Source billboard textures,
+colour/size/rotation and child effect graphs now drive missile/charge presentation.
+Shared/fighter effect dispatch and complete particle semantics remain in progress.
+
+Known limits: remaining effects/particles, movement transitions and full TEV
 materials remain unfinished. Projectile models now come from the disc; their
 physics and impact effects still need the source implementation. Attack speed, all item-specific effects,
 AI companions/clones and fall damage need further integration. Grabs, ledges,

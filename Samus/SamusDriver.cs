@@ -23,6 +23,7 @@ namespace Samus
         Native.HitboxSample[] hitboxes=new Native.HitboxSample[64];
         readonly Combat.HitTracker hits=new Combat.HitTracker();
         SamusAudio audio;
+        internal DiscParticles Particles { get; private set; }
         void Awake(){body=GetComponent<CharacterBody>();motor=GetComponent<CharacterMotor>();input=GetComponent<InputBankTest>();native=GetComponent<NativeBody>();direction=GetComponent<CharacterDirection>();}
         void Update()
         {
@@ -57,6 +58,7 @@ namespace Samus
                 uint extra=(uint)Math.Max(0,body.maxJumpCount-2);
                 Native.ssbm_sim_tuning(sim,new Native.Tuning { speed_scale=body.moveSpeed/Mathf.Max(0.1f,body.baseMoveSpeed),jump_scale=Plugin.JumpScale.Value*NativeBody.JumpScale(body),extra_jumps=extra,hold_charge=Plugin.HoldCharge.Value?1u:0u,smash_max_frames=60 });
                 Native.ssbm_sim_step(sim,in host,in p,Time.fixedDeltaTime);
+                Particles?.Step(Time.fixedDeltaTime);
                 uint count=Native.ssbm_sim_hitboxes(sim,null,0);
                 if(count>1024)throw new InvalidOperationException("Native hitbox sample budget exceeded");
                 if(count>hitboxes.Length)hitboxes=new Native.HitboxSample[count];
@@ -82,6 +84,7 @@ namespace Samus
             sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),ToSim(body.footPosition));if(sim==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
             view=new SamusView(Math.Min(body.skinIndex,4));self=GCHandle.Alloc(this);
             audio=new SamusAudio(sim);
+            Particles=new DiscParticles(scale);
             host=new Native.Host { user=GCHandle.ToIntPtr(self),collide=Marshal.GetFunctionPointerForDelegate(collideFn),evt=Marshal.GetFunctionPointerForDelegate(eventFn) };
             WorldProbe.UseBodyCollision(motor,gameObject);motor.Motor.enabled=false;
             smoother=new StepSmoother(transform);cameraPivot=new CameraPivot(body);cameraPivot.Use(true);active=true;
@@ -100,6 +103,7 @@ namespace Samus
                 var facing=new Vector3(state.facing.x,0,state.facing.z);
                 var rotation=facing.sqrMagnitude>0.0001f?Quaternion.LookRotation(facing):Quaternion.identity;
                 view.Models.Update(scale,d=>(at,rotation));
+                Particles?.Draw();
             }catch(Exception e){Fallback(e.ToString());}
         }
         Native.Vec3 ToSim(Vector3 v)=>new Native.Vec3(v.x/scale,v.y/scale,v.z/scale);
@@ -159,6 +163,7 @@ namespace Samus
         {
             active=false;cameraPivot?.Use(false);view?.Dispose();view=null;
             audio?.Dispose();audio=null;
+            Particles?.Dispose();Particles=null;
             if(sim!=IntPtr.Zero){Native.ssbm_sim_free(sim);sim=IntPtr.Zero;}if(self.IsAllocated)self.Free();
             if(motor&&motor.Motor)motor.Motor.enabled=true;
             if(body&&body.modelLocator&&body.modelLocator.modelTransform){GameSettings.HideRenderers(body.modelLocator.modelTransform,false);var a=body.modelLocator.modelTransform.GetComponent<Animator>();if(a)a.enabled=true;}

@@ -82,20 +82,27 @@ namespace Samus
     internal sealed class Shot:MonoBehaviour
     {
         CharacterBody owner;Vector3 velocity;float coefficient,radius,age;bool homing,bomb;
-        HealthComponent target;SamusView view;float modelScale;
+        HealthComponent target;SamusView view;float modelScale;DiscParticles particles;ulong particleKey;uint particleKind,particleState,particleFrame;readonly uint[] effectCues=new uint[32];
         internal static void Spawn(CharacterBody owner,Vector3 point,Vector3 direction,float coefficient,float speed,float radius,bool homing,bool bomb,uint article,uint state,float scale)
         {
             var go=new GameObject("Samus disc article");go.transform.position=point;
             var shot=go.AddComponent<Shot>();shot.owner=owner;shot.velocity=direction*speed;shot.coefficient=coefficient;shot.radius=radius;shot.homing=homing;shot.bomb=bomb;
             shot.modelScale=scale;
+            shot.particles=owner.GetComponent<SamusDriver>()?.Particles;shot.particleKey=0x100000000ul|(uint)go.GetInstanceID();shot.particleKind=article;shot.particleState=state;
             try { shot.view=new SamusView(article,state); }
             catch(System.Exception e) { Plugin.Log.LogError("Samus article presentation failed: "+e.Message);Object.Destroy(go);return; }
             if(homing){var lockOn=new EnemyLock { Range=45f };shot.target=lockOn.Update(owner,true,false,Vector2.zero)?.healthComponent;}
+            var transform=DiscParticles.At(point,direction.sqrMagnitude>0?Quaternion.LookRotation(direction):Quaternion.identity,scale);
+            // efAlt_Spawn: normal/smash missile source generator graphs.
+            shot.SourceEffects(uint.MaxValue,0,transform);
         }
         void FixedUpdate()
         {
             if(!owner||!owner.healthComponent||!owner.healthComponent.alive||!Run.instance){Destroy(gameObject);return;}
             age+=Time.fixedDeltaTime;
+            var particleTransform=DiscParticles.At(transform.position,velocity.sqrMagnitude>0?Quaternion.LookRotation(velocity):Quaternion.identity,modelScale);
+            particles?.Attach(particleKey,particleTransform);
+            uint frame=(uint)Mathf.FloorToInt(age*60);SourceEffects(particleFrame,frame,particleTransform);particleFrame=frame;
             if(bomb) {
                 velocity+=Physics.gravity*Time.fixedDeltaTime;var delta=velocity*Time.fixedDeltaTime;
                 if(Physics.SphereCast(transform.position,radius,delta.normalized,out var floor,delta.magnitude,WorldProbe.Mask,QueryTriggerInteraction.Ignore)){velocity=Vector3.zero;transform.position=floor.point+floor.normal*radius;}
@@ -121,7 +128,12 @@ namespace Samus
             fade.Material.SetColor("_TintColor",color);go.GetComponent<Renderer>().sharedMaterial=fade.Material;
         }
         void LateUpdate(){if(view==null)return;view.ObjectPose(age*60);var rotation=velocity.sqrMagnitude>0.0001f?Quaternion.LookRotation(velocity):Quaternion.identity;view.Models.Update(modelScale,d=>(transform.position,rotation));}
-        void OnDestroy(){view?.Dispose();}
+        void SourceEffects(uint previous,uint frame,Matrix4x4 transform)
+        {
+            uint count=Native.ssbm_article_cues(particleKind,particleState,previous,frame,coefficient>=11.9f?1u:0u,effectCues,(uint)effectCues.Length);
+            for(int i=0;i<count&&i<effectCues.Length;i++){int target=Native.ssbm_effect_target(effectCues[i]);if(target>=0&&target<int.MaxValue)particles?.Spawn((uint)target,transform,particleKey);}
+        }
+        void OnDestroy(){particles?.Stop(particleKey);view?.Dispose();}
     }
     internal sealed class FlashFade:MonoBehaviour
     {
