@@ -74,8 +74,8 @@ sound-slot replacement/stop and follows the game's volume/pause/run lifecycle.
 In-game listening verification and remaining source audio routing are pending.
 
 Known limits: effects/particles, remaining movement transitions and full TEV
-materials remain unfinished. Projectile shapes and impact effects are procedural
-placeholders. Attack speed, all item-specific effects,
+materials remain unfinished. Projectile models now come from the disc; their
+physics and impact effects still need the source implementation. Attack speed, all item-specific effects,
 AI companions/clones and fall damage need further integration. Grabs, ledges,
 percent/stock HUD, blast-zone effects and multiplayer are not implemented. Use
 single-player offline; remote-player native simulation is not supported.

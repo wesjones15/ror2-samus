@@ -63,6 +63,11 @@ static class Program
             }
             Check(gotHitboxes&&hits==0,"disc melee hitboxes must replace the placeholder hit callback");
             Check(gotSound,"disc attack sound cue did not reach the native PCM mixer");
+            for(uint kind=0;kind<4;kind++)for(uint articleState=0;articleState<(kind==0?2:kind==1?9:kind==2?4:1);articleState++) {
+                var article=Native.ssbm_article_new(NativeLib.CString(assets),kind,articleState);Check(article!=IntPtr.Zero,"article: "+Native.Error);
+                try { Check(Native.ssbm_object_update(article,10)==1,Native.Error);Native.ssbm_view_model(article,out var model);Check(model.vertex_count>0&&model.index_count>0,"empty article model"); }
+                finally { Native.ssbm_view_free(article); }
+            }
             for(uint costume=0;costume<5;costume++) {
                 view=Native.ssbm_view_new(NativeLib.CString(assets),costume);Check(view!=IntPtr.Zero,Native.Error);
                 Check(Native.ssbm_view_update(view,sim,1f/60)==1,Native.Error);

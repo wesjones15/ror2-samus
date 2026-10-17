@@ -16,10 +16,10 @@ namespace Samus
             var aim=new Vector3(e.direction.x,e.direction.y,e.direction.z).normalized;
             var origin=new Vector3(e.position.x,e.position.y,e.position.z)*scale+Vector3.up*1.2f;
             switch(e.move_id) {
-                case 20: Shot.Spawn(body,origin,aim,2f+10f*e.strength,55f,0.15f+0.3f*e.strength,false,false);break;
-                case 21: Shot.Spawn(body,origin,aim,3f,24f,0.18f,true,false);break;
-                case 22: Shot.Spawn(body,origin,aim,6f,45f,0.22f,false,false);break;
-                case 24: Shot.Spawn(body,origin-Vector3.up*0.8f,Vector3.zero,4f,0,0.3f,false,true);break;
+                case 20: Shot.Spawn(body,origin,aim,2f+10f*e.strength,55f,0.15f+0.3f*e.strength,false,false,1,(uint)Mathf.Clamp(Mathf.RoundToInt(e.strength*7)+1,1,8),scale);break;
+                case 21: Shot.Spawn(body,origin,aim,3f,24f,0.18f,true,false,2,0,scale);break;
+                case 22: Shot.Spawn(body,origin,aim,6f,45f,0.22f,false,false,2,1,scale);break;
+                case 24: Shot.Spawn(body,origin-Vector3.up*0.8f,Vector3.zero,4f,0,0.3f,false,true,0,0,scale);break;
             }
         }
         internal sealed class HitTracker
@@ -82,14 +82,14 @@ namespace Samus
     internal sealed class Shot:MonoBehaviour
     {
         CharacterBody owner;Vector3 velocity;float coefficient,radius,age;bool homing,bomb;
-        HealthComponent target;Material material;
-        internal static void Spawn(CharacterBody owner,Vector3 point,Vector3 direction,float coefficient,float speed,float radius,bool homing,bool bomb)
+        HealthComponent target;SamusView view;float modelScale;
+        internal static void Spawn(CharacterBody owner,Vector3 point,Vector3 direction,float coefficient,float speed,float radius,bool homing,bool bomb,uint article,uint state,float scale)
         {
-            var go=GameObject.CreatePrimitive(PrimitiveType.Sphere);go.name="Samus energy projectile";
-            Object.Destroy(go.GetComponent<Collider>());go.transform.position=point;go.transform.localScale=Vector3.one*radius*2f;
+            var go=new GameObject("Samus disc article");go.transform.position=point;
             var shot=go.AddComponent<Shot>();shot.owner=owner;shot.velocity=direction*speed;shot.coefficient=coefficient;shot.radius=radius;shot.homing=homing;shot.bomb=bomb;
-            shot.material=new Material(Shaders.HgStandard());shot.material.SetColor("_Color",bomb?Color.red:homing?Color.yellow:Color.cyan);
-            shot.material.SetColor("_EmColor",bomb?Color.red:Color.cyan);shot.material.SetFloat("_EmPower",2f);go.GetComponent<Renderer>().sharedMaterial=shot.material;
+            shot.modelScale=scale;
+            try { shot.view=new SamusView(article,state); }
+            catch(System.Exception e) { Plugin.Log.LogError("Samus article presentation failed: "+e.Message);Object.Destroy(go);return; }
             if(homing){var lockOn=new EnemyLock { Range=45f };shot.target=lockOn.Update(owner,true,false,Vector2.zero)?.healthComponent;}
         }
         void FixedUpdate()
@@ -120,7 +120,8 @@ namespace Samus
             var fade=go.AddComponent<FlashFade>();fade.Material=Shaders.SeeThrough("Samus diagnostic effect",Texture2D.whiteTexture,true,false);
             fade.Material.SetColor("_TintColor",color);go.GetComponent<Renderer>().sharedMaterial=fade.Material;
         }
-        void OnDestroy(){if(material)Destroy(material);}
+        void LateUpdate(){if(view==null)return;view.ObjectPose(age*60);var rotation=velocity.sqrMagnitude>0.0001f?Quaternion.LookRotation(velocity):Quaternion.identity;view.Models.Update(modelScale,d=>(transform.position,rotation));}
+        void OnDestroy(){view?.Dispose();}
     }
     internal sealed class FlashFade:MonoBehaviour
     {

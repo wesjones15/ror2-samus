@@ -11,13 +11,18 @@ namespace Samus
         internal ModelView Models { get; private set; }
         internal Quaternion LocalRotation=Quaternion.identity;
         internal SamusView(uint costume)
+            :this(Native.ssbm_view_new(NativeLib.CString(Plugin.AssetsDir),Math.Min(costume,4))) {}
+        internal SamusView(uint article,uint state)
+            :this(Native.ssbm_article_new(NativeLib.CString(Plugin.AssetsDir),article,state)) {}
+        SamusView(IntPtr handle)
         {
-            Handle=Native.ssbm_view_new(NativeLib.CString(Plugin.AssetsDir),Math.Min(costume,4));
+            Handle=handle;
             if(Handle==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
             Models=ModelView.Create(this,"Melee Samus");
             if(Models==null){Dispose();throw new InvalidOperationException("Samus ModelView creation failed");}
         }
         internal void Pose(IntPtr sim,float dt){if(Native.ssbm_view_update(Handle,sim,dt)!=1)throw new InvalidOperationException(Native.Error);}
+        internal void ObjectPose(float frame){if(Native.ssbm_object_update(Handle,frame)!=1)throw new InvalidOperationException(Native.Error);}
         public uint ModelCount()=>1;
         public bool Model(uint id,out ViewModelInfo info)=>Native.ssbm_view_model(Handle,out info)==1;
         public uint Batches(uint id,ViewBatch[] output,uint max)=>Native.ssbm_view_batches(Handle,output,max);
