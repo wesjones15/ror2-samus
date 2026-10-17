@@ -33,6 +33,13 @@ Samus active was an incorrect interpretation of log entries and has been
 withdrawn. Survivor/portrait log entries alone do not establish successful
 platform initialization. No Steamworks bypass or game-file changes were made.
 
+A diagnostic build traces the original Steam constructor's boolean checks and
+the loader's catch handler. Their signatures and catch layout were inspected
+against the D: installation. On the diagnostic run at 18:15, the original client
+validity, DLL validation and subscription checks returned true, and no caught
+startup exception was logged. This is a diagnostic observation, not an
+established fix for the user's earlier enabled/disabled result.
+
 RoR2 runtime, skin selection/unlocks and world/item/combat behavior require the
 offline playtest matrix in README. The corrected packaging ZIP has been built;
 this does not establish that the startup defect is fixed. Full audio, original attack commands and other fidelity work
