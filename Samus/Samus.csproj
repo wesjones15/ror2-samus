@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>Samus</AssemblyName>
+    <RootNamespace>Samus</RootNamespace>
+    <!-- The game install to compile against and deploy into. Its own DLLs are the reference
+         assemblies, so the plugin always matches that build (RoR2 DLC4 (2026)). -->
+    <RoR2Dir Condition="'$(RoR2Dir)' == ''">$(MSBuildThisFileDirectory)..\..\2026 Mod Stuff\RiskOfRain2_DLC4</RoR2Dir>
+    <Managed>$(RoR2Dir)\Risk of Rain 2_Data\Managed</Managed>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <!-- ror2-common's IL hooks (ItemHooks, MinionHit): needs the MonoMod references below. -->
+    <DefineConstants>$(DefineConstants);ROR2COMMON_HOOKS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <Reference><Private>false</Private></Reference>
+  </ItemDefinitionGroup>
+
+  <!-- Shared RoR2 host code, compiled in (no shared DLL to version across mods). -->
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)../../ror2-common/src/**/*.cs" Link="Common\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="BepInEx"><HintPath>$(RoR2Dir)\BepInEx\core\BepInEx.dll</HintPath></Reference>
+    <Reference Include="Mono.Cecil"><HintPath>$(RoR2Dir)\BepInEx\core\Mono.Cecil.dll</HintPath></Reference>
+    <Reference Include="MonoMod.Utils"><HintPath>$(RoR2Dir)\BepInEx\core\MonoMod.Utils.dll</HintPath></Reference>
+    <Reference Include="MonoMod.RuntimeDetour"><HintPath>$(RoR2Dir)\BepInEx\core\MonoMod.RuntimeDetour.dll</HintPath></Reference>
+    <Reference Include="RoR2"><HintPath>$(Managed)\RoR2.dll</HintPath></Reference>
+    <Reference Include="Unity.Addressables"><HintPath>$(Managed)\Unity.Addressables.dll</HintPath></Reference>
+    <Reference Include="Unity.ResourceManager"><HintPath>$(Managed)\Unity.ResourceManager.dll</HintPath></Reference>
+    <Reference Include="LegacyResourcesAPI"><HintPath>$(Managed)\LegacyResourcesAPI.dll</HintPath></Reference>
+    <Reference Include="KinematicCharacterController"><HintPath>$(Managed)\KinematicCharacterController.dll</HintPath></Reference>
+    <Reference Include="HGCSharpUtils"><HintPath>$(Managed)\HGCSharpUtils.dll</HintPath></Reference>
+    <Reference Include="Rewired_Core"><HintPath>$(Managed)\Rewired_Core.dll</HintPath></Reference>
+    <Reference Include="Rewired_CSharp"><HintPath>$(Managed)\Rewired_CSharp.dll</HintPath></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(Managed)\UnityEngine.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.AudioModule"><HintPath>$(Managed)\UnityEngine.AudioModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.UI"><HintPath>$(Managed)\UnityEngine.UI.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.UIModule"><HintPath>$(Managed)\UnityEngine.UIModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(Managed)\UnityEngine.CoreModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(Managed)\UnityEngine.PhysicsModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.AnimationModule"><HintPath>$(Managed)\UnityEngine.AnimationModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule"><HintPath>$(Managed)\UnityEngine.ParticleSystemModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(Managed)\UnityEngine.IMGUIModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.UnityWebRequestModule"><HintPath>$(Managed)\UnityEngine.UnityWebRequestModule.dll</HintPath></Reference>
+    <Reference Include="com.unity.multiplayer-hlapi.Runtime"><HintPath>$(Managed)\com.unity.multiplayer-hlapi.Runtime.dll</HintPath></Reference>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,67 @@
+using System;
+using System.Runtime.InteropServices;
+using Ror2Common;
+
+namespace Samus
+{
+    internal static class Native
+    {
+        public const uint AbiVersion = 1;
+        const string Dll = "ssbm";
+        [StructLayout(LayoutKind.Sequential)] public struct Vec3
+        {
+            public float x, y, z;
+            public Vec3(float x, float y, float z) { this.x=x; this.y=y; this.z=z; }
+        }
+        [StructLayout(LayoutKind.Sequential)] public struct Pad { public Vec3 movement, aim; public uint buttons, allowed; }
+        [StructLayout(LayoutKind.Sequential)] public struct State
+        {
+            public Vec3 position, velocity, facing;
+            public uint grounded, phase, move_id, jumps_used, shot_charge, smash_charge;
+            public ulong frame;
+        }
+        [StructLayout(LayoutKind.Sequential)] public struct Collision { public Vec3 position; public uint grounded, ceiling; }
+        [StructLayout(LayoutKind.Sequential)] public struct Event { public uint kind, move_id; public float strength; public Vec3 position, direction; }
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void CollideFn(IntPtr user, in Vec3 from, in Vec3 desired, out Collision collision);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void EventFn(IntPtr user, in Event ev);
+        [StructLayout(LayoutKind.Sequential)] public struct Host { public IntPtr user, collide, evt; }
+        [StructLayout(LayoutKind.Sequential)] public struct Tuning { public float speed_scale, jump_scale; public uint extra_jumps, hold_charge, smash_max_frames; }
+
+        public static void Load(string path)
+        {
+            if (!NativeLib.Load(path, out string error)) throw new InvalidOperationException(error);
+            if (ssbm_abi_version() != AbiVersion) throw new InvalidOperationException("Samus native ABI mismatch");
+            var sizes = new uint[11]; uint count=ssbm_struct_sizes(sizes,(uint)sizes.Length);
+            error=NativeLib.CompareSizes(sizes,count,new[] {
+                ("Vec3",NativeLib.Size<Vec3>()),("Pad",NativeLib.Size<Pad>()),("State",NativeLib.Size<State>()),
+                ("Collision",NativeLib.Size<Collision>()),("Event",NativeLib.Size<Event>()),("Host",NativeLib.Size<Host>()),
+                ("Tuning",NativeLib.Size<Tuning>()),("ViewModelInfo",NativeLib.Size<ViewModelInfo>()),
+                ("ViewBatch",NativeLib.Size<ViewBatch>()),("ViewTexture",NativeLib.Size<ViewTexture>()),("ViewDraw",NativeLib.Size<ViewDraw>()) });
+            if (error!=null) throw new InvalidOperationException(error);
+        }
+        public static string Error => NativeLib.Utf8(ssbm_last_error());
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_abi_version();
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_struct_sizes([Out]uint[] output,uint max);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] static extern IntPtr ssbm_last_error();
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_assets_complete(byte[] dir);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_extract(byte[] disc,byte[] dir);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_sim_new(byte[] dir,Vec3 position);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_free(IntPtr sim);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_step(IntPtr sim,in Host host,in Pad pad,double dt);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_state(IntPtr sim,out State state);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_tuning(IntPtr sim,Tuning tuning);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_place(IntPtr sim,Vec3 vector,uint kind);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_new(byte[] dir,uint costume);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_view_free(IntPtr view);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_view_update(IntPtr view,IntPtr sim,float dt);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_view_model(IntPtr view,out ViewModelInfo info);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_view_batches(IntPtr view,[Out]ViewBatch[] output,uint max);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_view_indices(IntPtr view,[Out]int[] output,uint max);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_view_uvs(IntPtr view,[Out]float[] output,uint max);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_positions(IntPtr view,out uint count);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_normals(IntPtr view,out uint count);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_colors(IntPtr view,out uint count);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_texture_ids(IntPtr view,out uint count);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_view_texture(IntPtr view,uint id,out ViewTexture info,[Out]byte[] rgba,uint len);
+    }
+}
