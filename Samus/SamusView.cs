@@ -62,7 +62,8 @@ namespace Samus
             uint selected=Skins.Selected();if(selected!=costume){var replacement=new SamusView(selected);view.Dispose();view=replacement;costume=selected;}
             var pad=new Native.Pad { aim=new Native.Vec3(0,0,1),allowed=0 };
             Native.ssbm_sim_step(sim,in host,in pad,dt);view.Pose(sim,dt);
-            view.LocalRotation=Quaternion.identity;
+            // The authored Wait pose faces +X; displays/portraits face +Z.
+            view.LocalRotation=Quaternion.Euler(0,-90,0);
         }
         public void Release(){view.Dispose();Native.ssbm_sim_free(sim);}
     }
