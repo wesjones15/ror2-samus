@@ -14,7 +14,12 @@ static class Program
     { result=new Native.Collision { position=new Native.Vec3(to.x,Math.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
     static void Event(IntPtr user,in Native.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++; }
     static void Check(bool ok,string what) { if(!ok) throw new Exception(what); }
-    static void Main(string[] args)
+    static int Main(string[] args)
+    {
+        try {Run(args);return 0;}
+        catch(Exception e){Console.Error.WriteLine(e);return 1;}
+    }
+    static void Run(string[] args)
     {
         string dll=Path.GetFullPath(args.Length>0?args[0]:"../../libssbm/target/release/ssbm.dll");
         string assets=Path.GetFullPath(args.Length>1?args[1]:"../../libssbm/assets");
@@ -35,7 +40,7 @@ static class Program
         }
         if(Native.ssbm_assets_complete(NativeLib.CString(assets))!=1) {
             // Clean release builds, like Mario/Olimar, need neither a disc nor a cache.
-            Console.WriteLine("PASS: ABI 3 + 13 layouts; SKIP: asset-dependent checks (no complete local cache)");
+            Console.WriteLine("PASS: ABI 4 + 14 layouts; SKIP: asset-dependent checks (no complete local cache)");
             return;
         }
         var host=new Native.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
@@ -110,6 +115,29 @@ static class Program
                 try { Check(Native.ssbm_object_update(article,10)==1,Native.Error);Native.ssbm_view_model(article,out var model);Check(model.vertex_count>0&&model.index_count>0,"empty article model"); }
                 finally { Native.ssbm_view_free(article); }
             }
+            foreach(var articleCase in new[]{(kind:0u,state:0u),(kind:1u,state:1u),(kind:1u,state:8u),(kind:2u,state:0u),(kind:2u,state:1u)}) {
+                Native.ProjectileState? reference=null;
+                foreach(int fps in new[]{30,60,144}) {
+                    var projectile=Native.ssbm_projectile_new(NativeLib.CString(assets),articleCase.kind,articleCase.state,articleCase.state==8?1:0,new Native.Vec3(0,0,1));
+                    Check(projectile!=IntPtr.Zero,"projectile create: "+Native.Error);
+                    try {
+                        for(int f=0;f<fps;f++)Native.ssbm_projectile_step(projectile,1.0/fps,default,0);
+                        Check(Native.ssbm_projectile_state(projectile,out var flight)==1,Native.Error);
+                        Check(flight.frame==60&&flight.damage>0&&flight.radius>0,"disc projectile clock/hitbox");
+                        if(reference.HasValue)Check(Math.Abs(reference.Value.position.z-flight.position.z)<0.0001f&&Math.Abs(reference.Value.position.y-flight.position.y)<0.0001f,"projectile changed with host rate");
+                        reference=flight;
+                        uint cue=Native.ssbm_projectile_impact(projectile,sim);
+                        Check(cue==1001||cue==1036||cue==1038,"source impact callback absent");
+                        Check(Native.ssbm_projectile_impact(projectile,sim)==0,"impact replayed");
+                        Check(Native.ssbm_projectile_state(projectile,out var explosion)==1,Native.Error);
+                        Check((explosion.flags&1)!=0,"impact state missing");
+                        if(articleCase.kind!=1)Check(explosion.state==(articleCase.kind==0?1:articleCase.state+2),"wrong source explosion animation");
+                        for(int f=0;f<fps;f++)Native.ssbm_projectile_step(projectile,1.0/fps,default,0);
+                        Check(Native.ssbm_projectile_state(projectile,out explosion)==1&&(explosion.flags&2)!=0,"source explosion never finished");
+                    } finally {Native.ssbm_projectile_free(projectile);}
+                }
+            }
+            Console.WriteLine("PASS: disc projectile speeds, hitboxes, fixed clocks and explosion states at 30/60/144 Hz");
             for(uint costume=0;costume<5;costume++) {
                 view=Native.ssbm_view_new(NativeLib.CString(assets),costume);Check(view!=IntPtr.Zero,Native.Error);
                 Check(Native.ssbm_view_update(view,sim,1f/60)==1,Native.Error);
@@ -156,7 +184,48 @@ static class Program
                 } finally {Native.ssbm_sim_free(select);}
             }
             Console.WriteLine("PASS: character-select up-special and source PCM at 30/60/144 Hz");
-            Console.WriteLine("PASS: ABI 3 + 13 layouts, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
+            // Reproduce the user's delayed failure through the exact C# bindings,
+            // consuming GFX after each step rather than merely decoding archives.
+            var longRun=Native.ssbm_sim_new(NativeLib.CString(assets),default);
+            var longParticles=Native.ssbm_particles_new(NativeLib.CString(assets));
+            var effectViews=new System.Collections.Generic.Dictionary<int,IntPtr>();
+            Check(longRun!=IntPtr.Zero&&longParticles!=IntPtr.Zero,Native.Error);
+            try {
+                var pcm=new float[1066];var matrix=new float[16];int gfxCount=0,chargeFrames=0;
+                for(int frame=0;frame<3600;frame++) {
+                    int f=frame%600;
+                    var p=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=15,
+                        buttons=f==1?4u|8u:f==150||f==280?4u:f==350?4u|16u:f==450?2u|8u:f==500?2u:0u};
+                    Native.ssbm_sim_step(longRun,in host,in p,1.0/60);
+                    Check(Native.ssbm_sim_audio(longRun,pcm,533)==533,Native.Error);
+                    if(Native.ssbm_sim_charge_visual(longRun,matrix)==1){foreach(float value in matrix)Check(float.IsFinite(value),"charge attachment nonfinite");chargeFrames++;}
+                    uint count=Native.ssbm_sim_gfx(longRun,null,0);
+                    var cues=new Native.Event[count];
+                    Check(Native.ssbm_sim_gfx(longRun,cues,count)==count,"long-run GFX: "+Native.Error);
+                    foreach(var cue in cues) {
+                        gfxCount++;int target=Native.ssbm_effect_target(cue.kind);
+                        Check(target!=int.MaxValue,"unresolved runtime effect "+cue.kind);
+                        Check(Native.ssbm_sim_bone(longRun,cue.move_id&65535,matrix)==1,"posed effect bone: "+Native.Error);
+                        if(target>=0)Check(Native.ssbm_particles_spawn(longParticles,(uint)target,matrix,(ulong)gfxCount)==1,Native.Error);
+                        else if(target>int.MinValue+1000) {
+                            if(!effectViews.TryGetValue(target,out var effect)) {
+                                effect=Native.ssbm_effect_new(NativeLib.CString(assets),(uint)(-target-1));
+                                Check(effect!=IntPtr.Zero,"runtime effect model: "+Native.Error);effectViews.Add(target,effect);
+                            }
+                            Check(Native.ssbm_object_update(effect,10)==1,Native.Error);
+                            Check(Native.ssbm_view_positions(effect,out uint vertices)!=IntPtr.Zero&&vertices>0,"empty effect geometry");
+                        }
+                    }
+                    Check(Native.ssbm_particles_step(longParticles,1.0/60)==1,"runtime particles: "+Native.Error);
+                    Check(Native.ssbm_sim_state(longRun,out var running)==1&&float.IsFinite(running.position.y),"simulation failed after "+frame+" ticks");
+                }
+                Check(gfxCount>100&&chargeFrames>100,"long-run did not exercise attack/held-article cues");
+                Console.WriteLine("PASS: 60 simulated seconds consuming "+gfxCount+" attack GFX cues, posed bones, effect models, particles and PCM through C#");
+            } finally {
+                foreach(var effect in effectViews.Values)Native.ssbm_view_free(effect);
+                Native.ssbm_particles_free(longParticles);Native.ssbm_sim_free(longRun);
+            }
+            Console.WriteLine("PASS: ABI 4 + 14 layouts, trophy entry, grid tile, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
         } finally { if(view!=IntPtr.Zero)Native.ssbm_view_free(view);Native.ssbm_sim_free(sim); }
     }
 }

@@ -10,16 +10,20 @@ character-specific; the gameplay state machine is not yet a generic fighter API.
 See the sibling `libssbm/docs/reuse.md` for the ownership and remaining split.
 
 Character select plays up-B (LB+B), using the shared Melee selection rule and the
-attack's original animation/sound cues. Samus plays Screw Attack once, then idles;
-the preview stays at the mannequin's origin. The icon uses Samus's original CSS
-photo from MnSlChr.usd, with its palette and aspect ratio preserved. The shared
+attack's original animation, effects and sounds. Samus repeats Screw Attack with
+a brief idle between plays, on the UI clock. The preview stays at the mannequin's
+origin. The icon uses Samus's original 64x56 CSS grid tile from MnSlChr.usd,
+with its palette and aspect ratio preserved. The shared
 portrait queue installs this texture after extraction; no 3D icon capture is used.
-Selection audio stops on completion/deselection.
+Selection audio stops between repeats and on deselection.
 
 Status: incomplete; Rust viewer visually checked and native C# boundary tested.
 The user successfully started single player as Samus with the diagnostic build,
-then reported broken locomotion and placeholder attacks. The earlier startup
-failure's cause remains unresolved. Subsequent changes require a new playtest.
+then reported broken locomotion and placeholder attacks. The delayed return to
+Commando was traced to special GFX bone IDs being used as physical joints. Source
+bone indirections now resolve and presentation failures cannot replace gameplay.
+The earlier Steamworks startup failure's cause remains unresolved. The latest
+changes require an offline visual/listening playtest.
 Full behavior fidelity is in
 the sibling libssbm/docs/behavior-spec.md when building from source.
 
@@ -78,8 +82,11 @@ jump pads, stun/freeze and falling off the stage. Finish a teleporter and check 
 costume unlock after restarting. Diagnostics are in BepInEx/LogOutput.log.
 
 Disc subaction commands now drive normal/Screw Attack hit windows and posed bone
-hitboxes; gait clocks use fixed ticks and disc speed scaling. ABI 3 transfers posed
-hitboxes and particle snapshots. These changes pass native checks but await RoR2 playtesting.
+hitboxes; gait clocks use fixed ticks and disc speed scaling. ABI 4 transfers posed
+hitboxes, particle snapshots and native projectile state. Walk/run sampling checks
+at least 18 distinct poses across 20 samples. Ground jump momentum, aerial steering,
+directional falls, aerial landings and hurt/fall/bounce/stand poses use the shared
+Melee layer. Knockdown is a RoR2 health/impulse adaptation, with automatic get-up.
 
 Disc sound cues now feed an SSM/SEM decoder and native stereo mixer, streamed
 through the shared Windows PCM queue. Playback follows action commands, supports
@@ -88,11 +95,19 @@ In-game listening verification and remaining source audio routing are pending.
 
 All 22 Samus particle streams execute in native checks. Source billboard textures,
 colour/size/rotation and child effect graphs now drive missile/charge presentation.
-Shared/fighter effect dispatch and complete particle semantics remain in progress.
+The attack/entry/recovery effect IDs resolve, including source bone cycles and
+attached Screw Attack. Held Charge Shot has its original article and generator;
+bombs and normal/super missiles use source impact particles and sound. The
+diagnostic explosion spheres have been removed. Source article attributes now
+drive native fixed-tick speed, gravity, homing, lifetime and explosion duration.
 
-Known limits: remaining effects/particles, movement transitions and full TEV
-materials remain unfinished. Projectile models now come from the disc; their
-physics and impact effects still need the source implementation. Attack speed, all item-specific effects,
+The shared trophy platform and growing figurine entry are implemented with source
+tuning, sound and effect. Host collision feet stay on clear ground while the
+presentation rises. Entry colour animation 0x75 is still missing.
+
+Known limits: full TEV/animated texture and UV fidelity, source transition blending,
+complete particle trail/mirror/alpha-compare semantics, and gameplay visual/audio
+validation remain unfinished. Attack speed, all item-specific effects,
 AI companions/clones and fall damage need further integration. Grabs, ledges,
 percent/stock HUD, blast-zone effects and multiplayer are not implemented. Use
 single-player offline; remote-player native simulation is not supported.

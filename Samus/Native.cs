@@ -6,7 +6,7 @@ namespace Samus
 {
     internal static class Native
     {
-        public const uint AbiVersion = 3;
+        public const uint AbiVersion = 4;
         const string Dll = "ssbm";
         [StructLayout(LayoutKind.Sequential)] public struct Vec3
         {
@@ -34,21 +34,35 @@ namespace Samus
             public Vec3 local_position,origin,facing;
             public uint angle,growth,fixed_knockback,base_knockback,element,flags;
         }
+        [StructLayout(LayoutKind.Sequential)] public struct ProjectileState
+        {
+            public Vec3 position,velocity;
+            public float frame,animation_frame,damage,radius;
+            public uint kind,state,flags,element;
+        }
 
         public static void Load(string path)
         {
             if (!NativeLib.Load(path, out string error)) throw new InvalidOperationException(error);
             if (ssbm_abi_version() != AbiVersion) throw new InvalidOperationException("Samus native ABI mismatch");
-            var sizes = new uint[13]; uint count=ssbm_struct_sizes(sizes,(uint)sizes.Length);
+            var sizes = new uint[14]; uint count=ssbm_struct_sizes(sizes,(uint)sizes.Length);
             error=NativeLib.CompareSizes(sizes,count,new[] {
                 ("Vec3",NativeLib.Size<Vec3>()),("Pad",NativeLib.Size<Pad>()),("State",NativeLib.Size<State>()),
                 ("Collision",NativeLib.Size<Collision>()),("Event",NativeLib.Size<Event>()),("Host",NativeLib.Size<Host>()),
                 ("Tuning",NativeLib.Size<Tuning>()),("ViewModelInfo",NativeLib.Size<ViewModelInfo>()),
                 ("ViewBatch",NativeLib.Size<ViewBatch>()),("ViewTexture",NativeLib.Size<ViewTexture>()),("ViewDraw",NativeLib.Size<ViewDraw>()),
-                ("HitboxSample",NativeLib.Size<HitboxSample>()),("ViewParticle",NativeLib.Size<ViewParticle>()) });
+                ("HitboxSample",NativeLib.Size<HitboxSample>()),("ViewParticle",NativeLib.Size<ViewParticle>()),("ProjectileState",NativeLib.Size<ProjectileState>()) });
             if (error!=null) throw new InvalidOperationException(error);
         }
         public static string Error => NativeLib.Utf8(ssbm_last_error());
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_charge_visual(IntPtr sim,[Out]float[] matrix);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_hit_feedback(IntPtr audio,uint element,uint kind,uint severity);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_projectile_new(byte[] dir,uint kind,uint state,float charge,Vec3 direction);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_projectile_step(IntPtr projectile,double dt,Vec3 target,uint hasTarget);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_projectile_state(IntPtr projectile,out ProjectileState state);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_projectile_place(IntPtr projectile,Vec3 relative,uint grounded);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_projectile_impact(IntPtr projectile,IntPtr audio);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_projectile_free(IntPtr projectile);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_particles_new(byte[] dir);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_particles_free(IntPtr handle);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_particles_spawn(IntPtr handle,uint id,float[] transform,ulong key);
@@ -72,6 +86,7 @@ namespace Samus
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_tuning(IntPtr sim,Tuning tuning);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_place(IntPtr sim,Vec3 vector,uint kind);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_interrupt(IntPtr sim);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_hurt(IntPtr sim);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_launch_pad(IntPtr sim,Vec3 velocity,Vec3 gravity);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_new(byte[] dir,uint costume);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_article_new(byte[] dir,uint kind,uint state);

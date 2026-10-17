@@ -12,37 +12,37 @@
     "effects": {
       "paths": ["EfSsData.dat", "EfCoData.dat", "PlSs.dat"],
       "source_references": ["melee/ef/efasync.c: effSamusDataTable and effCommonDataTable", "melee/ft/ftaction.c: ftAction_80071028"],
-      "status": "decoded",
-      "verification": ["Samus/shared effect readers decode 50 models and their object animations."],
-      "notes": "Original effect rendering and event routing are in progress. Generic effects do not satisfy coverage."
+      "status": "wired",
+      "verification": ["Samus/shared effect readers decode 50 models and their object animations.", "All 207 source GFX attachments resolve; C# consumed 174 live attack cues over sixty simulated seconds, with source model/particle snapshots and PCM.", "Original trophy platform and growing figurine, Screw Attack effect model, and grid tile inspected in local viewers."],
+      "notes": "Gameplay/select attack effects and source impact callbacks are wired; diagnostic explosion spheres removed. In-game rendering, entry colour animation 0x75 and complete TEV/texture animation remain open."
     },
     "particles": {
       "paths": ["EfSsData.dat", "EfCoData.dat"],
       "source_references": ["melee/ef/efasync.c: effect data loading", "sysdolphin/baselib: particle/emitter subsystem"],
       "status": "wired",
       "verification": ["Samus/shared embedded banks decode 614 emitter definitions and 44 texture groups, including texture frames/palettes.", "All 22 Samus emitters execute their command streams and transfer billboard/texture snapshots through NativeCheck; impact preview rendered in the viewer."],
-      "notes": "Missile/charge particle rendering wired. Shared/fighter GFX dispatch, complete shape/attachment/trail/mirror/alpha-compare semantics and in-game verification remain in progress."
+      "notes": "Missile/charge/held-charge and bomb/normal/super missile impact rendering wired. Shared attack and electric/fire/recovery child graphs execute, including randomized texture poses. Complete shape/trail/mirror/alpha-compare semantics and in-game verification remain open."
     },
     "animations": {
       "paths": ["PlSsAJ.dat", "PlSs.dat", "PlCo.dat"],
       "source_references": ["melee/lb/lbanim.c: FigaTree loading", "sysdolphin/baselib/fobj.c", "melee/ft/ftwalkcommon.c", "melee/ft/ftaction.c"],
       "status": "wired",
       "verification": ["Headless gait clock matches at 30, 60 and 144 Hz; jump continuation and gait phase tests pass.", "Real-disc clips decode to finite poses; WalkFast pose inspected in the native viewer."],
-      "notes": "Remaining movement transitions and all attack animations require completion and visual verification."
+      "notes": "Shared disc jump momentum/sounds, air drift, directional falls, aerial landing and hurt/fall/bounce/stand poses are connected. Walk/run have at least 18 distinct poses over 20 samples. Full transition blending and gameplay visual verification remain open."
     },
     "models": {
       "paths": ["PlSsNr.dat", "PlSsPi.dat", "PlSsBk.dat", "PlSsGr.dat", "PlSsLa.dat", "PlSs.dat"],
       "source_references": ["melee/ft/kinds/ftSamus/ftsamus.c: costume and article setup", "sysdolphin/baselib/jobj.c", "sysdolphin/baselib/pobj.c"],
       "status": "wired",
       "verification": ["NativeCheck validates meshes for all five costumes; default costume rendered and inspected."],
-      "notes": "All four Samus article meshes decode and transfer through the native boundary. Missile model rendered in the viewer; host art replacement wired. Effect rendering remains in progress."
+      "notes": "All four Samus article meshes decode and transfer through the native boundary. Native article physics, held charge and source impact callbacks are connected; trophy platform/grow entry is wired. In-game verification remains open."
     },
     "textures": {
       "paths": ["PlSsNr.dat", "PlSsPi.dat", "PlSsBk.dat", "PlSsGr.dat", "PlSsLa.dat", "PlSs.dat", "EfSsData.dat", "EfCoData.dat", "MnSlChr.usd"],
       "source_references": ["sysdolphin/baselib/tobj.c", "sysdolphin/baselib/mobj.c", "melee/ef/efasync.c", "melee/mn/mncharsel.c: mnCharSel_8025D1C4/8025D5AC"],
-      "status": "decoded",
-      "verification": ["Five costume texture transfers pass NativeCheck; viewer uses extracted diffuse textures.", "All five original CSS photos/palettes decode; default photo visually inspected and registered through the shared portrait texture queue. In-game icon verification pending."],
-      "notes": "Effect/article textures and animated materials require integration and visual verification."
+      "status": "wired",
+      "verification": ["Five costume texture transfers pass NativeCheck; viewer uses extracted diffuse textures.", "Original 64x56 CSS grid tile and large costume photos decode; grid tile visually inspected and registered through the shared portrait texture queue. In-game icon verification pending."],
+      "notes": "Source effect/article textures and material colour/alpha tracks are connected. Full TEV/animated texture/UV fidelity and in-game verification remain open."
     }
   }
 }

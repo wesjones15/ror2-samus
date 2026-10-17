@@ -13,7 +13,7 @@ namespace Samus
         {
             public ulong key,serial;
             public uint bone;
-            public bool attached,stop;
+            public bool attached,stop,chargeAttachment;
             public Matrix4x4 transform;
             public SamusView view;
             public float frame,duration;
@@ -21,6 +21,7 @@ namespace Samus
         readonly DiscParticles particles;
         readonly float scale;
         readonly List<Effect> active=new List<Effect>();
+        Effect charge;
         readonly float[] boneMatrix=new float[16];
         Native.Event[] cues=new Native.Event[32];
         ulong nextKey=1;
@@ -39,8 +40,8 @@ namespace Samus
                 // RoR2 adaptation of the source Camera_RequestQuake cue.
                 var point=transform.GetColumn(3);ShakeEmitter.CreateSimpleShakeEmitter(new Vector3(point.x,point.y,point.z)*scale,new Wave {amplitude=0.15f,frequency=12f,cycleOffset=0},0.15f,20f,true);return;
             }
-            var effect=new Effect {key=nextKey++,serial=serial,bone=bone,stop=stop,transform=transform,attached=(Native.ssbm_effect_flags(id)&1)!=0&&sim!=IntPtr.Zero};
-            if(effect.attached)effect.transform=Bone(sim,bone);
+            var effect=new Effect {key=nextKey++,serial=serial,bone=bone,stop=stop,transform=transform,attached=(Native.ssbm_effect_flags(id)&1)!=0&&sim!=IntPtr.Zero,chargeAttachment=id==1151};
+            if(effect.attached)effect.transform=effect.chargeAttachment&&charge!=null?charge.transform:Bone(sim,bone);
             if(target>=0)particles.Spawn((uint)target,effect.transform,effect.key);
             else {effect.view=SamusView.Effect((uint)(-target-1));effect.duration=Native.ssbm_object_duration(effect.view.Handle);}
             if(effect.view!=null||effect.attached||effect.stop)active.Add(effect);
@@ -48,13 +49,18 @@ namespace Samus
         }
         public void Step(IntPtr sim,float dt)
         {
+            if(Native.ssbm_sim_charge_visual(sim,boneMatrix)==1) {
+                if(charge==null)charge=new Effect {view=new SamusView(1,0)};
+                var matrix=new Matrix4x4();for(int n=0;n<16;n++)matrix[n]=boneMatrix[n];
+                charge.transform=matrix;charge.frame+=dt*60;
+            } else if(charge!=null){charge.view.Dispose();charge=null;}
             ulong serial=Native.ssbm_sim_motion_serial(sim);
             for(int i=active.Count-1;i>=0;i--) {
                 var effect=active[i];effect.frame+=dt*60;
                 if(effect.stop&&effect.serial!=serial || effect.view!=null&&effect.duration>0&&effect.frame>=effect.duration) {
                     effect.view?.Dispose();particles.Stop(effect.key);active.RemoveAt(i);continue;
                 }
-                if(effect.attached){effect.transform=Bone(sim,effect.bone);particles.Attach(effect.key,effect.transform);}
+                if(effect.attached){effect.transform=effect.chargeAttachment&&charge!=null?charge.transform:Bone(sim,effect.bone);particles.Attach(effect.key,effect.transform);}
             }
             uint count=Native.ssbm_sim_gfx(sim,null,0);if(count>1024)throw new InvalidOperationException("Native GFX cue budget exceeded");
             if(count>cues.Length)cues=new Native.Event[count];
@@ -68,7 +74,7 @@ namespace Samus
         }
         public void Draw(Matrix4x4? placement=null)
         {
-            foreach(var effect in active) {
+            foreach(var effect in Drawing()) {
                 if(effect.view==null)continue;
                 effect.view.ObjectPose(effect.frame);
                 var transform=effect.transform*Matrix4x4.Scale(new Vector3(-1,1,1));
@@ -80,6 +86,7 @@ namespace Samus
                 effect.view.Models.Update(size,d=>(position,rotation));
             }
         }
-        public void Dispose(){foreach(var effect in active){effect.view?.Dispose();particles.Stop(effect.key);}active.Clear();}
+        IEnumerable<Effect> Drawing(){foreach(var effect in active)yield return effect;if(charge!=null)yield return charge;}
+        public void Dispose(){foreach(var effect in active){effect.view?.Dispose();particles.Stop(effect.key);}active.Clear();charge?.view.Dispose();charge=null;}
     }
 }

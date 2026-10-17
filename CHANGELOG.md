@@ -1,3 +1,17 @@
+# 0.2.2 prototype
+
+- Resolve special GFX bone IDs 0x8D/0x8E and useUnkBone indirection. Check all
+  207 source animation GFX attachments; isolate presentation errors from gameplay.
+- Use the original CSS grid tile, replacing the large selected-character photo.
+- Repeat up-B with animation, effects and sound on UI time; retry after extraction.
+- Original trophy platform, grow/release entry, source sound and burst effect.
+- Disc jump momentum and voice cues, directional falls, aerial landing clips,
+  hurt/fall/bounce/stand recovery and common spawn/unstuck integration.
+- Native article physics/hitboxes/lifetimes; original charge article, bomb/missile
+  impact emitters and sound. Remove procedural explosion spheres. ABI 4.
+- Native tests compare 30/60/144 Hz. Full material/transition fidelity and RoR2
+  visual/listening verification remain pending; see README.
+
 # 0.2.1 prototype
 
 - Use the original Melee CSS portrait from MnSlChr.usd through the shared texture

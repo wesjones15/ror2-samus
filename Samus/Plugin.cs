@@ -13,7 +13,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Samus from Melee","0.2.1")]
+    [BepInPlugin(Guid,"Samus from Melee","0.2.2")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -57,7 +57,7 @@ namespace Samus
             Language.onCurrentLanguageChanged+=Tokens;
             ItemHooks.Install();GlyphOverride.Install();Skins.Install();
             RunAudio.Initialize(SamusAudio.StopAll);
-            Logger.LogInfo("Samus 0.2.1 / libssbm ABI "+Native.AbiVersion+" loaded. Movement, combat and presentation completion in progress.");
+            Logger.LogInfo("Samus 0.2.2 / libssbm ABI "+Native.AbiVersion+" loaded. Source effects, native articles and shared Melee movement/entry.");
         }
         static string FindDisc(string configured,string here)
         {

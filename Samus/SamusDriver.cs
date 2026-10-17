@@ -22,13 +22,14 @@ namespace Samus
         readonly Unstuck unstuck=new Unstuck();readonly WallGuard wallGuard=new WallGuard();
         static readonly float[] sweepHeights={0.1f,0.6f,1.2f,1.7f};
         readonly List<Vector3> walls=new List<Vector3>();
-        bool active,failed,permitDamage;float scale;
+        bool active,failed,permitDamage;float scale,lastHealth;
         Native.HitboxSample[] hitboxes=new Native.HitboxSample[64];
         readonly Combat.HitTracker hits=new Combat.HitTracker();
         readonly HashSet<string> presentationErrors=new HashSet<string>();
         SamusAudio audio;
         internal DiscParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
+        internal IntPtr Simulation=>sim;
         void Awake(){body=GetComponent<CharacterBody>();motor=GetComponent<CharacterMotor>();input=GetComponent<InputBankTest>();native=GetComponent<NativeBody>();direction=GetComponent<CharacterDirection>();}
         void Update()
         {
@@ -53,18 +54,27 @@ namespace Samus
             }
             try {
                 if(smoother.MovedElsewhere){var moved=transform.position-feetOffset;Native.ssbm_sim_place(sim,ToSim(moved),0);smoother.Reset();native.ForgetVelocity();unstuck.Reset();wallGuard.Placed(moved);}
+                bool hitImpulse=false;
                 if(native.TakeExternalVelocity(out var external)) {
+                    hitImpulse=!native.JumpPadLaunch&&external.sqrMagnitude>0.01f;
                     var velocity=new Native.Vec3(external.x/(scale*60),external.y/(scale*60),external.z/(scale*60));
                     if(native.JumpPadLaunch){var g=Physics.gravity/(scale*3600);Native.ssbm_sim_launch_pad(sim,velocity,new Native.Vec3(g.x,g.y,g.z));}
                     else Native.ssbm_sim_place(sim,velocity,1);
                 }
+                float health=body.healthComponent.combinedHealth;
+                if(health<lastHealth-0.001f&&(hitImpulse||native.Control()==NativeBody.Hold.All))Native.ssbm_sim_hurt(sim);
+                lastHealth=health;
                 var control=native.Control();var p=pad.Take(Skills.Allowed(body));
                 if(control==NativeBody.Hold.All){p.buttons=0;p.movement=default;p.allowed=0;Native.ssbm_sim_interrupt(sim);}
                 else if(control==NativeBody.Hold.Move)p.movement=default;
                 bool sprint=native.UpdateSprint((p.buttons&32)!=0,new Vector3(p.movement.x,0,p.movement.z).sqrMagnitude>0.01f,control==NativeBody.Hold.None);
                 if(sprint)p.buttons|=32;
                 uint extra=(uint)Math.Max(0,body.maxJumpCount-2);
-                Native.ssbm_sim_tuning(sim,new Native.Tuning { speed_scale=body.moveSpeed/Mathf.Max(0.1f,body.baseMoveSpeed),jump_scale=Plugin.JumpScale.Value*NativeBody.JumpScale(body),extra_jumps=extra,hold_charge=Plugin.HoldCharge.Value?1u:0u,smash_max_frames=60 });
+                float speedScale=body.moveSpeed/Mathf.Max(0.1f,body.baseMoveSpeed);
+                // Native Run already supplies Melee's run/walk ratio. Keep item
+                // scaling without applying RoR2's base sprint bonus a second time.
+                if(body.isSprinting)speedScale/=Mathf.Max(0.1f,body.sprintingSpeedMultiplier);
+                Native.ssbm_sim_tuning(sim,new Native.Tuning { speed_scale=speedScale,jump_scale=Plugin.JumpScale.Value*NativeBody.JumpScale(body),extra_jumps=extra,hold_charge=Plugin.HoldCharge.Value?1u:0u,smash_max_frames=60 });
                 Native.ssbm_sim_step(sim,in host,in p,Time.fixedDeltaTime);
                 Present(()=>Effects?.Step(sim,Time.fixedDeltaTime));
                 Present(()=>Particles?.Step(Time.fixedDeltaTime));
@@ -96,6 +106,7 @@ namespace Samus
         void StartSim()
         {
             scale=Plugin.MetresPerUnit.Value;feetOffset=transform.position-body.footPosition;safe=body.footPosition;
+            lastHealth=body.healthComponent.combinedHealth;
             // A pod exit can leave the feet slightly below a one-sided floor.
             // The common standing probe starts above it and checks full clearance.
             if(RecoveryGround(safe,0.6f,0.8f,out var standing)){safe=standing;transform.position=standing+feetOffset;}
