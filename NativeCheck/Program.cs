@@ -43,12 +43,26 @@ static class Program
             Check(Native.ssbm_portrait(NativeLib.CString(assets),c,out var portrait,null,0)==1,Native.Error);
             var rgba=new byte[portrait.width*portrait.height*4];
             Check(Native.ssbm_portrait(NativeLib.CString(assets),c,out portrait,rgba,(uint)rgba.Length)==1,Native.Error);
-            Check(portrait.width==136&&portrait.height==188,"unexpected CSS photo dimensions");
+            Check(portrait.width==64&&portrait.height==56,"expected CSS grid photo, not selected-character photo");
             Check(Native.ssbm_portrait(NativeLib.CString(assets),c,out portrait,new byte[1],1)==0,"portrait accepted short output buffer");
         }
         var sim=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,Native.Error);
         IntPtr view=IntPtr.Zero;
         try {
+            var platform=Native.ssbm_entry_platform_new(NativeLib.CString(assets));Check(platform!=IntPtr.Zero,"entry platform: "+Native.Error);
+            try {
+                Check(Native.ssbm_sim_begin_entry(sim,NativeLib.CString(assets))==1,"entry start: "+Native.Error);
+                bool entrySound=false;var entryPcm=new float[1066];
+                var entryPad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=15,buttons=2|4};
+                for(int f=0;f<60;f++) {
+                    Native.ssbm_sim_step(sim,in host,in entryPad,1.0/60);
+                    Native.ssbm_sim_state(sim,out var entryState);Check(entryState.move_id==0,"entry allowed an attack");
+                    if(f<59)Check(Native.ssbm_entry_platform_update(platform,sim)==1,"entry platform stopped early");
+                    Check(Native.ssbm_sim_audio(sim,entryPcm,533)==533,Native.Error);
+                    foreach(float v in entryPcm)if(Math.Abs(v)>0.00001f)entrySound=true;
+                }
+                Check(entrySound,"entry source sound missing");Check(Native.ssbm_entry_platform_update(platform,sim)==0,"entry did not finish");
+            } finally {Native.ssbm_view_free(platform);}
             var pad=new Native.Pad { aim=new Native.Vec3(1,0,0),allowed=15 };
             Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
             pad.buttons=1;for(int i=0;i<6;i++) Native.ssbm_sim_step(sim,in host,in pad,1.0/60);

@@ -66,7 +66,7 @@ namespace Samus
                 Spawn(cue.kind,transform,serial,cue.move_id&65535,(cue.move_id&(1<<17))!=0,sim);
             }
         }
-        public void Draw()
+        public void Draw(Matrix4x4? placement=null)
         {
             foreach(var effect in active) {
                 if(effect.view==null)continue;
@@ -75,6 +75,7 @@ namespace Samus
                 var p=transform.GetColumn(3);var f=transform.GetColumn(2);var u=transform.GetColumn(1);
                 var position=new Vector3(p.x,p.y,p.z)*scale;
                 var rotation=Quaternion.LookRotation(new Vector3(f.x,f.y,f.z),new Vector3(u.x,u.y,u.z));
+                if(placement.HasValue){position=placement.Value.MultiplyPoint3x4(position);rotation=placement.Value.rotation*rotation;}
                 float size=transform.GetColumn(0).magnitude*scale;
                 effect.view.Models.Update(size,d=>(position,rotation));
             }

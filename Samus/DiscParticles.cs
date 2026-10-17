@@ -13,7 +13,7 @@ namespace Samus
         public void Attach(ulong key,Matrix4x4 transform)=>view.Attach(key,transform);
         public void Stop(ulong key)=>view.Stop(key);
         public void Step(float dt)=>view.Step(dt);
-        public void Draw()=>view.Draw();
+        public void Draw(Matrix4x4? placement=null)=>view.Draw(placement);
         public void Dispose()=>view.Dispose();
         sealed class Source : IParticleSource
         {

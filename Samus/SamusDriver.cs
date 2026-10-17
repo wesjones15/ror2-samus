@@ -16,6 +16,7 @@ namespace Samus
         static readonly Native.EventFn eventFn=Event;
         CharacterBody body;CharacterMotor motor;InputBankTest input;NativeBody native;CharacterDirection direction;
         IntPtr sim;SamusView view;Native.Host host;GCHandle self;Native.State state;
+        SamusView entryPlatform;
         Vector3 feetOffset,safe;StepSmoother smoother;CameraPivot cameraPivot;
         readonly GroundGate ground=new GroundGate();readonly SamusPad pad=new SamusPad();
         readonly Unstuck unstuck=new Unstuck();readonly WallGuard wallGuard=new WallGuard();
@@ -103,6 +104,8 @@ namespace Samus
             audio=new SamusAudio(sim);
             Particles=new DiscParticles(scale);
             Effects=new MeleeEffects(Particles,scale);
+            entryPlatform=SamusView.EntryPlatform();
+            if(Native.ssbm_sim_begin_entry(sim,NativeLib.CString(Plugin.AssetsDir))!=1)throw new InvalidOperationException(Native.Error);
             host=new Native.Host { user=GCHandle.ToIntPtr(self),collide=Marshal.GetFunctionPointerForDelegate(collideFn),evt=Marshal.GetFunctionPointerForDelegate(eventFn) };
             WorldProbe.UseBodyCollision(motor,gameObject);motor.Motor.enabled=false;
             smoother=new StepSmoother(transform);cameraPivot=new CameraPivot(body);cameraPivot.Use(true);active=true;
@@ -122,6 +125,10 @@ namespace Samus
                 var facing=new Vector3(state.facing.x,0,state.facing.z);
                 var rotation=facing.sqrMagnitude>0.0001f?Quaternion.LookRotation(facing):Quaternion.identity;
                 view.Models.Update(scale,d=>(at,rotation));
+                if(entryPlatform!=null) {
+                    if(Native.ssbm_entry_platform_update(entryPlatform.Handle,sim)==1)entryPlatform.Models.Update(scale,d=>(at,rotation));
+                    else {entryPlatform.Dispose();entryPlatform=null;}
+                }
                 Present(()=>Particles?.Draw());
                 Present(()=>Effects?.Draw());
             }catch(Exception e){Fallback(e.ToString());}
@@ -192,6 +199,7 @@ namespace Samus
         void Cleanup()
         {
             active=false;cameraPivot?.Use(false);view?.Dispose();view=null;
+            entryPlatform?.Dispose();entryPlatform=null;
             audio?.Dispose();audio=null;
             Effects?.Dispose();Effects=null;Particles?.Dispose();Particles=null;
             if(sim!=IntPtr.Zero){Native.ssbm_sim_free(sim);sim=IntPtr.Zero;}if(self.IsAllocated)self.Free();
