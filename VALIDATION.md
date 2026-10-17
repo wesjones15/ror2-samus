@@ -12,8 +12,10 @@
 - C# NativeCheck calls the real release DLL through Samus/Native.cs; all eleven
   struct layouts, callbacks, movement events, five costumes, indices and textures pass.
 - BepInEx plugin compiles against installed RoR2 DLC4 assemblies. One MSB3270
-  metadata architecture warning remains: BepInEx and Samus are both I386/ILOnly
-  managed assemblies. Runtime behavior in the x64 game has not been verified.
+  metadata architecture warning remains: the installed BepInEx reference is
+  I386/ILOnly with Required32Bit, while Samus is I386/ILOnly without Required32Bit.
+  Compatibility with the game's Mono loader has not been verified in-game; the
+  game/BepInEx assemblies were not modified to suppress this warning.
 - Packaged setup/extractor ran against the user's disc into an ignored empty
   cache. All eight output files match gc2ror2 MCP extraction by SHA-256.
 - Release ZIP allowlist audited: Samus.dll, ssbm.dll, ssbm-extract.exe,
