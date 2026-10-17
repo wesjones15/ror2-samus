@@ -18,6 +18,8 @@ namespace Samus
         IntPtr sim;SamusView view;Native.Host host;GCHandle self;Native.State state;
         Vector3 feetOffset,safe;StepSmoother smoother;CameraPivot cameraPivot;
         readonly GroundGate ground=new GroundGate();readonly SamusPad pad=new SamusPad();
+        readonly Unstuck unstuck=new Unstuck();readonly WallGuard wallGuard=new WallGuard();
+        static readonly float[] sweepHeights={0.1f,0.6f,1.2f,1.7f};
         readonly List<Vector3> walls=new List<Vector3>();
         bool active,failed,permitDamage;float scale;
         Native.HitboxSample[] hitboxes=new Native.HitboxSample[64];
@@ -37,6 +39,9 @@ namespace Samus
         {
             if(failed||!body||!body.healthComponent||!body.healthComponent.alive)return;
             if(!body.hasEffectiveAuthority)return;
+            // The pod/vehicle owns placement until it releases the survivor, as
+            // in the common Mario host. Do not disable its motor while seated.
+            if(body.currentVehicle){if(active)Cleanup();return;}
             if(!NetworkServer.active){Fallback("Remote-player native simulation is not supported by this offline prototype.");return;}
             if(!active) {
                 if(Plugin.AssetsBusy)return;
@@ -45,7 +50,7 @@ namespace Samus
                 try{StartSim();}catch(Exception e){Fallback(e.ToString());return;}
             }
             try {
-                if(smoother.MovedElsewhere){Native.ssbm_sim_place(sim,ToSim(transform.position-feetOffset),0);smoother.Reset();native.ForgetVelocity();}
+                if(smoother.MovedElsewhere){var moved=transform.position-feetOffset;Native.ssbm_sim_place(sim,ToSim(moved),0);smoother.Reset();native.ForgetVelocity();unstuck.Reset();wallGuard.Placed(moved);}
                 if(native.TakeExternalVelocity(out var external)) {
                     var velocity=new Native.Vec3(external.x/(scale*60),external.y/(scale*60),external.z/(scale*60));
                     if(native.JumpPadLaunch){var g=Physics.gravity/(scale*3600);Native.ssbm_sim_launch_pad(sim,velocity,new Native.Vec3(g.x,g.y,g.z));}
@@ -70,9 +75,15 @@ namespace Samus
                 }
                 if(Native.ssbm_sim_state(sim,out state)!=1){Fallback(Native.Error);return;}
                 var feet=ToWorld(state.position);
-                if(state.grounded!=0&&WorldProbe.StandingGround(feet,0.2f,0.4f,1.8f,0.3f,out _))safe=feet;
-                if(feet.y<safe.y-100f||WorldProbe.InMapZone(feet)) {
-                    Native.ssbm_sim_place(sim,ToSim(safe+Vector3.up*0.1f),0);Native.ssbm_sim_state(sim,out state);feet=ToWorld(state.position);smoother.Reset();
+                bool supported=RecoveryGround(feet,0.45f,0.45f,out var support)&&Mathf.Abs(support.y-feet.y)<0.15f;
+                bool embedded=WorldProbe.InsideSolid(feet+Vector3.up*0.9f);
+                bool blocked=(new Vector3(p.movement.x,0,p.movement.z).sqrMagnitude>0.05f&&!supported)||embedded;
+                bool fallen=state.grounded==0&&state.velocity.y<=0;
+                if(unstuck.Step(feet,fallen||blocked,state.grounded!=0&&supported,control!=NativeBody.Hold.None,Time.fixedDeltaTime,1.8f,RecoveryGround,out var recovered)
+                    ||unstuck.Fell(feet,1.8f,RecoveryGround,out recovered)) {
+                    Recover(recovered);feet=ToWorld(state.position);Plugin.Log.LogInfo("Samus recovered using common Unstuck");
+                } else if(wallGuard.Step(feet,1.8f,sweepHeights,0.6f,control!=NativeBody.Hold.None,false,out var back,out var why)) {
+                    Recover(back);feet=ToWorld(state.position);Plugin.Log.LogInfo("Samus wall recovery: "+why);
                 }
                 smoother.Stepped(feet+feetOffset);native.WroteVelocity(ToWorld(state.velocity)*60f);
                 motor.Motor.GroundingStatus.IsStableOnGround=state.grounded!=0;
@@ -83,7 +94,10 @@ namespace Samus
         void StartSim()
         {
             scale=Plugin.MetresPerUnit.Value;feetOffset=transform.position-body.footPosition;safe=body.footPosition;
-            sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),ToSim(body.footPosition));if(sim==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
+            // A pod exit can leave the feet slightly below a one-sided floor.
+            // The common standing probe starts above it and checks full clearance.
+            if(RecoveryGround(safe,0.6f,0.8f,out var standing)){safe=standing;transform.position=standing+feetOffset;}
+            sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),ToSim(safe));if(sim==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
             view=new SamusView(Math.Min(body.skinIndex,4));self=GCHandle.Alloc(this);
             audio=new SamusAudio(sim);
             Particles=new DiscParticles(scale);
@@ -91,6 +105,7 @@ namespace Samus
             host=new Native.Host { user=GCHandle.ToIntPtr(self),collide=Marshal.GetFunctionPointerForDelegate(collideFn),evt=Marshal.GetFunctionPointerForDelegate(eventFn) };
             WorldProbe.UseBodyCollision(motor,gameObject);motor.Motor.enabled=false;
             smoother=new StepSmoother(transform);cameraPivot=new CameraPivot(body);cameraPivot.Use(true);active=true;
+            unstuck.Reset();wallGuard.Placed(safe);
             Plugin.Log.LogInfo("Samus sim started with costume "+body.skinIndex);
         }
         void LateUpdate()
@@ -111,6 +126,12 @@ namespace Samus
             }catch(Exception e){Fallback(e.ToString());}
         }
         Native.Vec3 ToSim(Vector3 v)=>new Native.Vec3(v.x/scale,v.y/scale,v.z/scale);
+        bool RecoveryGround(Vector3 sample,float rise,float drop,out Vector3 feet)=>WorldProbe.StandingGround(sample,rise,drop,1.8f,0.3f,out feet);
+        void Recover(Vector3 feet)
+        {
+            Native.ssbm_sim_place(sim,ToSim(feet),0);Native.ssbm_sim_state(sim,out state);
+            smoother.Reset();native.ForgetVelocity();unstuck.Reset();wallGuard.Placed(feet);
+        }
         Vector3 ToWorld(Native.Vec3 v)=>new Vector3(v.x,v.y,v.z)*scale;
         static void Collide(IntPtr user,in Native.Vec3 from,in Native.Vec3 desired,out Native.Collision result)
         {
