@@ -26,7 +26,7 @@ namespace Samus
                 skin.skinDefParams=p;skin.optimizedSkinDefParams=p;
                 if(i>0) {
                     int stage=i;var u=ScriptableObject.CreateInstance<UnlockableDef>();u.cachedName="Skins.MeleeSamus."+i;u.nameToken=skin.nameToken;
-                    u.getHowToUnlockString=()=>"Complete stage "+stage+"'s teleporter event as Samus.";u.getUnlockedString=()=>"Samus costume unlocked.";u.achievementIcon=skin.icon;
+                    u.getHowToUnlockString=()=>"Complete stage "+stage+"'s teleporter event as Samus.";u.getUnlockedString=()=>"Samus costume unlocked.";
                     skin.unlockableDef=u;unlocks[i]=u;pack.unlockableDefs.Add(new[]{u});
                 }
                 skins[i]=skin;

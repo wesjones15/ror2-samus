@@ -29,7 +29,8 @@ namespace Samus
         void FixedUpdate()
         {
             if(failed||!body||!body.healthComponent||!body.healthComponent.alive)return;
-            if(!NetworkServer.active||!body.hasEffectiveAuthority)return; // Offline/server-local prototype.
+            if(!body.hasEffectiveAuthority)return;
+            if(!NetworkServer.active){Fallback("Remote-player native simulation is not supported by this offline prototype.");return;}
             if(!active) {
                 if(Plugin.AssetsBusy)return;
                 if(!Plugin.AssetsReady){Fallback("Assets missing. Set the Samus Paths.Disc config.");return;}
@@ -130,6 +131,13 @@ namespace Samus
         {
             if(failed)return;failed=true;Plugin.Log.LogError("Samus falls back to Commando: "+reason);Cleanup();
             var machine=EntityStateMachine.FindByCustomName(gameObject,"Body");if(machine){machine.mainStateType=new SerializableEntityStateType(typeof(GenericCharacterMain));machine.SetNextStateToMain();}
+            var commando=LegacyResourcesAPI.Load<GameObject>("Prefabs/CharacterBodies/CommandoBody");
+            var stock=commando?commando.GetComponent<SkillLocator>():null;
+            if(stock&&body.skillLocator)foreach(var slot in Skills.Slots) {
+                var replacement=stock.GetSkill(slot);var skill=body.skillLocator.GetSkill(slot);
+                if(skill&&replacement&&replacement.skillFamily&&replacement.skillFamily.variants.Length>0)
+                    skill.SetSkillOverride(this,replacement.skillFamily.variants[0].skillDef,GenericSkill.SkillOverridePriority.Contextual);
+            }
         }
         void Cleanup()
         {
