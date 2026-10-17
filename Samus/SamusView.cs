@@ -57,8 +57,7 @@ namespace Samus
             uint selected=Skins.Selected();if(selected!=costume){var replacement=new SamusView(selected);view.Dispose();view=replacement;costume=selected;}
             var pad=new Native.Pad { aim=new Native.Vec3(0,0,1),allowed=0 };
             Native.ssbm_sim_step(sim,in host,in pad,dt);view.Pose(sim,dt);
-            // Disc Samus faces +X. Rotate her lobby model toward +Z.
-            view.LocalRotation=Quaternion.Euler(0,-90,0);
+            view.LocalRotation=Quaternion.identity;
         }
         public void Release(){view.Dispose();Native.ssbm_sim_free(sim);}
     }

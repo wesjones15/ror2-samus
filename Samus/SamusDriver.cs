@@ -82,8 +82,11 @@ namespace Samus
                 // The hidden Commando animator must not emit animation-event sounds.
                 var animator=body.modelLocator.modelTransform.GetComponent<Animator>();if(animator)animator.enabled=false;
                 view.Pose(sim,Time.deltaTime);
-                var at=transform.position-feetOffset;float yaw=-Mathf.Atan2(state.facing.z,state.facing.x)*Mathf.Rad2Deg;
-                view.Models.Update(scale,d=>(at,Quaternion.Euler(0,yaw,0)));
+                var at=transform.position-feetOffset;
+                // Melee Samus's authored forward is +Z. ModelView mirrors local X.
+                var facing=new Vector3(state.facing.x,0,state.facing.z);
+                var rotation=facing.sqrMagnitude>0.0001f?Quaternion.LookRotation(facing):Quaternion.identity;
+                view.Models.Update(scale,d=>(at,rotation));
             }catch(Exception e){Fallback(e.ToString());}
         }
         Native.Vec3 ToSim(Vector3 v)=>new Native.Vec3(v.x/scale,v.y/scale,v.z/scale);
