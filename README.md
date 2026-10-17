@@ -22,8 +22,10 @@ The user successfully started single player as Samus with the diagnostic build,
 then reported broken locomotion and placeholder attacks. The delayed return to
 Commando was traced to special GFX bone IDs being used as physical joints. Source
 bone indirections now resolve and presentation failures cannot replace gameplay.
-The earlier Steamworks startup failure's cause remains unresolved. The latest
-changes require an offline visual/listening playtest.
+The user confirmed a successful Steam launch with 0.2.4 enabled on 2026-10-17,
+after removing Steam diagnostic hooks and deferring native loading to onLoad.
+The exact earlier cause is unproven; gameplay changes still need an offline
+visual/listening playtest.
 Full behavior fidelity is in
 the sibling libssbm/docs/behavior-spec.md when building from source.
 

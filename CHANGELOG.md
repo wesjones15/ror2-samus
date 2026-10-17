@@ -5,8 +5,9 @@
   Content still registers during bootstrap; body/display/portrait wait for assets.
 - Check the built plugin's IL on every package build: no Steam type references or
   native calls reachable from Awake. The previous release is a failing control.
-- Recurrent Steamworks startup failure is under investigation; a game launch is
-  required to validate this ordering correction. Steam validation is unchanged.
+- User confirmed a successful Steam launch with 0.2.4 enabled on 2026-10-17.
+  Fresh log shows deferred native initialization, portrait readiness and main menu.
+  Steam validation is unchanged; the exact source of the earlier failure is unproven.
 
 # 0.2.3 prototype
 
