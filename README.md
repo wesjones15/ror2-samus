@@ -9,6 +9,11 @@ model/particle rendering and PCM device output. Samus's special behavior remains
 character-specific; the gameplay state machine is not yet a generic fighter API.
 See the sibling `libssbm/docs/reuse.md` for the ownership and remaining split.
 
+Character select plays up-B (LB+B), using the shared Melee selection rule and the
+attack's original animation/sound cues. Samus plays Screw Attack once, then idles;
+the preview stays at the mannequin's origin. Portrait generation uses a separate
+silent idle actor, facing forward. Selection audio stops on completion/deselection.
+
 Status: incomplete; Rust viewer visually checked and native C# boundary tested.
 The user successfully started single player as Samus with the diagnostic build,
 then reported broken locomotion and placeholder attacks. The earlier startup

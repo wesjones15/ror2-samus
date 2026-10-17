@@ -38,16 +38,20 @@ namespace Samus
         public IntPtr FrameUvs(out uint count){count=0;return IntPtr.Zero;}
         public void Dispose(){Models?.Dispose();Models=null;if(Handle!=IntPtr.Zero){Native.ssbm_view_free(Handle);Handle=IntPtr.Zero;}}
     }
-    internal sealed class SamusDisplay:IDisplayActor
+    internal sealed class SamusDisplay:IMeleeSelectSource
     {
         static readonly Native.CollideFn collide=Floor;
         SamusView view;
         uint costume;
         readonly IntPtr sim;
         readonly Native.Host host;
+        bool requestUpSpecial,upSpecialStarted;
+        public bool UpSpecialFinished { get; private set; }
+        public int AudioRate=>32000;
         public ModelView Models=>view.Models;
         public float Scale=>Plugin.MetresPerUnit.Value;
-        public static IDisplayActor Make()=>Plugin.AssetsReady?new SamusDisplay():null;
+        public static IDisplayActor Make()=>Plugin.AssetsReady?new MeleeSelectDisplay(new SamusDisplay()):null;
+        public static IDisplayActor Portrait()=>Plugin.AssetsReady?new MeleeSelectDisplay(new SamusDisplay(),intro:false):null;
         SamusDisplay()
         {
             sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),default);
@@ -58,14 +62,28 @@ namespace Samus
         }
         static void Floor(IntPtr user,in Native.Vec3 from,in Native.Vec3 to,out Native.Collision c)
         { c=new Native.Collision { position=new Native.Vec3(to.x,Mathf.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
-        public void Step(float dt,Transform display)
+        public void BeginUpSpecial(){requestUpSpecial=true;}
+        public bool RenderAudio(float[] stereo)=>Native.ssbm_sim_audio(sim,stereo,(uint)stereo.Length/2)==stereo.Length/2;
+        public void Step(float dt)
         {
             uint selected=Skins.Selected();if(selected!=costume){var replacement=new SamusView(selected);view.Dispose();view=replacement;costume=selected;}
             var pad=new Native.Pad { aim=new Native.Vec3(0,0,1),allowed=0 };
-            Native.ssbm_sim_step(sim,in host,in pad,dt);view.Pose(sim,dt);
+            if(requestUpSpecial) {
+                // Settle the preview's flat floor before the ground up-special.
+                if(Native.ssbm_sim_step(sim,in host,in pad,1.0/60)!=1)throw new InvalidOperationException(Native.Error);
+                requestUpSpecial=false;upSpecialStarted=true;
+                pad.buttons=4|8;pad.allowed=8; // libssbm SPECIAL|UP, up-special slot.
+                // One complete native tick latches the press even at high refresh.
+                if(Native.ssbm_sim_step(sim,in host,in pad,1.0/60)!=1)throw new InvalidOperationException(Native.Error);
+                pad.buttons=0;pad.allowed=0;
+            }
+            // Return value is the number of fixed ticks, including zero at high refresh.
+            Native.ssbm_sim_step(sim,in host,in pad,dt);
+            if(upSpecialStarted){if(Native.ssbm_sim_state(sim,out var state)!=1)throw new InvalidOperationException(Native.Error);UpSpecialFinished=state.move_id!=23;}
+            view.Pose(sim,dt);
             // The authored Wait pose faces +X; displays/portraits face +Z.
             view.LocalRotation=Quaternion.Euler(0,-90,0);
         }
-        public void Release(){view.Dispose();Native.ssbm_sim_free(sim);}
+        public void Dispose(){view.Dispose();Native.ssbm_sim_free(sim);}
     }
 }

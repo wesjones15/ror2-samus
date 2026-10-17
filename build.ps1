@@ -1,5 +1,6 @@
 param(
     [string]$RoR2Dir=(Join-Path $PSScriptRoot '..\2026 Mod Stuff\RiskOfRain2_DLC4'),
+    [string]$CommonDir=(Join-Path $PSScriptRoot '..\ror2-common'),
     [switch]$Deploy,
     [switch]$SkipTests
 )
@@ -7,6 +8,8 @@ $ErrorActionPreference='Stop'
 $repoRoot=[IO.Path]::GetFullPath($PSScriptRoot)
 $libraryRoot=[IO.Path]::GetFullPath((Join-Path $repoRoot '..\libssbm'))
 $gameRoot=[IO.Path]::GetFullPath($RoR2Dir)
+$commonRoot=[IO.Path]::GetFullPath($CommonDir)
+if(!(Test-Path -LiteralPath (Join-Path $commonRoot 'src\MeleeSelectDisplay.cs'))) { throw 'CommonDir must contain the shared Melee selection implementation.' }
 if(!(Test-Path -LiteralPath (Join-Path $gameRoot 'Risk of Rain 2_Data\Managed\RoR2.dll'))) { throw 'RoR2Dir must name a DLC4 game installation.' }
 Push-Location $libraryRoot
 try {
@@ -15,13 +18,13 @@ try {
     & cargo build -p libssbm-ffi --release --offline
     if($LASTEXITCODE) { throw 'Native build failed.' }
 } finally { Pop-Location }
-& dotnet build (Join-Path $repoRoot 'Samus\Samus.csproj') -c Release "-p:RoR2Dir=$gameRoot" --ignore-failed-sources
+& dotnet build (Join-Path $repoRoot 'Samus\Samus.csproj') -c Release "-p:RoR2Dir=$gameRoot" "-p:Ror2CommonDir=$commonRoot" --ignore-failed-sources
 if($LASTEXITCODE) { throw 'Samus plugin build failed.' }
 if(!$SkipTests) {
     & dotnet run --project (Join-Path $repoRoot 'NativeCheck') -c Release -- (Join-Path $libraryRoot 'target\release\ssbm.dll') (Join-Path $libraryRoot 'assets')
     if($LASTEXITCODE) { throw 'Native C# boundary check failed.' }
 }
-$name='Samus-modern-0.1.0-win-x64'
+$name='Samus-modern-0.2.0-win-x64'
 $packageRoot=Join-Path $repoRoot ('dist\'+$name)
 $pluginRoot=Join-Path $packageRoot 'BepInEx\plugins\MeleeSamus'
 $distRoot=[IO.Path]::GetFullPath((Join-Path $repoRoot 'dist'))
@@ -44,7 +47,7 @@ foreach($source in @('libssbm','ror2-samus','ror2-common')) {
     if($LASTEXITCODE) { throw "Cannot identify source revision: $source" }
 }
 $manifest=[ordered]@{
-    schema=1; character='Samus'; version='0.1.0'; nativeAbi=3; channel='modern'
+    schema=1; character='Samus'; version='0.2.0'; nativeAbi=3; channel='modern'
     game='Risk of Rain 2'; gameVersion='DLC4 (2026)'; unity='2021.3.45f2'; platform='win-x64'
     sourceCommits=$commits
     files=@($payload | ForEach-Object { [ordered]@{ path=$_; sha256=(Get-FileHash -LiteralPath (Join-Path $packageRoot $_) -Algorithm SHA256).Hash.ToLowerInvariant() } })

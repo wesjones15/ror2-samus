@@ -1,3 +1,18 @@
+# 0.2.0 prototype
+
+- Shared Melee character-select rule: play the character's up-B animation and
+  source sound cues once per selection. Samus uses Screw Attack. Portraits idle
+  silently and face forward.
+- Fixed-tick gait animation, disc attack-script hit windows and posed hitboxes.
+- Original SSM/SEM sound decoding/mixing through the shared PCM device queue.
+- Disc article models, native HSD particle snapshots and effect model/material
+  animation; shared character asset profiles and particle renderer.
+- ABI 3; matching C#/native DLLs, thirteen required disc files and cache migration.
+
+Gameplay verification of these changes is pending. Projectile physics/impacts,
+movement transitions and complete effects/material fidelity remain unfinished.
+See README for current limits; the 0.1.0 notes below describe the original prototype.
+
 # 0.1.0 prototype
 
 - Samus survivor for RoR2 DLC4, compiling the existing ror2-common host library.

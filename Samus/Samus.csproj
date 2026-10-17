@@ -10,6 +10,7 @@
          assemblies, so the plugin always matches that build (RoR2 DLC4 (2026)). -->
     <RoR2Dir Condition="'$(RoR2Dir)' == ''">$(MSBuildThisFileDirectory)..\..\2026 Mod Stuff\RiskOfRain2_DLC4</RoR2Dir>
     <Managed>$(RoR2Dir)\Risk of Rain 2_Data\Managed</Managed>
+    <Ror2CommonDir Condition="'$(Ror2CommonDir)' == ''">$(MSBuildThisFileDirectory)..\..\ror2-common</Ror2CommonDir>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <!-- ror2-common's IL hooks (ItemHooks, MinionHit): needs the MonoMod references below. -->
@@ -22,7 +23,7 @@
 
   <!-- Shared RoR2 host code, compiled in (no shared DLL to version across mods). -->
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)../../ror2-common/src/**/*.cs" Link="Common\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="$(Ror2CommonDir)/src/**/*.cs" Link="Common\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

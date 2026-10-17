@@ -13,7 +13,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Samus from Melee","0.1.0")]
+    [BepInPlugin(Guid,"Samus from Melee","0.2.0")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -57,7 +57,7 @@ namespace Samus
             Language.onCurrentLanguageChanged+=Tokens;
             ItemHooks.Install();GlyphOverride.Install();Skins.Install();
             RunAudio.Initialize(SamusAudio.StopAll);
-            Logger.LogInfo("Samus 0.1.0 / libssbm ABI "+Native.AbiVersion+" loaded. Movement, combat and presentation completion in progress.");
+            Logger.LogInfo("Samus 0.2.0 / libssbm ABI "+Native.AbiVersion+" loaded. Movement, combat and presentation completion in progress.");
         }
         static string FindDisc(string configured,string here)
         {
@@ -84,7 +84,7 @@ namespace Samus
             cb.baseMaxHealth=140f;cb.levelMaxHealth=42f;cb.baseArmor=10f;cb.baseJumpCount=2;
             foreach(var state in body.GetComponents<EntityStateMachine>()) if(state.customName=="Body")state.mainStateType=new SerializableEntityStateType(typeof(SamusMain));
             body.AddComponent<NativeBody>();body.AddComponent<SamusDriver>();Skills.Add(body,pack);
-            var lobby=Prefabs.Clone(display,"MeleeSamusDisplay",Guid);DisplayModel.Attach(lobby,Guid,SamusDisplay.Make);Portrait.Request(body,SamusDisplay.Make);
+            var lobby=Prefabs.Clone(display,"MeleeSamusDisplay",Guid);DisplayModel.Attach(lobby,Guid,SamusDisplay.Make);Portrait.Request(body,SamusDisplay.Portrait);
             Skins.Add(body,pack);
             var survivor=ScriptableObject.CreateInstance<SurvivorDef>();survivor.cachedName="MeleeSamus";survivor.bodyPrefab=body;survivor.displayPrefab=lobby;
             survivor.displayNameToken="SSBM_SAMUS_NAME";survivor.descriptionToken="SSBM_SAMUS_DESCRIPTION";survivor.outroFlavorToken="SSBM_SAMUS_OUTRO";
