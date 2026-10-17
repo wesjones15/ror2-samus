@@ -24,6 +24,7 @@ namespace Samus
             if(Models==null){Dispose();throw new InvalidOperationException("Samus ModelView creation failed");}
         }
         internal void Pose(IntPtr sim,float dt){if(Native.ssbm_view_update(Handle,sim,dt)!=1)throw new InvalidOperationException(Native.Error);}
+        internal void IdlePose(){if(Native.ssbm_view_pose(Handle,NativeLib.CString("Wait"),0)!=1)throw new InvalidOperationException(Native.Error);}
         internal void ObjectPose(float frame){if(Native.ssbm_object_update(Handle,frame)!=1)throw new InvalidOperationException(Native.Error);}
         public uint ModelCount()=>1;
         public bool Model(uint id,out ViewModelInfo info)=>Native.ssbm_view_model(Handle,out info)==1;
@@ -47,6 +48,7 @@ namespace Samus
         readonly IntPtr sim;
         readonly Native.Host host;
         bool requestUpSpecial,upSpecialStarted;
+        readonly bool idleOnly;
         readonly float[] anchorMatrix=new float[16];
         static readonly Quaternion previewRotation=Quaternion.Euler(0,-90,0);
         public bool UpSpecialFinished { get; private set; }
@@ -66,9 +68,10 @@ namespace Samus
         public ModelView Models=>view.Models;
         public float Scale=>Plugin.MetresPerUnit.Value;
         public static IDisplayActor Make()=>Plugin.AssetsReady?new MeleeSelectDisplay(new SamusDisplay()):null;
-        public static IDisplayActor Portrait()=>Plugin.AssetsReady?new MeleeSelectDisplay(new SamusDisplay(),intro:false):null;
-        SamusDisplay()
+        public static IDisplayActor Portrait()=>Plugin.AssetsReady?new MeleeSelectDisplay(new SamusDisplay(idleOnly:true),intro:false):null;
+        SamusDisplay(bool idleOnly=false)
         {
+            this.idleOnly=idleOnly;
             sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),default);
             if(sim==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
             try { costume=Skins.Selected();view=new SamusView(costume); }
@@ -82,6 +85,7 @@ namespace Samus
         public void Step(float dt)
         {
             uint selected=Skins.Selected();if(selected!=costume){var replacement=new SamusView(selected);view.Dispose();view=replacement;costume=selected;}
+            if(idleOnly){view.IdlePose();view.LocalRotation=previewRotation;return;}
             var pad=new Native.Pad { aim=new Native.Vec3(0,0,1),allowed=0 };
             if(requestUpSpecial) {
                 // Settle the preview's flat floor before the ground up-special.

@@ -39,6 +39,13 @@ static class Program
             return;
         }
         var host=new Native.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
+        for(uint c=0;c<5;c++) {
+            Check(Native.ssbm_portrait(NativeLib.CString(assets),c,out var portrait,null,0)==1,Native.Error);
+            var rgba=new byte[portrait.width*portrait.height*4];
+            Check(Native.ssbm_portrait(NativeLib.CString(assets),c,out portrait,rgba,(uint)rgba.Length)==1,Native.Error);
+            Check(portrait.width==136&&portrait.height==188,"unexpected CSS photo dimensions");
+            Check(Native.ssbm_portrait(NativeLib.CString(assets),c,out portrait,new byte[1],1)==0,"portrait accepted short output buffer");
+        }
         var sim=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,Native.Error);
         IntPtr view=IntPtr.Zero;
         try {
@@ -92,6 +99,14 @@ static class Program
             for(uint costume=0;costume<5;costume++) {
                 view=Native.ssbm_view_new(NativeLib.CString(assets),costume);Check(view!=IntPtr.Zero,Native.Error);
                 Check(Native.ssbm_view_update(view,sim,1f/60)==1,Native.Error);
+                Check(Native.ssbm_view_pose(view,NativeLib.CString("Wait"),0)==1,"direct idle portrait pose failed");
+                var idlePtr=Native.ssbm_view_positions(view,out uint idleCount);var idleVertices=new float[idleCount*3];Marshal.Copy(idlePtr,idleVertices,0,idleVertices.Length);
+                Check(Native.ssbm_view_pose(view,NativeLib.CString("SpecialHi"),15)==1,"up-special test pose failed");
+                Check(Native.ssbm_view_pose(view,NativeLib.CString("Wait"),0)==1,"return to idle failed");
+                var restoredPtr=Native.ssbm_view_positions(view,out uint restoredCount);var restored=new float[restoredCount*3];Marshal.Copy(restoredPtr,restored,0,restored.Length);
+                Check(idleCount==restoredCount,"portrait vertex count changed");
+                for(int vertex=0;vertex<restored.Length;vertex++)Check(idleVertices[vertex]==restored[vertex],"portrait retained attack/landing pose");
+                Check(Native.ssbm_view_pose(view,NativeLib.CString("missing-clip"),0)==0,"unknown portrait clip accepted");
                 Native.ssbm_view_model(view,out var model);Check(model.vertex_count>0&&model.batch_count>0,"empty model");
                 var pos=Native.ssbm_view_positions(view,out uint n);Check(n==model.vertex_count&&pos!=IntPtr.Zero,"position pointer/count");
                 var indices=new int[model.index_count];Native.ssbm_view_indices(view,indices,(uint)indices.Length);

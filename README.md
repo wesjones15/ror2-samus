@@ -11,8 +11,10 @@ See the sibling `libssbm/docs/reuse.md` for the ownership and remaining split.
 
 Character select plays up-B (LB+B), using the shared Melee selection rule and the
 attack's original animation/sound cues. Samus plays Screw Attack once, then idles;
-the preview stays at the mannequin's origin. Portrait generation uses a separate
-silent idle actor, facing forward. Selection audio stops on completion/deselection.
+the preview stays at the mannequin's origin. The icon uses Samus's original CSS
+photo from MnSlChr.usd, with its palette and aspect ratio preserved. The shared
+portrait queue installs this texture after extraction; no 3D icon capture is used.
+Selection audio stops on completion/deselection.
 
 Status: incomplete; Rust viewer visually checked and native C# boundary tested.
 The user successfully started single player as Samus with the diagnostic build,

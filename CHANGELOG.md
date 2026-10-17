@@ -1,3 +1,12 @@
+# 0.2.1 prototype
+
+- Use the original Melee CSS portrait from MnSlChr.usd through the shared texture
+  queue. Image and costume palette are decoded from source animation channels;
+  no 3D portrait pose/camera capture. Older caches require the fourteenth file.
+- Wait for pod/vehicle release before driving the body, probe clear spawn ground,
+  and use common Unstuck and WallGuard recovery. Build-checked; playtest pending.
+- No DLL backups on deployment, following the user's preference.
+
 # 0.2.0 prototype
 
 - Shared Melee character-select rule: play the character's up-B animation and
