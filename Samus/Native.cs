@@ -9,6 +9,7 @@ namespace Samus
         public const uint AbiVersion = 4;
         const string Dll = "ssbm";
         public static bool HasOverlay {get;private set;}
+        public static bool HasMaterialAlpha {get;private set;}
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_object_camera(IntPtr view,Vec3 camera);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern float ssbm_sim_charge_fraction(IntPtr sim);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_entry_control(IntPtr sim,uint kind);
@@ -53,6 +54,8 @@ namespace Samus
             // ABI-4 pairs can omit this presentation-only capability safely.
             try {ssbm_sim_overlay(IntPtr.Zero,null);HasOverlay=true;}
             catch(EntryPointNotFoundException){HasOverlay=false;}
+            try {ssbm_view_alpha_sources(IntPtr.Zero,out _);HasMaterialAlpha=true;}
+            catch(EntryPointNotFoundException){HasMaterialAlpha=false;}
             var sizes = new uint[14]; uint count=ssbm_struct_sizes(sizes,(uint)sizes.Length);
             error=NativeLib.CompareSizes(sizes,count,new[] {
                 ("Vec3",NativeLib.Size<Vec3>()),("Pad",NativeLib.Size<Pad>()),("State",NativeLib.Size<State>()),
@@ -127,6 +130,7 @@ namespace Samus
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_positions(IntPtr view,out uint count);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_normals(IntPtr view,out uint count);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_colors(IntPtr view,out uint count);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_alpha_sources(IntPtr view,out uint count);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_texture_ids(IntPtr view,out uint count);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_view_texture(IntPtr view,uint id,out ViewTexture info,[Out]byte[] rgba,uint len);
     }

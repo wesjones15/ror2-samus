@@ -256,7 +256,18 @@ static class Program
     static void PresentationRegressions(string assets,in Native.Host host)
     {
         var effect=Native.ssbm_effect_new(NativeLib.CString(assets),2000);Check(effect!=IntPtr.Zero,Native.Error);
-        try {Check(Native.ssbm_object_update(effect,12)==1,Native.Error);var colors=Native.ssbm_view_colors(effect,out uint count);var rgba=new float[count*4];Marshal.Copy(colors,rgba,0,rgba.Length);for(int i=3;i<rgba.Length;i+=4)Check(rgba[i]>0.1f,"Screw Attack was made transparent at native/C# boundary");}
+        try {
+            Check(Native.HasMaterialAlpha,"shared material alpha metadata export missing");
+            using(var alpha=new MaterialAlphaBuffer())foreach(float frame in new[]{0f,12f,32f}) {
+                Check(Native.ssbm_object_update(effect,frame)==1,Native.Error);
+                var colors=Native.ssbm_view_colors(effect,out uint count);var expected=new float[count*4];Marshal.Copy(colors,expected,0,expected.Length);
+                var metadata=Native.ssbm_view_alpha_sources(effect,out uint n);var raw=new float[n*3];Marshal.Copy(metadata,raw,0,raw.Length);
+                Check(n==count,"alpha metadata record count");for(int i=0;i<raw.Length;i+=3)Check(raw[i]==0&&raw[i+2]==1,"expected zero-alpha material with texture blend");
+                var resolved=alpha.Resolve(colors,count,metadata,n);var rgba=new float[count*4];Marshal.Copy(resolved,rgba,0,rgba.Length);
+                for(int i=0;i<rgba.Length;i++)Check(Math.Abs(rgba[i]-expected[i])<0.00001f,"common alpha diverged from source viewer");
+                if(frame==12)for(int i=3;i<rgba.Length;i+=4)Check(rgba[i]>0.1f,"shared alpha erased Screw Attack");
+            }
+        }
         finally {Native.ssbm_view_free(effect);}
         var chargeView=Native.ssbm_article_new(NativeLib.CString(assets),1,8);Check(chargeView!=IntPtr.Zero,Native.Error);
         try {

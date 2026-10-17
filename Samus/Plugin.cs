@@ -13,7 +13,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Samus from Melee","0.2.6")]
+    [BepInPlugin(Guid,"Samus from Melee","0.2.7")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -47,7 +47,7 @@ namespace Samus
             Language.onCurrentLanguageChanged+=Tokens;
             ItemHooks.Install();GlyphOverride.Install();Skins.Install();
             RunAudio.Initialize(SamusAudio.StopAll);
-            Logger.LogInfo("Samus 0.2.6 registered; native initialization waits for RoR2 startup completion.");
+            Logger.LogInfo("Samus 0.2.7 registered; native initialization waits for RoR2 startup completion.");
         }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         void InitializeAssets()
@@ -71,7 +71,7 @@ namespace Samus
                         finally { AssetsBusy=false; }
                     }) { IsBackground=true,Name="Samus first-run extraction" }.Start();
                 } else AssetsBusy=false;
-                Logger.LogInfo("Samus 0.2.6 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Samus 0.2.7 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
                 } catch(Exception e) {AssetsReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
         }
         static string FindDisc(string configured,string here)

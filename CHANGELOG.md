@@ -1,3 +1,9 @@
+# 0.2.7 shared effect alpha
+
+- Route source texture alpha through ror2-common MaterialAlphaBuffer so future characters can reuse multiply/blend/replace handling.
+- Preserve zero-material-alpha effects, transparent texture borders, RGB and animated fades; legacy pre-baked sources retain their existing behavior.
+- Compare shared and native Screw Attack output at active/fade frames through the actual DLL boundary. Shared alpha, native, movement and startup checks pass; Unity playtest remains pending.
+
 # 0.2.6 dash movement and start prompt
 
 - Use RoR2's vanilla interaction UI and bound-button glyph with Start as the arrival prompt.

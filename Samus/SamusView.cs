@@ -12,6 +12,7 @@ namespace Samus
         internal Quaternion LocalRotation=Quaternion.identity;
         internal Vector3 LocalPosition;
         readonly float[] overlay=new float[4];
+        readonly MaterialAlphaBuffer alpha=new MaterialAlphaBuffer();
         byte drawFlags;
         internal ViewDraw[] InstanceDraws;
         internal SamusView(uint costume)
@@ -44,10 +45,10 @@ namespace Samus
         public uint Draws(ViewDraw[] output,uint max){if(InstanceDraws!=null){if(output!=null)Array.Copy(InstanceDraws,output,Math.Min(InstanceDraws.Length,(int)max));return(uint)InstanceDraws.Length;}if(output!=null&&max>0)output[0]=new ViewDraw { key=1,flags=drawFlags,pos=new ViewVec3(LocalPosition.x,LocalPosition.y,LocalPosition.z),rot_x=LocalRotation.x,rot_y=LocalRotation.y,rot_z=LocalRotation.z,rot_w=LocalRotation.w,alpha=1 };return 1;}
         public IntPtr Positions(out uint count)=>Native.ssbm_view_positions(Handle,out count);
         public IntPtr Normals(out uint count)=>Native.ssbm_view_normals(Handle,out count);
-        public IntPtr Colors(out uint count)=>Native.ssbm_view_colors(Handle,out count);
+        public IntPtr Colors(out uint count){var colors=Native.ssbm_view_colors(Handle,out count);if(!Native.HasMaterialAlpha)return colors;var sources=Native.ssbm_view_alpha_sources(Handle,out uint n);return alpha.Resolve(colors,count,sources,n);}
         public IntPtr TextureIds(out uint count)=>Native.ssbm_view_texture_ids(Handle,out count);
         public IntPtr FrameUvs(out uint count){count=0;return IntPtr.Zero;}
-        public void Dispose(){Models?.Dispose();Models=null;if(Handle!=IntPtr.Zero){Native.ssbm_view_free(Handle);Handle=IntPtr.Zero;}}
+        public void Dispose(){Models?.Dispose();Models=null;alpha.Dispose();if(Handle!=IntPtr.Zero){Native.ssbm_view_free(Handle);Handle=IntPtr.Zero;}}
     }
     internal sealed class SamusDisplay:IMeleeSelectSource,IDisplayEffects
     {
