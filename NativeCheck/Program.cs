@@ -48,9 +48,12 @@ static class Program
             Check(jumps==1,"jump callback/layout failed");
             pad.buttons=0;for(int i=0;i<180;i++) Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
             Native.ssbm_sim_state(sim,out var state);Check(state.grounded==1&&state.jumps_used==0,"landing state mismatch");
-            bool gotHitboxes=false;
+            bool gotHitboxes=false,gotSound=false;
             pad.buttons=2;for(int i=0;i<10;i++) {
                 Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                var pcm=new float[1066];
+                Check(Native.ssbm_sim_audio(sim,pcm,533)==533,"native PCM render failed: "+Native.Error);
+                foreach(float x in pcm){Check(float.IsFinite(x),"nonfinite PCM");if(Math.Abs(x)>0.0001f)gotSound=true;}
                 uint count=Native.ssbm_sim_hitboxes(sim,null,0);
                 if(count==0)continue;
                 var samples=new Native.HitboxSample[count];
@@ -59,6 +62,7 @@ static class Program
                 gotHitboxes=true;
             }
             Check(gotHitboxes&&hits==0,"disc melee hitboxes must replace the placeholder hit callback");
+            Check(gotSound,"disc attack sound cue did not reach the native PCM mixer");
             for(uint costume=0;costume<5;costume++) {
                 view=Native.ssbm_view_new(NativeLib.CString(assets),costume);Check(view!=IntPtr.Zero,Native.Error);
                 Check(Native.ssbm_view_update(view,sim,1f/60)==1,Native.Error);

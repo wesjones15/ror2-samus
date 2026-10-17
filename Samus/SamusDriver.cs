@@ -22,10 +22,13 @@ namespace Samus
         bool active,failed,permitDamage;float scale;
         Native.HitboxSample[] hitboxes=new Native.HitboxSample[64];
         readonly Combat.HitTracker hits=new Combat.HitTracker();
+        SamusAudio audio;
         void Awake(){body=GetComponent<CharacterBody>();motor=GetComponent<CharacterMotor>();input=GetComponent<InputBankTest>();native=GetComponent<NativeBody>();direction=GetComponent<CharacterDirection>();}
         void Update()
         {
             if(failed||!body)return;pad.Read(body,input);
+            if(body.healthComponent&&!body.healthComponent.alive){audio?.Dispose();return;}
+            audio?.Update();
             if(active) { smoother.Smooth();cameraPivot.Use(true); }
         }
         void FixedUpdate()
@@ -78,6 +81,7 @@ namespace Samus
             scale=Plugin.MetresPerUnit.Value;feetOffset=transform.position-body.footPosition;safe=body.footPosition;
             sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),ToSim(body.footPosition));if(sim==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
             view=new SamusView(Math.Min(body.skinIndex,4));self=GCHandle.Alloc(this);
+            audio=new SamusAudio(sim);
             host=new Native.Host { user=GCHandle.ToIntPtr(self),collide=Marshal.GetFunctionPointerForDelegate(collideFn),evt=Marshal.GetFunctionPointerForDelegate(eventFn) };
             WorldProbe.UseBodyCollision(motor,gameObject);motor.Motor.enabled=false;
             smoother=new StepSmoother(transform);cameraPivot=new CameraPivot(body);cameraPivot.Use(true);active=true;
@@ -154,6 +158,7 @@ namespace Samus
         void Cleanup()
         {
             active=false;cameraPivot?.Use(false);view?.Dispose();view=null;
+            audio?.Dispose();audio=null;
             if(sim!=IntPtr.Zero){Native.ssbm_sim_free(sim);sim=IntPtr.Zero;}if(self.IsAllocated)self.Free();
             if(motor&&motor.Motor)motor.Motor.enabled=true;
             if(body&&body.modelLocator&&body.modelLocator.modelTransform){GameSettings.HideRenderers(body.modelLocator.modelTransform,false);var a=body.modelLocator.modelTransform.GetComponent<Animator>();if(a)a.enabled=true;}

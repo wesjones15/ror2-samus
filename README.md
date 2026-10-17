@@ -11,7 +11,9 @@ Full behavior fidelity is in
 the sibling libssbm/docs/behavior-spec.md when building from source.
 
 No game data is shipped. Supply your own GALE01 revision 2 ISO/GCM/CISO. Models,
-animation and tuning are extracted locally. Never share your assets folder.
+animation, tuning, sound banks, sequences and effect/particle archives are
+extracted locally. Old incomplete caches automatically require extraction again.
+Never share your assets folder.
 
 Install the ZIP into your RoR2 DLC4 folder with BepInEx 5 installed. Launch once
 to create `BepInEx/config/com.libssbm.samus.cfg`, then set `Paths.Disc` to your
@@ -66,7 +68,12 @@ Disc subaction commands now drive normal/Screw Attack hit windows and posed bone
 hitboxes; gait clocks use fixed ticks and disc speed scaling. ABI 2 adds the posed
 hitbox transfer. These changes pass native checks but await RoR2 playtesting.
 
-Known limits: audio, effects/particles, remaining movement transitions and full TEV
+Disc sound cues now feed an SSM/SEM decoder and native stereo mixer, streamed
+through the shared Windows PCM queue. Playback follows action commands, supports
+sound-slot replacement/stop and follows the game's volume/pause/run lifecycle.
+In-game listening verification and remaining source audio routing are pending.
+
+Known limits: effects/particles, remaining movement transitions and full TEV
 materials remain unfinished. Projectile shapes and impact effects are procedural
 placeholders. Attack speed, all item-specific effects,
 AI companions/clones and fall damage need further integration. Grabs, ledges,

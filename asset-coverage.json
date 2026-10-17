@@ -5,9 +5,9 @@
     "sounds": {
       "paths": ["audio/us/samus.ssm", "audio/us/main.ssm", "audio/us/smash2.sem"],
       "source_references": ["melee/lb/lbaudio_ax.c: ssm_files and initialization", "sysdolphin/baselib/synth.c: HSD_SynthSFXLoad", "sysdolphin/baselib/axdriver.c: AXDriver_8038DA70"],
-      "status": "extracted",
-      "verification": [],
-      "notes": "Sound bank and SEM decoding/playback are in progress. No claim of working original audio."
+      "status": "wired",
+      "verification": ["271 SSM samples decode; checked Samus/shared SEM cues produce nonzero PCM.", "Native attack timeline feeds the mixer; C# PCM boundary checked."],
+      "notes": "Original sample/sequence decoding and streamed playback are implemented. Audio device and in-game timing await listening verification; source aux routing is approximated to stereo."
     },
     "effects": {
       "paths": ["EfSsData.dat", "EfCoData.dat", "PlSs.dat"],

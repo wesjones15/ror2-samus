@@ -56,6 +56,7 @@ namespace Samus
             ContentProvider.Register(Guid,AddContent);
             Language.onCurrentLanguageChanged+=Tokens;
             ItemHooks.Install();GlyphOverride.Install();Skins.Install();
+            RunAudio.Initialize(SamusAudio.StopAll);
             Logger.LogInfo("Samus 0.1.0 / libssbm ABI "+Native.AbiVersion+" loaded. Movement, combat and presentation completion in progress.");
         }
         static string FindDisc(string configured,string here)
