@@ -45,6 +45,23 @@ static class Program
         }
         var host=new Native.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
         PresentationRegressions(assets,in host);
+        foreach(int fps in new[]{30,60,144}) {
+            var dash=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(dash!=IntPtr.Zero,Native.Error);
+            try {
+                var pad=new Native.Pad {aim=new Native.Vec3(0,0,1),movement=new Native.Vec3(0,0,1),allowed=15,buttons=32};
+                for(int f=0;f<60;f++)Native.ssbm_sim_step(dash,in host,in pad,1.0/60);
+                Native.ssbm_sim_state(dash,out var before);pad.buttons|=2;
+                Native.ssbm_sim_step(dash,in host,in pad,1.0/60);
+                Native.ssbm_sim_state(dash,out var state);Check(state.move_id==5,"sprinting RT did not select Dash Attack");
+                pad.buttons=0;pad.movement=default;float furthest=state.position.z;
+                for(int f=0;f<fps*2;f++) {
+                    Native.ssbm_sim_step(dash,in host,in pad,1.0/fps);Native.ssbm_sim_state(dash,out state);
+                    Check(state.position.z>=furthest-0.001f,"dash rubberbanded at "+fps+" FPS");furthest=Math.Max(furthest,state.position.z);
+                }
+                Check(state.move_id==0&&state.position.z-before.position.z>10,"dash did not retain source movement after returning to idle");
+            }finally{Native.ssbm_sim_free(dash);}
+        }
+        Console.WriteLine("PASS: sprint + RT retains Dash Attack travel through the native boundary at 30/60/144 FPS");
         for(uint c=0;c<5;c++) {
             Check(Native.ssbm_portrait(NativeLib.CString(assets),c,out var portrait,null,0)==1,Native.Error);
             var rgba=new byte[portrait.width*portrait.height*4];

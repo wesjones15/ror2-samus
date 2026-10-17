@@ -159,8 +159,7 @@ namespace Samus
         void OnGUI()
         {
             if(!active||failed||!body||!body.isPlayerControlled||!body.hasEffectiveAuthority||!body.healthComponent.alive)return;
-            if(ArrivalWaiting)GUI.Box(new Rect(Screen.width/2f-180,Screen.height*0.72f,360,36),"Interact to bring Samus to life");
-            else if(chargeFraction>0) {
+            if(!ArrivalWaiting&&chargeFraction>0) {
                 string label=(state.phase==4?"Charging":"Stored Charge Shot")+": "+Mathf.RoundToInt(chargeFraction*100)+"%";
                 if(chargeFraction>=1)label="Charge Shot ready";
                 GUI.Box(new Rect(Screen.width/2f-110,Screen.height-130,220,30),label);

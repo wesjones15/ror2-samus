@@ -69,7 +69,7 @@ Screw Attack; down special drops a bomb. Flick direction + attack, hold, then
 release for a smash. Tap up/down + attack for vertical smashes. LB/RB take priority over LS for move selection. No bubble shield.
 
 The first map spawn materializes Samus as a figure on the original entry platform.
-Press Interact (X) to play the source transformation, burst and sound, then take control.
+RoR2's vanilla Start prompt shows the bound Interact button (X on the pad). Press it to play the source transformation, burst and sound, then take control.
 The shared MeleeArrival state replaces the vanilla pod. Ground B grabs; air B uses
 the Z-air hitbox. Captured enemies enable Melee-style LS axes and A/B pummel or throws.
 RoR2 capture stops on interruption, death, release or an eight-second timeout; player

@@ -1,3 +1,9 @@
+# 0.2.6 dash movement and start prompt
+
+- Use RoR2's vanilla interaction UI and bound-button glyph with Start as the arrival prompt.
+- Move Dash Attack's source translation into collision-resolved native movement so Samus keeps the distance after returning to idle.
+- Verify dash retention at 30/60/144 FPS, wall collision and native C# input; inspect mid-attack and completed poses in the viewer. Unity playtest remains pending.
+
 # 0.2.5 presentation and controls
 
 - Fix UV-pair transfer, source alpha/blending, texture matrices/mirror wrapping and camera-facing joints so Screw Attack and the complete Charge Shot orb render their source geometry.
