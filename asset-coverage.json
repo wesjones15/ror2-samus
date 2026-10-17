@@ -38,10 +38,10 @@
       "notes": "All four Samus article meshes decode and transfer through the native boundary. Missile model rendered in the viewer; host art replacement wired. Effect rendering remains in progress."
     },
     "textures": {
-      "paths": ["PlSsNr.dat", "PlSsPi.dat", "PlSsBk.dat", "PlSsGr.dat", "PlSsLa.dat", "PlSs.dat", "EfSsData.dat", "EfCoData.dat"],
-      "source_references": ["sysdolphin/baselib/tobj.c", "sysdolphin/baselib/mobj.c", "melee/ef/efasync.c"],
+      "paths": ["PlSsNr.dat", "PlSsPi.dat", "PlSsBk.dat", "PlSsGr.dat", "PlSsLa.dat", "PlSs.dat", "EfSsData.dat", "EfCoData.dat", "MnSlChr.usd"],
+      "source_references": ["sysdolphin/baselib/tobj.c", "sysdolphin/baselib/mobj.c", "melee/ef/efasync.c", "melee/mn/mncharsel.c: mnCharSel_8025D1C4/8025D5AC"],
       "status": "decoded",
-      "verification": ["Five costume texture transfers pass NativeCheck; viewer uses extracted diffuse textures."],
+      "verification": ["Five costume texture transfers pass NativeCheck; viewer uses extracted diffuse textures.", "All five original CSS photos/palettes decode; default photo visually inspected and registered through the shared portrait texture queue. In-game icon verification pending."],
       "notes": "Effect/article textures and animated materials require integration and visual verification."
     }
   }

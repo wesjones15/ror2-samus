@@ -28,5 +28,10 @@ compilation or headless checks as in-game verification.
 
 Started: common vehicle gating, clear-ground spawn placement, Unstuck and WallGuard
 integration in SamusDriver; original CSS portrait decoding and shared texture
-registration. These edits are not yet deployed. Core movement/entry/effect fidelity
+registration. Version 0.2.1 was deployed to D: Steam RoR2 with both installed DLL
+hashes verified, directly replacing the pair without backups. The previous DLL
+backup pair created by this chat was removed. Full Rust/native-boundary checks,
+all five CSS photo/palette decodes, and real fourteen-file first-run extraction
+through the packaged DLL pass. Common host changes build in Mario/Olimar too.
+In-game portrait/spawn verification is pending. Core movement/entry/effect fidelity
 work above remains outstanding.
