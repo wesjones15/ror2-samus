@@ -14,8 +14,8 @@
 - BepInEx plugin compiles against installed RoR2 DLC4 assemblies. One MSB3270
   metadata architecture warning remains: the installed BepInEx reference is
   I386/ILOnly with Required32Bit, while Samus is I386/ILOnly without Required32Bit.
-  Compatibility with the game's Mono loader has not been verified in-game; the
-  game/BepInEx assemblies were not modified to suppress this warning.
+  The user's game log confirms the plugin loads under Mono. The game/BepInEx
+  assemblies were not modified to suppress this warning.
 - C# NativeCheck extracted the user's disc into an ignored empty cache on a
   worker through ssbm.dll, without an external tool. A second invocation reused
   that cache with no disc argument. A missing-cache invocation passed ABI checks
@@ -26,12 +26,15 @@
 - gc2ror2's 15 server/protocol/guide tests pass after the DLL-first release policy
   update, including policy checks on initialization, prompts, plans and guides.
 
-The user's D: Steam installation logs confirm plugin loading, survivor
-registration and portrait rendering. Both 2026-10-16 startup attempts reached
-Steamworks initialization; the reported startup dialog remains under diagnosis.
-This does not establish successful startup or gameplay compatibility.
+The user's D: Steam installation log at 18:09 on 2026-10-16 confirms plugin
+loading, survivor registration, portrait rendering, Steam profile loading and
+the main menu. The user confirmed startup without error. Steam restarted and
+updated before this successful launch, with Samus restored and active; no
+Steamworks bypass or game-file changes were made. The earlier generic Steamworks
+startup dialog's exact cause was not established. The attempted comparison did
+not launch a game before restoring Samus, so it is not an A/B test result.
 
 RoR2 runtime, skin selection/unlocks and world/item/combat behavior require the
-offline playtest matrix in README. The ZIP has been built, not deployed into the
-game installation. Full audio, original attack commands and other fidelity work
+offline playtest matrix in README. The corrected ZIP has been built; the user's
+successful startup used the previously installed plugin. Full audio, original attack commands and other fidelity work
 listed in README remain unfinished; this is a prototype, not a final release.

@@ -3,8 +3,8 @@
 Offline prototype for RoR2 DLC4 / Unity 2021.3.45f2, BepInEx 5. Uses libssbm for
 gameplay and disc presentation; ror2-common for the host. No R2API required.
 
-Status: compiled prototype; Rust viewer visually checked and native C# boundary
-tested. **RoR2 gameplay has not been playtested.** Full behavior fidelity is in
+Status: prototype; Rust viewer visually checked, native C# boundary tested, and
+RoR2 startup confirmed with Samus loaded. **RoR2 gameplay has not been playtested.** Full behavior fidelity is in
 the sibling libssbm/docs/behavior-spec.md when building from source.
 
 No game data is shipped. Supply your own GALE01 revision 2 ISO/GCM/CISO. Models,
