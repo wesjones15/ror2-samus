@@ -4,5 +4,6 @@
     <Compile Include="../Samus/Native.cs" Link="Native.cs" />
     <Compile Include="../../ror2-common/src/NativeLib.cs" Link="NativeLib.cs" />
     <Compile Include="../../ror2-common/src/ViewSource.cs" Link="ViewSource.cs" />
+    <Compile Include="../../ror2-common/src/ParticleSource.cs" Link="ParticleSource.cs" />
   </ItemGroup>
 </Project>

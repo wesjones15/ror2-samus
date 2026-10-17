@@ -14,11 +14,12 @@ namespace Samus
             :this(Native.ssbm_view_new(NativeLib.CString(Plugin.AssetsDir),Math.Min(costume,4))) {}
         internal SamusView(uint article,uint state)
             :this(Native.ssbm_article_new(NativeLib.CString(Plugin.AssetsDir),article,state)) {}
+        internal static SamusView Effect(uint model)=>new SamusView(Native.ssbm_effect_new(NativeLib.CString(Plugin.AssetsDir),model));
         SamusView(IntPtr handle)
         {
             Handle=handle;
             if(Handle==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
-            Models=ModelView.Create(this,"Melee Samus");
+            Models=ModelView.Create(this,"Melee Samus",translucentOpacity:1f);
             if(Models==null){Dispose();throw new InvalidOperationException("Samus ModelView creation failed");}
         }
         internal void Pose(IntPtr sim,float dt){if(Native.ssbm_view_update(Handle,sim,dt)!=1)throw new InvalidOperationException(Native.Error);}

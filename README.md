@@ -3,6 +3,12 @@
 Offline prototype for RoR2 DLC4 / Unity 2021.3.45f2, BepInEx 5. Uses libssbm for
 gameplay and disc presentation; ror2-common for the host. No R2API required.
 
+Shared integration: libssbm's character asset profile supplies file references,
+costumes, sound banks and article layouts to reusable readers. ror2-common owns
+model/particle rendering and PCM device output. Samus's special behavior remains
+character-specific; the gameplay state machine is not yet a generic fighter API.
+See the sibling `libssbm/docs/reuse.md` for the ownership and remaining split.
+
 Status: incomplete; Rust viewer visually checked and native C# boundary tested.
 The user successfully started single player as Samus with the diagnostic build,
 then reported broken locomotion and placeholder attacks. The earlier startup

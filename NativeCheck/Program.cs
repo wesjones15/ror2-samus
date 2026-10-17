@@ -72,7 +72,7 @@ static class Program
                     for(int frame=0;frame<30;frame++) {
                         Check(Native.ssbm_particles_step(particles,1.0/60)==1,Native.Error);
                         uint n=Native.ssbm_particles_draws(particles,null,0);if(n==0)continue;
-                        var sprites=new Native.Sprite[n];Check(Native.ssbm_particles_draws(particles,sprites,n)==n,Native.Error);
+                        var sprites=new ViewParticle[n];Check(Native.ssbm_particles_draws(particles,sprites,n)==n,Native.Error);
                         foreach(var sprite in sprites) {
                             Check(float.IsFinite(sprite.position.x)&&float.IsFinite(sprite.size)&&float.IsFinite(sprite.r),"invalid particle snapshot");
                             Check(Native.ssbm_particles_texture(particles,sprite.texture,out var info,null,0)==1,Native.Error);

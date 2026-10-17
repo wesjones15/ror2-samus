@@ -45,22 +45,17 @@ namespace Samus
                 ("Collision",NativeLib.Size<Collision>()),("Event",NativeLib.Size<Event>()),("Host",NativeLib.Size<Host>()),
                 ("Tuning",NativeLib.Size<Tuning>()),("ViewModelInfo",NativeLib.Size<ViewModelInfo>()),
                 ("ViewBatch",NativeLib.Size<ViewBatch>()),("ViewTexture",NativeLib.Size<ViewTexture>()),("ViewDraw",NativeLib.Size<ViewDraw>()),
-                ("HitboxSample",NativeLib.Size<HitboxSample>()),("Sprite",NativeLib.Size<Sprite>()) });
+                ("HitboxSample",NativeLib.Size<HitboxSample>()),("ViewParticle",NativeLib.Size<ViewParticle>()) });
             if (error!=null) throw new InvalidOperationException(error);
         }
         public static string Error => NativeLib.Utf8(ssbm_last_error());
-        [StructLayout(LayoutKind.Sequential)] public struct Sprite
-        {
-            public Vec3 position,velocity;public float size,rotation;
-            public float r,g,b,a,er,eg,eb,ea;public uint texture,flags;
-        }
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_particles_new(byte[] dir);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_particles_free(IntPtr handle);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_particles_spawn(IntPtr handle,uint id,float[] transform,ulong key);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_particles_attach(IntPtr handle,ulong key,float[] transform);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_particles_stop(IntPtr handle,ulong key);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_particles_step(IntPtr handle,double dt);
-        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_particles_draws(IntPtr handle,[Out]Sprite[] output,uint max);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_particles_draws(IntPtr handle,[Out]ViewParticle[] output,uint max);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_particles_texture(IntPtr handle,uint id,out ViewTexture info,[Out]byte[] rgba,uint len);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_abi_version();
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_struct_sizes([Out]uint[] output,uint max);
@@ -82,6 +77,7 @@ namespace Samus
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_object_update(IntPtr view,float frame);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_article_cues(uint kind,uint state,uint previous,uint frame,uint fullCharge,[Out]uint[] output,uint max);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern int ssbm_effect_target(uint id);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_effect_flags(uint id);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_effect_new(byte[] dir,uint id);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern float ssbm_object_duration(IntPtr view);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_gfx(IntPtr sim,[Out]Event[] output,uint max);
