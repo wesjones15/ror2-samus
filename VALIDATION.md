@@ -26,15 +26,14 @@
 - gc2ror2's 15 server/protocol/guide tests pass after the DLL-first release policy
   update, including policy checks on initialization, prompts, plans and guides.
 
-The user's D: Steam installation log at 18:09 on 2026-10-16 confirms plugin
-loading, survivor registration, portrait rendering, Steam profile loading and
-the main menu. The user confirmed startup without error. Steam restarted and
-updated before this successful launch, with Samus restored and active; no
-Steamworks bypass or game-file changes were made. The earlier generic Steamworks
-startup dialog's exact cause was not established. The attempted comparison did
-not launch a game before restoring Samus, so it is not an A/B test result.
+The user reports a Steamworks startup failure with Samus enabled and successful
+startup with Samus.dll disabled. Treat Samus as the trigger while investigating
+the underlying fault. The prior claim of confirmed successful startup with
+Samus active was an incorrect interpretation of log entries and has been
+withdrawn. Survivor/portrait log entries alone do not establish successful
+platform initialization. No Steamworks bypass or game-file changes were made.
 
 RoR2 runtime, skin selection/unlocks and world/item/combat behavior require the
-offline playtest matrix in README. The corrected ZIP has been built; the user's
-successful startup used the previously installed plugin. Full audio, original attack commands and other fidelity work
+offline playtest matrix in README. The corrected packaging ZIP has been built;
+this does not establish that the startup defect is fixed. Full audio, original attack commands and other fidelity work
 listed in README remain unfinished; this is a prototype, not a final release.
