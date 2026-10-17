@@ -69,6 +69,8 @@ namespace Samus
                 var cue=cues[i];var facing=new Vector3(cue.direction.x,0,cue.direction.z);
                 var rotation=facing.sqrMagnitude>0?Quaternion.LookRotation(facing):Quaternion.identity;
                 var transform=Matrix4x4.TRS(new Vector3(cue.position.x,cue.position.y,cue.position.z),rotation,new Vector3(-1,1,1));
+                // efasync 0x42B scales the original KO model by common x4F4.
+                if(cue.kind==0x42b)transform*=Matrix4x4.Scale(Vector3.one*cue.strength);
                 Spawn(cue.kind,transform,serial,cue.move_id&65535,(cue.move_id&(1<<17))!=0,sim);
             }
         }

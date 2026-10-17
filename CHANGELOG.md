@@ -1,3 +1,10 @@
+# 0.2.8 shared Melee falloff recovery
+
+- Keep common map-zone/AnyDrop thresholds and safe-ground placement; falloff now plays the original Melee downward KO model and sound before figurine return.
+- Release the figurine on movement after its minimum return phase or after the source timeout; play the entry transformation once, followed by source flashing and two seconds of invulnerability.
+- Share the native sequence through libssbm::rebirth and host buff ownership through common MeleeRecovery. Initial Start arrival and ordinary collision recovery retain their separate behavior.
+- Native/core and C# tests cover 30/60/144 FPS, repeated falls, source assets/PCM, visibility, input/timeout release, protection expiry and cleanup. Viewer poses inspected; Unity playtest pending.
+
 # 0.2.7 shared effect alpha
 
 - Route source texture alpha through ror2-common MaterialAlphaBuffer so future characters can reuse multiply/blend/replace handling.

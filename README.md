@@ -70,6 +70,14 @@ release for a smash. Tap up/down + attack for vertical smashes. LB/RB take prior
 
 The first map spawn materializes Samus as a figure on the original entry platform.
 RoR2's vanilla Start prompt shows the bound Interact button (X on the pad). Press it to play the source transformation, burst and sound, then take control.
+
+Falling off the map uses common map-zone/AnyDrop detection. The shared Melee
+sequence plays its original downward KO effect/sound, then returns Samus as a
+figurine on verified safe ground. After a one-second minimum return phase, move
+to transform early or wait up to four more seconds. The source entry burst and
+sound play once; two seconds of source flashing/invulnerability follow release.
+This preserves RoR2 health and does not add stocks. Initial Start arrival and
+ordinary wall/unstuck correction remain separate. In-game verification is pending.
 The shared MeleeArrival state replaces the vanilla pod. Ground B grabs; air B uses
 the Z-air hitbox. Captured enemies enable Melee-style LS axes and A/B pummel or throws.
 RoR2 capture stops on interruption, death, release or an eight-second timeout; player

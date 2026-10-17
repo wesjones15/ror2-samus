@@ -10,13 +10,16 @@ using UnityEngine.Networking;
 namespace Samus
 {
     [DefaultExecutionOrder(-200)]
-    public sealed class SamusDriver:MonoBehaviour,IMeleeArrival
+    public sealed class SamusDriver:MonoBehaviour,IMeleeArrival,IMeleeRecovery
     {
         static readonly Native.CollideFn collideFn=Collide;
         static readonly Native.EventFn eventFn=Event;
         CharacterBody body;CharacterMotor motor;InputBankTest input;NativeBody native;CharacterDirection direction;
         IntPtr sim;SamusView view;Native.Host host;GCHandle self;Native.State state;
         SamusView entryPlatform;
+        MeleeRecovery recovery;uint recoveryFlags;
+        public bool Recovering=>(recoveryFlags&1)!=0;
+        public bool RecoveryInvulnerable=>(recoveryFlags&2)!=0;
         Vector3 feetOffset,safe;StepSmoother smoother;CameraPivot cameraPivot;
         readonly GroundGate ground=new GroundGate();readonly SamusPad pad=new SamusPad();
         readonly Unstuck unstuck=new Unstuck();readonly WallGuard wallGuard=new WallGuard();
@@ -61,7 +64,7 @@ namespace Samus
             try {
                 if(smoother.MovedElsewhere){var moved=transform.position-feetOffset;Native.ssbm_sim_place(sim,ToSim(moved),0);smoother.Reset();native.ForgetVelocity();unstuck.Reset();wallGuard.Placed(moved);}
                 bool hitImpulse=false;
-                if(native.TakeExternalVelocity(out var external)) {
+                if(native.TakeExternalVelocity(out var external)&&!Recovering) {
                     hitImpulse=!native.JumpPadLaunch&&external.sqrMagnitude>0.01f;
                     var velocity=new Native.Vec3(external.x/(scale*60),external.y/(scale*60),external.z/(scale*60));
                     if(native.JumpPadLaunch){var g=Physics.gravity/(scale*3600);Native.ssbm_sim_launch_pad(sim,velocity,new Native.Vec3(g.x,g.y,g.z));}
@@ -82,6 +85,8 @@ namespace Samus
                 if(body.isSprinting)speedScale/=Mathf.Max(0.1f,body.sprintingSpeedMultiplier);
                 Native.ssbm_sim_tuning(sim,new Native.Tuning { speed_scale=speedScale,jump_scale=Plugin.JumpScale.Value*NativeBody.JumpScale(body),extra_jumps=extra,hold_charge=Plugin.HoldCharge.Value?1u:0u,smash_max_frames=60 });
                 Native.ssbm_sim_step(sim,in host,in p,Time.fixedDeltaTime);
+                uint previousRecovery=recoveryFlags;recoveryFlags=Native.ssbm_sim_rebirth_flags(sim);
+                recovery?.Refresh();
                 if(Arriving&&!ArrivalWaiting&&Native.ssbm_sim_entry_control(sim,2)==0)Arriving=false;
                 Grab?.AfterStep(Time.fixedDeltaTime);
                 Present(()=>Effects?.Step(sim,Time.fixedDeltaTime));
@@ -96,14 +101,21 @@ namespace Samus
                 if(Native.ssbm_sim_state(sim,out state)!=1){Fallback(Native.Error);return;}
                 chargeFraction=Native.ssbm_sim_charge_fraction(sim);
                 var feet=ToWorld(state.position);
+                if((previousRecovery&4)!=0&&(recoveryFlags&4)==0){
+                    // The native KO phase placed the fighter back on safe ground.
+                    transform.position=feet+feetOffset;smoother.Reset();native.ForgetVelocity();wallGuard.Placed(feet);
+                    unstuck.Step(feet,false,true,false,0.25f,1.8f,RecoveryGround,out _);
+                    entryPlatform?.Dispose();entryPlatform=SamusView.EntryPlatform();
+                }
                 bool supported=RecoveryGround(feet,0.45f,0.45f,out var support)&&Mathf.Abs(support.y-feet.y)<0.15f;
                 bool embedded=WorldProbe.InsideSolid(feet+Vector3.up*0.9f);
                 bool blocked=(new Vector3(p.movement.x,0,p.movement.z).sqrMagnitude>0.05f&&!supported)||embedded;
                 bool fallen=state.grounded==0&&state.velocity.y<=0;
-                if(unstuck.Step(feet,fallen||blocked,state.grounded!=0&&supported,control!=NativeBody.Hold.None,Time.fixedDeltaTime,1.8f,RecoveryGround,out var recovered)
-                    ||unstuck.Fell(feet,1.8f,RecoveryGround,out recovered)) {
+                if(!Recovering&&recovery!=null&&recovery.CheckFall(unstuck,feet,1.8f,RecoveryGround)) {
+                    Plugin.Log.LogInfo("Samus falloff: common threshold, Melee KO and figurine recovery");
+                } else if(!Recovering&&unstuck.Step(feet,fallen||blocked,state.grounded!=0&&supported,control!=NativeBody.Hold.None,Time.fixedDeltaTime,1.8f,RecoveryGround,out var recovered)) {
                     Recover(recovered);feet=ToWorld(state.position);Plugin.Log.LogInfo("Samus recovered using common Unstuck");
-                } else if(wallGuard.Step(feet,1.8f,sweepHeights,0.6f,control!=NativeBody.Hold.None,false,out var back,out var why)) {
+                } else if(!Recovering&&wallGuard.Step(feet,1.8f,sweepHeights,0.6f,control!=NativeBody.Hold.None,false,out var back,out var why)) {
                     Recover(back);feet=ToWorld(state.position);Plugin.Log.LogInfo("Samus wall recovery: "+why);
                 }
                 smoother.Stepped(feet+feetOffset);native.WroteVelocity(ToWorld(state.velocity)*60f);
@@ -115,6 +127,7 @@ namespace Samus
         void StartSim()
         {
             scale=Plugin.MetresPerUnit.Value;feetOffset=transform.position-body.footPosition;safe=body.footPosition;
+            recovery=GetComponent<MeleeRecovery>();
             lastHealth=body.healthComponent.combinedHealth;
             // A pod exit can leave the feet slightly below a one-sided floor.
             // The common standing probe starts above it and checks full clearance.
@@ -172,9 +185,18 @@ namespace Samus
             try{draw();}catch(Exception e){if(presentationErrors.Add(e.Message))Plugin.Log.LogError("Samus presentation failed; character simulation remains active: "+e);}
         }
         bool RecoveryGround(Vector3 sample,float rise,float drop,out Vector3 feet)=>WorldProbe.StandingGround(sample,rise,drop,1.8f,0.3f,out feet);
+        public void BeginFallRecovery(Vector3 safeFeet)
+        {
+            if(!active||Recovering)return;
+            Grab?.Dispose();Grab=new SamusGrab(this,body);
+            Effects?.Dispose();Particles?.Dispose();Particles=new DiscParticles(scale);Effects=new MeleeEffects(Particles,scale);
+            permitDamage=false;ArrivalWaiting=false;
+            if(Native.ssbm_sim_begin_rebirth(sim,NativeLib.CString(Plugin.AssetsDir),ToSim(safeFeet))!=1)throw new InvalidOperationException("Melee fall recovery: "+Native.Error);
+            recoveryFlags=Native.ssbm_sim_rebirth_flags(sim);
+        }
         void Recover(Vector3 feet)
         {
-            Native.ssbm_sim_place(sim,ToSim(feet),0);Native.ssbm_sim_state(sim,out state);
+            Native.ssbm_sim_place(sim,ToSim(feet),2);Native.ssbm_sim_state(sim,out state);
             smoother.Reset();native.ForgetVelocity();unstuck.Reset();wallGuard.Placed(feet);
         }
         Vector3 ToWorld(Native.Vec3 v)=>new Vector3(v.x,v.y,v.z)*scale;
@@ -232,7 +254,7 @@ namespace Samus
         }
         void Cleanup()
         {
-            Arriving=false;ArrivalWaiting=false;
+            Arriving=false;ArrivalWaiting=false;recoveryFlags=0;recovery?.Refresh();
             active=false;cameraPivot?.Use(false);view?.Dispose();view=null;
             entryPlatform?.Dispose();entryPlatform=null;
             audio?.Dispose();audio=null;

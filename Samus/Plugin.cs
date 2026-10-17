@@ -13,7 +13,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Samus from Melee","0.2.7")]
+    [BepInPlugin(Guid,"Samus from Melee","0.2.8")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -47,7 +47,7 @@ namespace Samus
             Language.onCurrentLanguageChanged+=Tokens;
             ItemHooks.Install();GlyphOverride.Install();Skins.Install();
             RunAudio.Initialize(SamusAudio.StopAll);
-            Logger.LogInfo("Samus 0.2.7 registered; native initialization waits for RoR2 startup completion.");
+            Logger.LogInfo("Samus 0.2.8 registered; native initialization waits for RoR2 startup completion.");
         }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         void InitializeAssets()
@@ -71,7 +71,7 @@ namespace Samus
                         finally { AssetsBusy=false; }
                     }) { IsBackground=true,Name="Samus first-run extraction" }.Start();
                 } else AssetsBusy=false;
-                Logger.LogInfo("Samus 0.2.7 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Samus 0.2.8 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
                 } catch(Exception e) {AssetsReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
         }
         static string FindDisc(string configured,string here)
@@ -99,7 +99,7 @@ namespace Samus
             cb.baseMaxHealth=140f;cb.levelMaxHealth=42f;cb.baseArmor=10f;cb.baseJumpCount=2;
             cb.preferredPodPrefab=null;cb.preferredInitialStateType=new SerializableEntityStateType(typeof(MeleeArrival));
             foreach(var state in body.GetComponents<EntityStateMachine>()) if(state.customName=="Body"){state.mainStateType=new SerializableEntityStateType(typeof(SamusMain));state.initialStateType=new SerializableEntityStateType(typeof(MeleeArrival));}
-            body.AddComponent<NativeBody>();body.AddComponent<SamusDriver>();Skills.Add(body,pack);
+            body.AddComponent<NativeBody>();body.AddComponent<SamusDriver>();body.AddComponent<MeleeRecovery>();Skills.Add(body,pack);
             var lobby=Prefabs.Clone(display,"MeleeSamusDisplay",Guid);DisplayModel.Attach(lobby,Guid,SamusDisplay.Make);Portrait.RequestTexture(body,SamusPortrait.Load);
             Skins.Add(body,pack);
             var survivor=ScriptableObject.CreateInstance<SurvivorDef>();survivor.cachedName="MeleeSamus";survivor.bodyPrefab=body;survivor.displayPrefab=lobby;

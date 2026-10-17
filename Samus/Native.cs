@@ -10,6 +10,8 @@ namespace Samus
         const string Dll = "ssbm";
         public static bool HasOverlay {get;private set;}
         public static bool HasMaterialAlpha {get;private set;}
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_begin_rebirth(IntPtr sim,byte[] dir,Vec3 destination);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_rebirth_flags(IntPtr sim);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_object_camera(IntPtr view,Vec3 camera);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern float ssbm_sim_charge_fraction(IntPtr sim);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_entry_control(IntPtr sim,uint kind);

@@ -45,6 +45,7 @@ static class Program
         }
         var host=new Native.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
         PresentationRegressions(assets,in host);
+        RebirthRegressions(assets,in host);
         foreach(int fps in new[]{30,60,144}) {
             var dash=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(dash!=IntPtr.Zero,Native.Error);
             try {
@@ -304,5 +305,42 @@ static class Program
         try {Native.ssbm_projectile_lifetime(shot,0);for(int i=0;i<600;i++)Native.ssbm_projectile_step(shot,1.0/60,default,0);Native.ssbm_projectile_state(shot,out var state);Check((state.flags&2)==0&&state.position.z>1000,"RoR2 charge shot still expires at short source range");Check(Math.Abs(state.position.y/state.position.z-0.75f)<0.001f,"charge shot changed aimed pitch");}
         finally {Native.ssbm_projectile_free(shot);}
         Console.WriteLine("PASS: visible Screw Attack, source grapple geometry/contact, directional throw release, Interact-gated figurine at 30/60/144 Hz, and long aimed charge-shot travel");
+    }
+    static void RebirthRegressions(string assets,in Native.Host host)
+    {
+        foreach(int fps in new[]{30,60,144}) {
+            ulong automatic=0,movement=0;
+            foreach(bool move in new[]{false,true}) {
+                var sim=Native.ssbm_sim_new(NativeLib.CString(assets),new Native.Vec3(0,-200,0));Check(sim!=IntPtr.Zero,Native.Error);
+                var view=Native.ssbm_view_new(NativeLib.CString(assets),0);Check(view!=IntPtr.Zero,Native.Error);
+                try {
+                    Check(Native.ssbm_sim_begin_rebirth(sim,NativeLib.CString(assets),default)==1,Native.Error);
+                    Check(Native.ssbm_sim_begin_rebirth(sim,NativeLib.CString(assets),default)==0,"duplicate falloff restarted KO");
+                    var pad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=15};int ko=0,transform=0;bool figurine=false,protectedState=false,koPcm=false,flashOn=false,flashOff=false;
+                    var pcm=new float[1024];var overlay=new float[4];
+                    for(int f=0;f<fps*10;f++) {
+                        uint before=Native.ssbm_sim_rebirth_flags(sim);pad.movement=move&&(before&8)!=0?new Native.Vec3(0,0,1):default;
+                        Native.ssbm_sim_step(sim,in host,in pad,1.0/fps);uint flags=Native.ssbm_sim_rebirth_flags(sim);
+                        uint n=Native.ssbm_sim_gfx(sim,null,0);var cues=new Native.Event[n];Check(Native.ssbm_sim_gfx(sim,cues,n)==n,Native.Error);
+                        foreach(var cue in cues){if(cue.kind==0x42b){ko++;Check(Math.Abs(cue.position.y+200)<.001f,"KO cue moved to respawn point");Check(Native.ssbm_effect_target(cue.kind)==-26,"original KO model not dispatched");}if(cue.kind==0x43e)transform++;}
+                        Check(Native.ssbm_sim_audio(sim,pcm,512)==512,Native.Error);if((flags&4)!=0)foreach(float v in pcm)koPcm|=Math.Abs(v)>.00001f;
+                        if((flags&4)!=0||(flags&8)!=0) {
+                            Check(Native.ssbm_view_update(view,sim,1f/fps)==1,Native.Error);var ptr=Native.ssbm_view_positions(view,out uint vertices);var positions=new float[vertices*3];Marshal.Copy(ptr,positions,0,positions.Length);bool visible=false;foreach(float v in positions)visible|=Math.Abs(v)>.001f;
+                            Check(visible==((flags&8)!=0),"fighter visibility wrong during KO/figurine");
+                        }
+                        figurine|=(flags&8)!=0;
+                        if(flags==2) {
+                            if(!protectedState){Native.ssbm_sim_state(sim,out var state);if(move)movement=state.frame;else automatic=state.frame;Native.ssbm_sim_place(sim,state.position,2);Check(Native.ssbm_sim_rebirth_flags(sim)==2,"collision correction cancelled protection");}
+                            protectedState=true;bool visible=Native.ssbm_sim_overlay(sim,overlay)==1;flashOn|=visible;flashOff|=!visible;
+                            Native.ssbm_sim_hurt(sim);
+                        }
+                    }
+                    Check(ko==1&&transform==1&&figurine&&protectedState&&koPcm&&flashOn&&flashOff,"missing/duplicate recovery cues, PCM, figurine, protection or flash at "+fps);
+                    Check(Native.ssbm_sim_rebirth_flags(sim)==0&&Native.ssbm_sim_entry_control(sim,2)==0,"respawn/protection failed to expire");
+                }finally{Native.ssbm_view_free(view);Native.ssbm_sim_free(sim);}
+            }
+            Check(movement<automatic,"movement did not release the figurine earlier than timeout");
+        }
+        Console.WriteLine("PASS: common Melee KO model/PCM, hidden KO, visible figurine, movement/timeout release, source flash and expiring protection at 30/60/144 FPS");
     }
 }
