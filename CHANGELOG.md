@@ -8,7 +8,9 @@
 - NativeSkills charges, NativeHit damage/procs/credit, extra jumps from Hopoo Feathers,
   movement/jump stat scaling, crowd-control interruption and ballistic jump-pad flights.
 - Pink, black, green and lavender costume unlocks after stage 1/2/3/4 teleporter events.
-- First-run local disc extraction, version/struct checks, native .NET harness and package audit.
+- C#-driven first-run disc extraction through ssbm.dll, version/struct checks,
+  native .NET harness and package audit. Release contains DLLs, docs and checksum
+  manifest only; standalone development extractors and setup scripts are excluded.
 
 Unverified in RoR2. Sound, original hitboxes/timing/projectiles/material effects, grabs/throws,
 ledge mechanics, percent/stock HUD and multiplayer are not implemented. Basic damage effects

@@ -12,11 +12,10 @@ animation and tuning are extracted locally. Never share your assets folder.
 
 Install the ZIP into your RoR2 DLC4 folder with BepInEx 5 installed. Launch once
 to create `BepInEx/config/com.libssbm.samus.cfg`, then set `Paths.Disc` to your
-Melee disc image and restart. Alternatively, before launching, run:
-
-```powershell
-.\setup-assets.ps1 -Disc 'C:\path\to\Melee.ciso'
-```
+Melee disc image and restart. The C# plugin calls the extractor inside `ssbm.dll`
+on a worker thread, builds its local `assets/` cache, and uses that cache on later
+launches. This is the same first-run strategy as Mario and Olimar; no external
+extractor or setup script is needed or included.
 
 The plugin searches nearby folders and `SSBM_DISC` when Paths.Disc is empty.
 Extraction runs on a worker thread. A missing DLL, invalid ABI or failed asset
@@ -45,7 +44,10 @@ costumes unlock persistently after stage 1, 2, 3 and 4 teleporter events as Samu
 
 Build from this workspace with `./build.ps1`; `-Deploy` explicitly installs the
 two built DLLs and a local assets path into RoR2Dir. Default builds only the ZIP.
-The release ZIP has an explicit file allowlist and contains no Nintendo/game data.
+The release ZIP contains only Samus.dll, ssbm.dll, README.md, CHANGELOG.md and the
+checksum manifest release.json. Its explicit allowlist excludes executables,
+setup scripts, extracted assets and Nintendo/game data. A clean build needs no
+disc or asset cache; asset-dependent harness checks skip when the cache is absent.
 
 Verification completed: matching Melee decomp rebuild; Rust behavior/parser/ABI
 tests; five costumes and all clip transforms; rendered viewer inspection; real

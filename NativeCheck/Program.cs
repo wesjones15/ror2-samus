@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Ror2Common;
 using Samus;
 
@@ -17,7 +18,26 @@ static class Program
     {
         string dll=Path.GetFullPath(args.Length>0?args[0]:"../../libssbm/target/release/ssbm.dll");
         string assets=Path.GetFullPath(args.Length>1?args[1]:"../../libssbm/assets");
-        Native.Load(dll); Check(Native.ssbm_assets_complete(NativeLib.CString(assets))==1,"assets incomplete");
+        Native.Load(dll);
+        if(args.Length>2) {
+            // Exercise the release route: C# worker -> P/Invoke -> native DLL,
+            // starting without a cache. No extractor EXE or shell script is used.
+            Check(!Directory.Exists(assets),"first-run check requires a fresh cache path");
+            string disc=Path.GetFullPath(args[2]),failure=null;
+            var worker=new Thread(()=> {
+                try {
+                    if(Native.ssbm_extract(NativeLib.CString(disc),NativeLib.CString(assets))!=1) failure=Native.Error;
+                    else if(Native.ssbm_assets_complete(NativeLib.CString(assets))!=1) failure="DLL extraction left an incomplete cache";
+                }catch(Exception e){failure=e.ToString();}
+            }) { IsBackground=true,Name="Samus first-run check" };
+            worker.Start();Check(worker.Join(30000),"first-run extraction timed out");Check(failure==null,failure);
+            Console.WriteLine("PASS: first-run extraction on a C# worker through ssbm.dll, with no external tools");
+        }
+        if(Native.ssbm_assets_complete(NativeLib.CString(assets))!=1) {
+            // Clean release builds, like Mario/Olimar, need neither a disc nor a cache.
+            Console.WriteLine("PASS: ABI + 11 layouts; SKIP: asset-dependent checks (no complete local cache)");
+            return;
+        }
         var host=new Native.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
         var sim=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,Native.Error);
         IntPtr view=IntPtr.Zero;

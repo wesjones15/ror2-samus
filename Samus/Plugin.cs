@@ -44,7 +44,9 @@ namespace Samus
                     try {
                         if(image==null) throw new FileNotFoundException("Set Paths.Disc to your Melee GALE01 rev 2 disc image.");
                         if(Native.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir))!=1) throw new IOException(Native.Error);
-                        AssetsReady=true;Log.LogInfo("Samus assets extracted from your disc.");
+                        AssetsReady=Native.ssbm_assets_complete(NativeLib.CString(AssetsDir))==1;
+                        if(!AssetsReady) throw new IOException("Extraction finished without a complete Samus cache. Set Paths.Disc and restart to retry.");
+                        Log.LogInfo("Samus assets extracted from your disc.");
                     } catch(Exception e) { Log.LogError("Samus assets unavailable: "+e.Message); }
                     finally { AssetsBusy=false; }
                 }) { IsBackground=true,Name="Samus first-run extraction" }.Start();

@@ -2,6 +2,9 @@
 
 - Follow ../CLAUDE.md and ../libssbm/CLAUDE.md: reimplement from decomp; cite it;
   no Nintendo data in Git/packages. First-run extraction from the player's disc.
+- Match Mario/Olimar: the C# plugin invokes native DLL extraction on a worker.
+  Release packages contain only mod DLLs, docs and a checksum manifest; no
+  extractor executables or setup scripts. CLI extractors stay development-only.
 - Rust owns fighter behavior. C# owns Unity/RoR2 world, item/skill adaptation,
   input bindings and unit conversion. No Unity types in libssbm.
 - Use gc2ror2 MCP common_library/find_recipe before inventing shared mechanisms.

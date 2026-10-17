@@ -16,11 +16,20 @@
   I386/ILOnly with Required32Bit, while Samus is I386/ILOnly without Required32Bit.
   Compatibility with the game's Mono loader has not been verified in-game; the
   game/BepInEx assemblies were not modified to suppress this warning.
-- Packaged setup/extractor ran against the user's disc into an ignored empty
-  cache. All eight output files match gc2ror2 MCP extraction by SHA-256.
-- Release ZIP allowlist audited: Samus.dll, ssbm.dll, ssbm-extract.exe,
-  setup-assets.ps1, README.md and CHANGELOG.md only; no game/disc data.
-- gc2ror2's 39 tests pass after nested decomp discovery and Samus workspace reporting.
+- C# NativeCheck extracted the user's disc into an ignored empty cache on a
+  worker through ssbm.dll, without an external tool. A second invocation reused
+  that cache with no disc argument. A missing-cache invocation passed ABI checks
+  and skipped asset-dependent checks, so clean builds need no disc or cache.
+- Release packaging allows only Samus.dll, ssbm.dll, README.md, CHANGELOG.md and
+  release.json. The build removes the two obsolete helpers from previous staging
+  output, rejects unexpected files and writes an external ZIP checksum.
+- gc2ror2's 15 server/protocol/guide tests pass after the DLL-first release policy
+  update, including policy checks on initialization, prompts, plans and guides.
+
+The user's D: Steam installation logs confirm plugin loading, survivor
+registration and portrait rendering. Both 2026-10-16 startup attempts reached
+Steamworks initialization; the reported startup dialog remains under diagnosis.
+This does not establish successful startup or gameplay compatibility.
 
 RoR2 runtime, skin selection/unlocks and world/item/combat behavior require the
 offline playtest matrix in README. The ZIP has been built, not deployed into the

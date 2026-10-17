@@ -11,32 +11,54 @@ if(!(Test-Path -LiteralPath (Join-Path $gameRoot 'Risk of Rain 2_Data\Managed\Ro
 Push-Location $libraryRoot
 try {
     if(!$SkipTests) { & cargo test --workspace --offline; if($LASTEXITCODE) { throw 'libssbm tests failed.' } }
-    & cargo build -p libssbm-ffi -p libssbm-assets --release --offline
+    # The extractor is part of ssbm.dll. CLI tools are development-only.
+    & cargo build -p libssbm-ffi --release --offline
     if($LASTEXITCODE) { throw 'Native build failed.' }
 } finally { Pop-Location }
 & dotnet build (Join-Path $repoRoot 'Samus\Samus.csproj') -c Release "-p:RoR2Dir=$gameRoot" --ignore-failed-sources
 if($LASTEXITCODE) { throw 'Samus plugin build failed.' }
 if(!$SkipTests) {
     & dotnet run --project (Join-Path $repoRoot 'NativeCheck') -c Release -- (Join-Path $libraryRoot 'target\release\ssbm.dll') (Join-Path $libraryRoot 'assets')
-    if($LASTEXITCODE) { throw 'Native C# boundary check failed; extract your disc to libssbm/assets first.' }
+    if($LASTEXITCODE) { throw 'Native C# boundary check failed.' }
 }
 $name='Samus-modern-0.1.0-win-x64'
 $packageRoot=Join-Path $repoRoot ('dist\'+$name)
 $pluginRoot=Join-Path $packageRoot 'BepInEx\plugins\MeleeSamus'
+$distRoot=[IO.Path]::GetFullPath((Join-Path $repoRoot 'dist'))
+if(![IO.Path]::GetFullPath($packageRoot).StartsWith($distRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) { throw 'Package path is outside dist.' }
+# Remove only the obsolete helpers from previous local builds of this package.
+# Never recursively clean a package/cache or touch an installed user's assets.
+foreach($obsolete in @('ssbm-extract.exe','setup-assets.ps1')) {
+    $obsoletePath=Join-Path $packageRoot $obsolete
+    if(Test-Path -LiteralPath $obsoletePath -PathType Leaf) { Remove-Item -LiteralPath $obsoletePath }
+}
 New-Item -ItemType Directory -Force -Path $pluginRoot | Out-Null
 # Explicit source allowlist: no assets, ROM/disc files, game DLLs or local path hints.
 Copy-Item -LiteralPath (Join-Path $repoRoot 'Samus\bin\Release\netstandard2.1\Samus.dll') -Destination $pluginRoot
 Copy-Item -LiteralPath (Join-Path $libraryRoot 'target\release\ssbm.dll') -Destination $pluginRoot
 Copy-Item -LiteralPath (Join-Path $repoRoot 'README.md'),(Join-Path $repoRoot 'CHANGELOG.md') -Destination $packageRoot
-Copy-Item -LiteralPath (Join-Path $libraryRoot 'target\release\ssbm-extract.exe') -Destination $packageRoot
-Copy-Item -LiteralPath (Join-Path $repoRoot 'setup-assets.ps1') -Destination $packageRoot
-$allowed=@('BepInEx/plugins/MeleeSamus/Samus.dll','BepInEx/plugins/MeleeSamus/ssbm.dll','README.md','CHANGELOG.md','ssbm-extract.exe','setup-assets.ps1')
+$payload=@('BepInEx/plugins/MeleeSamus/Samus.dll','BepInEx/plugins/MeleeSamus/ssbm.dll','README.md','CHANGELOG.md')
+$commits=[ordered]@{}
+foreach($source in @('libssbm','ror2-samus','ror2-common')) {
+    $commits[$source]=(& git -C (Join-Path $repoRoot ('..\'+$source)) rev-parse HEAD)
+    if($LASTEXITCODE) { throw "Cannot identify source revision: $source" }
+}
+$manifest=[ordered]@{
+    schema=1; character='Samus'; version='0.1.0'; nativeAbi=1; channel='modern'
+    game='Risk of Rain 2'; gameVersion='DLC4 (2026)'; unity='2021.3.45f2'; platform='win-x64'
+    sourceCommits=$commits
+    files=@($payload | ForEach-Object { [ordered]@{ path=$_; sha256=(Get-FileHash -LiteralPath (Join-Path $packageRoot $_) -Algorithm SHA256).Hash.ToLowerInvariant() } })
+}
+$manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $packageRoot 'release.json') -Encoding utf8
+$allowed=$payload+@('release.json')
 foreach($file in Get-ChildItem -LiteralPath $packageRoot -File -Recurse) {
     $relative=[IO.Path]::GetRelativePath($packageRoot,$file.FullName).Replace('\','/')
     if($allowed -notcontains $relative) { throw "Package contains unexpected file: $relative" }
 }
 $zip=Join-Path $repoRoot ('dist\'+$name+'.zip')
 Compress-Archive -Path (Join-Path $packageRoot '*') -DestinationPath $zip -Force
+$checksum=(Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+"$checksum  $name.zip" | Set-Content -LiteralPath ($zip+'.sha256') -Encoding ascii
 if($Deploy) {
     if(Get-Process -Name 'Risk of Rain 2' -ErrorAction SilentlyContinue) { throw 'Close Risk of Rain 2 before deploying DLLs.' }
     $destination=Join-Path $gameRoot 'BepInEx\plugins\MeleeSamus'
