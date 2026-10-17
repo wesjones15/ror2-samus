@@ -68,8 +68,24 @@ uses missiles; a quick directional flick selects a super missile. Up special is
 Screw Attack; down special drops a bomb. Flick direction + attack, hold, then
 release for a smash. Tap up/down + attack for vertical smashes. LB/RB take priority over LS for move selection. No bubble shield.
 
+With LS held above 0.3, camera pitch selects up attacks from 20 degrees above
+level and down attacks from 50 degrees below. This applies to RT and LT; LB/RB
+still force up/down independently of camera pitch. Neutral controls remain neutral,
+and captured throws retain raw LS axes. These selection bands are a 3D adaptation.
+
+Ordinary facing uses RoR2's real CharacterBody.shouldAim decision (aim vs movement,
+including sprint/alwaysAim rules) and CharacterDirection's turn smoothing. Attacks
+set the real aim timer; held ranged actions refresh it. Native movement keeps its
+own momentum. Authored dash/back-air/spin/grab/throw/entry/reaction headings stay
+fixed; other attacks follow the game's smooth turn. Melee assets do not provide
+vanilla upper-body aim or strafe blends. Charge shots use the camera-corrected live
+crosshair ray, ignoring the owner's colliders; nearby obstructions cannot aim the
+shot backwards into Samus. Unity playtest of these changes is pending.
+
 The first map spawn materializes Samus as a figure on the original entry platform.
 RoR2's vanilla Start prompt shows the bound Interact button (X on the pad). Press it to play the source transformation, burst and sound, then take control.
+Prompt binding retries if local control, authority or InteractionDriver becomes
+available after the initial body state enters.
 
 Falling off the map uses common map-zone/AnyDrop detection. The shared Melee
 sequence plays its original downward KO effect/sound, then returns Samus as a

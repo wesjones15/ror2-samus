@@ -38,14 +38,20 @@ namespace Samus
         public bool Arriving {get;set;}
         public bool ArrivalWaiting {get;private set;}
         float chargeFraction;
+        bool FacingLocked=>Arriving||Recovering||Native.ssbm_sim_facing_locked(sim)!=0;
+        void FaceTarget()
+        {
+            if(state.move_id>=20&&state.move_id<=22)MeleeAim.BeginAttack(body,direction,MeleeAim.CameraRay(body,input).direction);
+            MeleeAim.FacingTarget(body,direction,input?input.moveVector:Vector3.zero,MeleeAim.CameraRay(body,input).direction,FacingLocked,new Vector3(state.facing.x,0,state.facing.z));
+        }
         public void ReleaseArrival(){if(active&&ArrivalWaiting){ArrivalWaiting=false;Native.ssbm_sim_entry_control(sim,1);}}
         void Awake(){body=GetComponent<CharacterBody>();motor=GetComponent<CharacterMotor>();input=GetComponent<InputBankTest>();native=GetComponent<NativeBody>();direction=GetComponent<CharacterDirection>();}
         void Update()
         {
-            if(failed||!body)return;pad.Read(body,input,Grab?.Holding??false);
+            if(failed||!body)return;pad.Read(body,input,Grab?.Holding??false,MeleeAim.CameraRay(body,input).direction);
             if(body.healthComponent&&!body.healthComponent.alive){audio?.Dispose();return;}
             audio?.Update();
-            if(active) { smoother.Smooth();cameraPivot.Use(true); }
+            if(active) { smoother.Smooth();cameraPivot.Use(true);FaceTarget(); }
         }
         void FixedUpdate()
         {
@@ -84,6 +90,8 @@ namespace Samus
                 // scaling without applying RoR2's base sprint bonus a second time.
                 if(body.isSprinting)speedScale/=Mathf.Max(0.1f,body.sprintingSpeedMultiplier);
                 Native.ssbm_sim_tuning(sim,new Native.Tuning { speed_scale=speedScale,jump_scale=Plugin.JumpScale.Value*NativeBody.JumpScale(body),extra_jumps=extra,hold_charge=Plugin.HoldCharge.Value?1u:0u,smash_max_frames=60 });
+                FaceTarget();
+                if(direction){var facing=direction.forward;Native.ssbm_sim_facing(sim,new Native.Vec3(facing.x,0,facing.z));}
                 Native.ssbm_sim_step(sim,in host,in p,Time.fixedDeltaTime);
                 uint previousRecovery=recoveryFlags;recoveryFlags=Native.ssbm_sim_rebirth_flags(sim);
                 recovery?.Refresh();
@@ -121,7 +129,7 @@ namespace Samus
                 smoother.Stepped(feet+feetOffset);native.WroteVelocity(ToWorld(state.velocity)*60f);
                 motor.Motor.GroundingStatus.IsStableOnGround=state.grounded!=0;
                 motor.Motor.GroundingStatus.FoundAnyGround=state.grounded!=0;
-                if(direction)direction.moveVector=new Vector3(state.facing.x,0,state.facing.z);
+                FaceTarget();
             }catch(Exception e){Fallback(e.ToString());}
         }
         void StartSim()
@@ -235,6 +243,7 @@ namespace Samus
                 int slot=Skills.Slot(e.move_id);var skill=body.skillLocator.GetSkill(Skills.Slots[slot]);
                 bool own=skill.skillDef==Skills.Definitions[slot];permitDamage=NativeSkills.Spend(skill,Skills.Definitions[slot])&&own;
                 NativeBody.MarkCombat(body);
+                MeleeAim.BeginAttack(body,direction,MeleeAim.CameraRay(body,input).direction);
             } else if(e.kind==2&&permitDamage)Combat.Attack(body,e,scale);
             else if(e.kind==6)Grab?.Throw(e);
             else if(e.kind==3)native.Jumped();

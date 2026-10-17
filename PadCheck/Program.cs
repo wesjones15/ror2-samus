@@ -40,6 +40,8 @@ class Program{
         pad.Read(body,input,false);Check((pad.Take(15).buttons&128)==0,"B held across release must not instantly re-grab");
         device.b.value=false;pad.Read(body,input);pad.Take(15);device.b.value=true;pad.Read(body,input);device.b.value=false;pad.Read(body,input);Check((pad.Take(15).buttons&128)!=0,"short B press between fixed ticks was lost");
         user.isUIFocused=true;pad.Read(body,input);Check(pad.Take(15).buttons==0,"UI focus must clear gameplay presses");
+        user.isUIFocused=false;pad.Read(body,input,false,new UnityEngine.Vector3(0,.8f,.6f));var aimed=pad.Take(15);
+        Check(aimed.aim.y==.8f&&aimed.aim.z==.6f,"corrected camera aim was replaced by body aim");
         Console.WriteLine("PASS: B grab, capture/release edge suppression, raw throw axes, A/B remapping, shoulder priority, between-tick press and UI focus");
     }
 }

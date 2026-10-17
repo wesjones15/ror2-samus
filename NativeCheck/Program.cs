@@ -10,9 +10,10 @@ static class Program
     static readonly Native.CollideFn collide=Collide;
     static readonly Native.EventFn evt=Event;
     static int jumps, hits,throws;
+    static Native.Event lastShot;static int shotCount;
     static void Collide(IntPtr user,in Native.Vec3 from,in Native.Vec3 to,out Native.Collision result)
     { result=new Native.Collision { position=new Native.Vec3(to.x,Math.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
-    static void Event(IntPtr user,in Native.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++;if(e.kind==6)throws++; }
+    static void Event(IntPtr user,in Native.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++;if(e.kind==6)throws++;if(e.kind==2&&e.move_id==20){lastShot=e;shotCount++;} }
     static void Check(bool ok,string what) { if(!ok) throw new Exception(what); }
     static int Main(string[] args)
     {
@@ -46,6 +47,8 @@ static class Program
         var host=new Native.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
         PresentationRegressions(assets,in host);
         RebirthRegressions(assets,in host);
+        AimingRegressions(assets,in host);
+        jumps=hits=throws=0;
         foreach(int fps in new[]{30,60,144}) {
             var dash=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(dash!=IntPtr.Zero,Native.Error);
             try {
@@ -253,6 +256,44 @@ static class Program
             }
             Console.WriteLine("PASS: ABI 4 + 14 layouts, trophy entry, grid tile, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
         } finally { if(view!=IntPtr.Zero)Native.ssbm_view_free(view);Native.ssbm_sim_free(sim); }
+    }
+    static void AimingRegressions(string assets,in Native.Host host)
+    {
+        foreach(int fps in new[]{30,60,144}) {
+            foreach(var example in new[]{(pitch:.6f,button:2u,want:11u),(pitch:-.9f,button:2u,want:12u),(pitch:.6f,button:4u,want:23u),(pitch:-.9f,button:4u,want:24u),(pitch:.9f,button:2u|16u,want:12u)}) {
+                var sim=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,Native.Error);
+                try {
+                    var pad=new Native.Pad{aim=new Native.Vec3(0,example.pitch,(float)Math.Sqrt(1-example.pitch*example.pitch)),allowed=15};
+                    Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                    Native.ssbm_sim_facing(sim,new Native.Vec3(1,0,0));pad.movement=new Native.Vec3(0,0,1);
+                    pad.buttons=example.button;
+                    for(int i=0;i<Math.Max(1,fps/30);i++)Native.ssbm_sim_step(sim,in host,in pad,1.0/fps);
+                    Native.ssbm_sim_state(sim,out var state);Check(state.move_id==example.want,"camera directional selection through native DLL at "+fps);
+                } finally {Native.ssbm_sim_free(sim);}
+            }
+            var actor=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(actor!=IntPtr.Zero,Native.Error);
+            try {
+                var pad=new Native.Pad{aim=new Native.Vec3(0,0,1),movement=new Native.Vec3(0,0,-1),allowed=15};
+                Native.ssbm_sim_facing(actor,new Native.Vec3(0,0,1));
+                for(int i=0;i<fps/2;i++)Native.ssbm_sim_step(actor,in host,in pad,1.0/fps);
+                Native.ssbm_sim_state(actor,out var state);Check(state.facing.z>.999f&&state.velocity.z<0,"native yaw override changed backpedal momentum");
+                Native.ssbm_sim_place(actor,default,0);pad.movement=default;pad.buttons=4;
+                Native.ssbm_sim_step(actor,in host,in pad,1.0/60);pad.buttons=0;
+                for(int i=0;i<fps;i++)Native.ssbm_sim_step(actor,in host,in pad,1.0/fps);
+                Check(Native.ssbm_sim_charge_fraction(actor)>0,"aim test never charged");
+                pad.buttons=128;Native.ssbm_sim_step(actor,in host,in pad,1.0/60);pad.buttons=0;
+                for(int i=0;i<fps;i++)Native.ssbm_sim_step(actor,in host,in pad,1.0/fps);
+                int before=shotCount;pad.buttons=4;Native.ssbm_sim_step(actor,in host,in pad,1.0/60);pad.buttons=0;
+                for(int i=0;i<fps/2;i++)Native.ssbm_sim_step(actor,in host,in pad,1.0/fps);
+                pad.aim=new Native.Vec3(.8f,.6f,0);Native.ssbm_sim_facing(actor,new Native.Vec3(0,0,-1));
+                pad.buttons=4;Native.ssbm_sim_step(actor,in host,in pad,1.0/60);pad.buttons=0;
+                for(int i=0;i<fps;i++)Native.ssbm_sim_step(actor,in host,in pad,1.0/fps);
+                Check(shotCount==before+1&&Math.Abs(lastShot.direction.x-.8f)<.001f&&Math.Abs(lastShot.direction.y-.6f)<.001f,"stored shot used body heading/old camera snapshot");
+                Check(Native.ssbm_sim_facing_locked(actor)==0,"normal/ranged aim remains locked after completion");
+            } finally {Native.ssbm_sim_free(actor);}
+        }
+        Native.ssbm_sim_facing(IntPtr.Zero,default);Check(Native.ssbm_sim_facing_locked(IntPtr.Zero)==0,"null facing boundary");
+        Console.WriteLine("PASS: camera directional moves, independent host yaw/backpedal and stored-shot live aim through native DLL at 30/60/144 Hz");
     }
     static void PresentationRegressions(string assets,in Native.Host host)
     {

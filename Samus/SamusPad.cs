@@ -9,11 +9,11 @@ namespace Samus
         uint held,previous,pending,blocked;
         Vector3 move,aim;
         bool grabbing;
-        internal void Read(CharacterBody body,InputBankTest input,bool grabbing=false)
+        internal void Read(CharacterBody body,InputBankTest input,bool grabbing=false,Vector3? cameraAim=null)
         {
             if(this.grabbing!=grabbing){blocked=1|2|4|128;held=previous=pending=0;}this.grabbing=grabbing;
             LocalUser user=null;foreach(var u in LocalUserManager.readOnlyLocalUsersList)if(u.cachedBody==body){user=u;break;}
-            uint buttons=0;move=input?input.moveVector:Vector3.zero;aim=input?input.aimDirection:Vector3.forward;
+            uint buttons=0;move=input?input.moveVector:Vector3.zero;aim=cameraAim??(input?input.aimDirection:Vector3.forward);
             if(user!=null&&user.isUIFocused){held=previous=pending=0;move=Vector3.zero;return;}
             var last=user?.inputPlayer?.controllers.GetLastActiveController();
             var pad=last!=null&&last.type==ControllerType.Joystick&&last.ImplementsTemplate<IGamepadTemplate>()?last.GetTemplate<IGamepadTemplate>():null;

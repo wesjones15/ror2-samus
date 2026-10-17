@@ -1,3 +1,11 @@
+# 0.2.9 arrival interaction and vanilla facing/aim integration
+
+- Retry the vanilla Start interaction when local player control, authority or InteractionDriver arrives after state entry.
+- Use RoR2 CharacterBody.shouldAim and the actual CharacterDirection turn controller instead of forcing camera yaw. Keep movement independent and preserve authored heading locks.
+- LS-modified RT/LT attacks use camera pitch: up from +20 degrees, down from -50; LB/RB override, neutral inputs and captured throw axes remain intact.
+- Use RoR2's camera-corrected live crosshair ray for shots, ignoring owner colliders and preventing backwards convergence on near-camera obstructions.
+- Shared arrival/aim checks, core and native 30/60/144 FPS regressions; Unity playtest pending.
+
 # 0.2.8 shared Melee falloff recovery
 
 - Keep common map-zone/AnyDrop thresholds and safe-ground placement; falloff now plays the original Melee downward KO model and sound before figurine return.

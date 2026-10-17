@@ -18,9 +18,7 @@ namespace Samus
             if(e.move_id!=24&&body.inputBank) {
                 // Converge the cannon on the live crosshair rather than the
                 // aim snapshot captured before several seconds of charging.
-                var ray=body.inputBank.GetAimRay();
-                var point=Physics.Raycast(ray,out var hit,Mathf.Infinity,WorldProbe.Mask|LayerIndex.entityPrecise.mask,QueryTriggerInteraction.Ignore)?hit.point:ray.origin+ray.direction*10000f;
-                aim=(point-origin).normalized;
+                aim=MeleeAim.ProjectileDirection(body,origin,MeleeAim.CameraRay(body,body.inputBank));
             }
             switch(e.move_id) {
                 case 20: Shot.Spawn(body,origin,aim,1,(uint)Mathf.Clamp(Mathf.RoundToInt(e.strength*7)+1,1,8),e.strength,scale);break;
