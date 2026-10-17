@@ -1,3 +1,10 @@
+# 0.2.10 automatic arrival and earlier falloff
+
+- Initial spawn enters the same native figurine return as falloff recovery, skipping the KO and removing the X/Start prompt. Movement after the minimum arrival or the source timeout triggers transformation and flashing protection.
+- Begin falloff KO/recovery at Mario's TOO BAD onset: >20m below remembered safe ground with no floor within 2000m, or a valid stage return zone. Preserve descents onto lower terrain.
+- Share the early-void predicate with Mario and Olimar; keep their own initial arrival sequences intact.
+- Core/native initial and falloff return checks pass at 30/60/144 FPS; common checks cover the threshold, lower terrain, zones and protection ownership. Unity playtest pending.
+
 # 0.2.9 arrival interaction and vanilla facing/aim integration
 
 - Retry the vanilla Start interaction when local player control, authority or InteractionDriver arrives after state entry.

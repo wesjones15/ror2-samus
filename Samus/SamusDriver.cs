@@ -36,7 +36,6 @@ namespace Samus
         internal float Units=>scale;
         internal SamusGrab Grab {get;private set;}
         public bool Arriving {get;set;}
-        public bool ArrivalWaiting {get;private set;}
         float chargeFraction;
         bool FacingLocked=>Arriving||Recovering||Native.ssbm_sim_facing_locked(sim)!=0;
         void FaceTarget()
@@ -44,7 +43,6 @@ namespace Samus
             if(state.move_id>=20&&state.move_id<=22)MeleeAim.BeginAttack(body,direction,MeleeAim.CameraRay(body,input).direction);
             MeleeAim.FacingTarget(body,direction,input?input.moveVector:Vector3.zero,MeleeAim.CameraRay(body,input).direction,FacingLocked,new Vector3(state.facing.x,0,state.facing.z));
         }
-        public void ReleaseArrival(){if(active&&ArrivalWaiting){ArrivalWaiting=false;Native.ssbm_sim_entry_control(sim,1);}}
         void Awake(){body=GetComponent<CharacterBody>();motor=GetComponent<CharacterMotor>();input=GetComponent<InputBankTest>();native=GetComponent<NativeBody>();direction=GetComponent<CharacterDirection>();}
         void Update()
         {
@@ -95,7 +93,7 @@ namespace Samus
                 Native.ssbm_sim_step(sim,in host,in p,Time.fixedDeltaTime);
                 uint previousRecovery=recoveryFlags;recoveryFlags=Native.ssbm_sim_rebirth_flags(sim);
                 recovery?.Refresh();
-                if(Arriving&&!ArrivalWaiting&&Native.ssbm_sim_entry_control(sim,2)==0)Arriving=false;
+                if(Arriving&&!Recovering)Arriving=false;
                 Grab?.AfterStep(Time.fixedDeltaTime);
                 Present(()=>Effects?.Step(sim,Time.fixedDeltaTime));
                 Present(()=>Particles?.Step(Time.fixedDeltaTime));
@@ -147,12 +145,12 @@ namespace Samus
             Effects=new MeleeEffects(Particles,scale);
             Grab=new SamusGrab(this,body);
             entryPlatform=SamusView.EntryPlatform();
-            if(Native.ssbm_sim_begin_entry(sim,NativeLib.CString(Plugin.AssetsDir))!=1)throw new InvalidOperationException(Native.Error);
-            if(Arriving){Native.ssbm_sim_entry_control(sim,0);ArrivalWaiting=true;}
+            if(Native.ssbm_sim_begin_arrival(sim,NativeLib.CString(Plugin.AssetsDir))!=1)throw new InvalidOperationException(Native.Error);
+            recoveryFlags=Native.ssbm_sim_rebirth_flags(sim);recovery?.Refresh();
             host=new Native.Host { user=GCHandle.ToIntPtr(self),collide=Marshal.GetFunctionPointerForDelegate(collideFn),evt=Marshal.GetFunctionPointerForDelegate(eventFn) };
             WorldProbe.UseBodyCollision(motor,gameObject);motor.Motor.enabled=false;
             smoother=new StepSmoother(transform);cameraPivot=new CameraPivot(body);cameraPivot.Use(true);active=true;
-            unstuck.Reset();wallGuard.Placed(safe);
+            unstuck.Reset();unstuck.Step(safe,false,true,false,0.25f,1.8f,RecoveryGround,out _);wallGuard.Placed(safe);
             Plugin.Log.LogInfo("Samus sim started with costume "+body.skinIndex);
         }
         void LateUpdate()
@@ -180,7 +178,7 @@ namespace Samus
         void OnGUI()
         {
             if(!active||failed||!body||!body.isPlayerControlled||!body.hasEffectiveAuthority||!body.healthComponent.alive)return;
-            if(!ArrivalWaiting&&chargeFraction>0) {
+            if(!Arriving&&chargeFraction>0) {
                 string label=(state.phase==4?"Charging":"Stored Charge Shot")+": "+Mathf.RoundToInt(chargeFraction*100)+"%";
                 if(chargeFraction>=1)label="Charge Shot ready";
                 GUI.Box(new Rect(Screen.width/2f-110,Screen.height-130,220,30),label);
@@ -198,7 +196,7 @@ namespace Samus
             if(!active||Recovering)return;
             Grab?.Dispose();Grab=new SamusGrab(this,body);
             Effects?.Dispose();Particles?.Dispose();Particles=new DiscParticles(scale);Effects=new MeleeEffects(Particles,scale);
-            permitDamage=false;ArrivalWaiting=false;
+            permitDamage=false;
             if(Native.ssbm_sim_begin_rebirth(sim,NativeLib.CString(Plugin.AssetsDir),ToSim(safeFeet))!=1)throw new InvalidOperationException("Melee fall recovery: "+Native.Error);
             recoveryFlags=Native.ssbm_sim_rebirth_flags(sim);
         }
@@ -263,7 +261,7 @@ namespace Samus
         }
         void Cleanup()
         {
-            Arriving=false;ArrivalWaiting=false;recoveryFlags=0;recovery?.Refresh();
+            Arriving=false;recoveryFlags=0;recovery?.Refresh();
             active=false;cameraPivot?.Use(false);view?.Dispose();view=null;
             entryPlatform?.Dispose();entryPlatform=null;
             audio?.Dispose();audio=null;

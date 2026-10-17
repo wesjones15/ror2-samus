@@ -83,17 +83,22 @@ crosshair ray, ignoring the owner's colliders; nearby obstructions cannot aim th
 shot backwards into Samus. Unity playtest of these changes is pending.
 
 The first map spawn materializes Samus as a figure on the original entry platform.
-RoR2's vanilla Start prompt shows the bound Interact button (X on the pad). Press it to play the source transformation, burst and sound, then take control.
-Prompt binding retries if local control, authority or InteractionDriver becomes
-available after the initial body state enters.
+It enters the same automatic figurine phase as falloff recovery, skipping the KO.
+After the one-second minimum, movement transforms early; otherwise the source
+four-second wait expires. The source transformation, burst, sound and two seconds
+of flashing protection follow. There is no X/Interact prompt or indefinite wait.
 
-Falling off the map uses common map-zone/AnyDrop detection. The shared Melee
+Falling off the map uses common FellEarly detection at Mario's TOO BAD onset:
+more than 20 metres below last safe ground with no landing surface within 2000
+metres below, or a valid stage return zone. Long descents onto lower platforms
+remain possible. The shared Melee
 sequence plays its original downward KO effect/sound, then returns Samus as a
 figurine on verified safe ground. After a one-second minimum return phase, move
 to transform early or wait up to four more seconds. The source entry burst and
 sound play once; two seconds of source flashing/invulnerability follow release.
-This preserves RoR2 health and does not add stocks. Initial Start arrival and
-ordinary wall/unstuck correction remain separate. In-game verification is pending.
+This preserves RoR2 health and does not add stocks. Initial arrival shares the
+same return phase; ordinary wall/unstuck correction stays immediate. In-game
+verification is pending.
 The shared MeleeArrival state replaces the vanilla pod. Ground B grabs; air B uses
 the Z-air hitbox. Captured enemies enable Melee-style LS axes and A/B pummel or throws.
 RoR2 capture stops on interruption, death, release or an eight-second timeout; player

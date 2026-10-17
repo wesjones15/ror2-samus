@@ -25,12 +25,16 @@ if($LASTEXITCODE) { throw 'Samus startup boundary check failed.' }
 if(!$SkipTests) {
     & dotnet run --project (Join-Path $commonRoot 'tests\MeleeHostCheck') -c Release
     if($LASTEXITCODE) { throw 'Shared Melee arrival/camera checks failed.' }
+    & dotnet run --project (Join-Path $commonRoot 'tests\UnstuckCheck') -c Release
+    if($LASTEXITCODE) { throw 'Shared early-void checks failed.' }
+    & dotnet run --project (Join-Path $commonRoot 'tests\MeleeRecoveryCheck') -c Release
+    if($LASTEXITCODE) { throw 'Shared Melee recovery checks failed.' }
     & dotnet run --project (Join-Path $repoRoot 'PadCheck') -c Release
     if($LASTEXITCODE) { throw 'Samus input checks failed.' }
     & dotnet run --project (Join-Path $repoRoot 'NativeCheck') -c Release -- (Join-Path $libraryRoot 'target\release\ssbm.dll') (Join-Path $libraryRoot 'assets')
     if($LASTEXITCODE) { throw 'Native C# boundary check failed.' }
 }
-$name='Samus-modern-0.2.9-win-x64'
+$name='Samus-modern-0.2.10-win-x64'
 $packageRoot=Join-Path $repoRoot ('dist\'+$name)
 $pluginRoot=Join-Path $packageRoot 'BepInEx\plugins\MeleeSamus'
 $distRoot=[IO.Path]::GetFullPath((Join-Path $repoRoot 'dist'))
@@ -53,7 +57,7 @@ foreach($source in @('libssbm','ror2-samus','ror2-common')) {
     if($LASTEXITCODE) { throw "Cannot identify source revision: $source" }
 }
 $manifest=[ordered]@{
-    schema=1; character='Samus'; version='0.2.9'; nativeAbi=4; channel='modern'
+    schema=1; character='Samus'; version='0.2.10'; nativeAbi=4; channel='modern'
     game='Risk of Rain 2'; gameVersion='DLC4 (2026)'; unity='2021.3.45f2'; platform='win-x64'
     sourceCommits=$commits
     files=@($payload | ForEach-Object { [ordered]@{ path=$_; sha256=(Get-FileHash -LiteralPath (Join-Path $packageRoot $_) -Algorithm SHA256).Hash.ToLowerInvariant() } })

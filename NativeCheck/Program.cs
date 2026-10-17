@@ -345,17 +345,18 @@ static class Program
         var shot=Native.ssbm_projectile_new(NativeLib.CString(assets),1,8,1,new Native.Vec3(0,0.6f,0.8f));Check(shot!=IntPtr.Zero,Native.Error);
         try {Native.ssbm_projectile_lifetime(shot,0);for(int i=0;i<600;i++)Native.ssbm_projectile_step(shot,1.0/60,default,0);Native.ssbm_projectile_state(shot,out var state);Check((state.flags&2)==0&&state.position.z>1000,"RoR2 charge shot still expires at short source range");Check(Math.Abs(state.position.y/state.position.z-0.75f)<0.001f,"charge shot changed aimed pitch");}
         finally {Native.ssbm_projectile_free(shot);}
-        Console.WriteLine("PASS: visible Screw Attack, source grapple geometry/contact, directional throw release, Interact-gated figurine at 30/60/144 Hz, and long aimed charge-shot travel");
+        Console.WriteLine("PASS: visible Screw Attack, source grapple geometry/contact, directional throw release, manual entry controls and long aimed charge-shot travel");
     }
     static void RebirthRegressions(string assets,in Native.Host host)
     {
-        foreach(int fps in new[]{30,60,144}) {
+        foreach(int fps in new[]{30,60,144}) foreach(bool initial in new[]{false,true}) {
             ulong automatic=0,movement=0;
             foreach(bool move in new[]{false,true}) {
-                var sim=Native.ssbm_sim_new(NativeLib.CString(assets),new Native.Vec3(0,-200,0));Check(sim!=IntPtr.Zero,Native.Error);
+                var sim=Native.ssbm_sim_new(NativeLib.CString(assets),new Native.Vec3(0,initial?0:-200,0));Check(sim!=IntPtr.Zero,Native.Error);
                 var view=Native.ssbm_view_new(NativeLib.CString(assets),0);Check(view!=IntPtr.Zero,Native.Error);
                 try {
-                    Check(Native.ssbm_sim_begin_rebirth(sim,NativeLib.CString(assets),default)==1,Native.Error);
+                    Check((initial?Native.ssbm_sim_begin_arrival(sim,NativeLib.CString(assets)):Native.ssbm_sim_begin_rebirth(sim,NativeLib.CString(assets),default))==1,Native.Error);
+                    if(initial)Check((Native.ssbm_sim_rebirth_flags(sim)&12)==8,"initial arrival did not start as a visible figurine");
                     Check(Native.ssbm_sim_begin_rebirth(sim,NativeLib.CString(assets),default)==0,"duplicate falloff restarted KO");
                     var pad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=15};int ko=0,transform=0;bool figurine=false,protectedState=false,koPcm=false,flashOn=false,flashOff=false;
                     var pcm=new float[1024];var overlay=new float[4];
@@ -376,12 +377,12 @@ static class Program
                             Native.ssbm_sim_hurt(sim);
                         }
                     }
-                    Check(ko==1&&transform==1&&figurine&&protectedState&&koPcm&&flashOn&&flashOff,"missing/duplicate recovery cues, PCM, figurine, protection or flash at "+fps);
+                    Check(ko==(initial?0:1)&&transform==1&&figurine&&protectedState&&(initial||koPcm)&&flashOn&&flashOff,"missing/duplicate recovery cues, PCM, figurine, protection or flash at "+fps+" initial="+initial);
                     Check(Native.ssbm_sim_rebirth_flags(sim)==0&&Native.ssbm_sim_entry_control(sim,2)==0,"respawn/protection failed to expire");
                 }finally{Native.ssbm_view_free(view);Native.ssbm_sim_free(sim);}
             }
             Check(movement<automatic,"movement did not release the figurine earlier than timeout");
         }
-        Console.WriteLine("PASS: common Melee KO model/PCM, hidden KO, visible figurine, movement/timeout release, source flash and expiring protection at 30/60/144 FPS");
+        Console.WriteLine("PASS: shared initial/falloff return, initial spawn without KO or Interact, fall KO model/PCM, visible figurine, movement/timeout release, flash and expiring protection at 30/60/144 FPS");
     }
 }
