@@ -1,3 +1,15 @@
+# 0.2.5 presentation and controls
+
+- Fix UV-pair transfer, source alpha/blending, texture matrices/mirror wrapping and camera-facing joints so Screw Attack and the complete Charge Shot orb render their source geometry.
+- Character select plays up-B once, settles to animated idle, and replays on reselection.
+- Remove the firing voice on full-charge storage; add source full-charge pulse and stored-charge HUD indicator.
+- Aim ranged attacks at the live crosshair and remove Charge Shot's short offscreen lifetime for RoR2.
+- Add elemental projectile hit feedback alongside melee hit feedback.
+- Replace the first map's pod with a shared Interact-gated figure/platform arrival and original transformation cues.
+- B grabs on the ground and Z-airs in the air. While holding an enemy, raw LS + A/B selects source throws; neutral A/B pummels. Shoulder modifiers override LS.
+- Decode source grapple links and animated throw accessory instances. Enemy capture/AI restoration lives in common.
+- Native, real-disc and C# boundary tests pass; Unity playtest remains pending. Full TEV/animated texture fidelity, constrained tether/ledge physics and Melee escape/percent rules remain incomplete.
+
 # 0.2.4 startup compatibility patch
 
 - Remove Samus's Steam constructor/initialization diagnostic hooks entirely.

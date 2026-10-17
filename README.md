@@ -10,12 +10,12 @@ character-specific; the gameplay state machine is not yet a generic fighter API.
 See the sibling `libssbm/docs/reuse.md` for the ownership and remaining split.
 
 Character select plays up-B (LB+B), using the shared Melee selection rule and the
-attack's original animation, effects and sounds. Samus repeats Screw Attack with
-a brief idle between plays, on the UI clock. The preview stays at the mannequin's
+attack's original animation, effects and sounds. Samus plays Screw Attack once,
+then returns to an animated idle on the UI clock. The preview stays at the mannequin's
 origin. The icon uses Samus's original 64x56 CSS grid tile from MnSlChr.usd,
 with its palette and aspect ratio preserved. The shared
 portrait queue installs this texture after extraction; no 3D icon capture is used.
-Selection audio stops between repeats and on deselection.
+Selection audio stops when the intro completes and on deselection.
 
 Status: incomplete; Rust viewer visually checked and native C# boundary tested.
 The user successfully started single player as Samus with the diagnostic build,
@@ -56,14 +56,30 @@ load logs an error; an initialized body that fails returns to Commando behavior.
 | Up / down modifier | LB / RB | Utility / special bindings |
 | Jump / short hop | A, tap during jump squat | Jump |
 | Sprint | LS click | Sprint |
-| Store Charge Shot | B or jump | C or jump |
+| Grab / aerial Z-air | B | C |
+| Store Charge Shot while charging | B or jump | C or jump |
+| Throw a captured enemy | LS direction + A or B (RT/LT also work) | WASD + primary/secondary |
+| Pummel a captured enemy | Neutral A or B | Neutral primary/secondary |
 | Interact / equipment | X / Y | RoR2 bindings |
 
 Neutral special starts charging, another press fires, and jump/cancel stores the
 charge. `Controls.HoldCharge` optionally changes this to hold/release. Side special
 uses missiles; a quick directional flick selects a super missile. Up special is
 Screw Attack; down special drops a bomb. Flick direction + attack, hold, then
-release for a smash. Tap up/down + attack for vertical smashes. No bubble shield.
+release for a smash. Tap up/down + attack for vertical smashes. LB/RB take priority over LS for move selection. No bubble shield.
+
+The first map spawn materializes Samus as a figure on the original entry platform.
+Press Interact (X) to play the source transformation, burst and sound, then take control.
+The shared MeleeArrival state replaces the vanilla pod. Ground B grabs; air B uses
+the Z-air hitbox. Captured enemies enable Melee-style LS axes and A/B pummel or throws.
+RoR2 capture stops on interruption, death, release or an eight-second timeout; player
+bodies and stationary encounter objects are excluded. Constrained tether/ledge physics
+and Melee escape/percent knockback rules remain incomplete.
+
+Stored Charge Shot shows a HUD indicator; full charge also uses the original white
+colour pulse. Firing aims from the cannon at the live crosshair and travels until
+collision without the source offscreen timeout. Charge article size and opacity use
+disc values. Melee and projectile damage request source elemental hit effects/sounds.
 
 Skill slots hold host charges: attacks, Charge Shot, missiles/bombs, Screw Attack.
 Cooldowns and damage coefficients are RoR2 adaptations. Four alternate disc

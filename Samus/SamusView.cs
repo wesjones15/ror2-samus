@@ -13,12 +13,14 @@ namespace Samus
         internal Vector3 LocalPosition;
         readonly float[] overlay=new float[4];
         byte drawFlags;
+        internal ViewDraw[] InstanceDraws;
         internal SamusView(uint costume)
             :this(Native.ssbm_view_new(NativeLib.CString(Plugin.AssetsDir),Math.Min(costume,4))) {}
         internal SamusView(uint article,uint state)
             :this(Native.ssbm_article_new(NativeLib.CString(Plugin.AssetsDir),article,state)) {}
         internal static SamusView Effect(uint model)=>new SamusView(Native.ssbm_effect_new(NativeLib.CString(Plugin.AssetsDir),model));
         internal static SamusView EntryPlatform()=>new SamusView(Native.ssbm_entry_platform_new(NativeLib.CString(Plugin.AssetsDir)));
+        internal static SamusView Grapple(uint part)=>new SamusView(Native.ssbm_grapple_new(NativeLib.CString(Plugin.AssetsDir),part));
         SamusView(IntPtr handle)
         {
             Handle=handle;
@@ -32,13 +34,14 @@ namespace Samus
         }
         internal void IdlePose(){if(Native.ssbm_view_pose(Handle,NativeLib.CString("Wait"),0)!=1)throw new InvalidOperationException(Native.Error);}
         internal void ObjectPose(float frame){if(Native.ssbm_object_update(Handle,frame)!=1)throw new InvalidOperationException(Native.Error);}
+        internal void FaceCamera(Vector3 position,Quaternion rotation,float scale){var camera=GameSettings.PlayerCamera();if(!camera||scale<=0)return;var local=Quaternion.Inverse(rotation)*(camera.position-position)/scale;local.x=-local.x;if(Native.ssbm_object_camera(Handle,new Native.Vec3(local.x,local.y,local.z))!=1)throw new InvalidOperationException(Native.Error);}
         public uint ModelCount()=>1;
         public bool Model(uint id,out ViewModelInfo info)=>Native.ssbm_view_model(Handle,out info)==1;
         public uint Batches(uint id,ViewBatch[] output,uint max)=>Native.ssbm_view_batches(Handle,output,max);
         public uint Indices(uint id,int[] output,uint max)=>Native.ssbm_view_indices(Handle,output,max);
         public uint Uvs(uint id,float[] output,uint max)=>Native.ssbm_view_uvs(Handle,output,max);
         public bool Texture(uint id,out ViewTexture info,byte[] rgba,uint len)=>Native.ssbm_view_texture(Handle,id,out info,rgba,len)==1;
-        public uint Draws(ViewDraw[] output,uint max){if(output!=null&&max>0)output[0]=new ViewDraw { key=1,flags=drawFlags,pos=new ViewVec3(LocalPosition.x,LocalPosition.y,LocalPosition.z),rot_x=LocalRotation.x,rot_y=LocalRotation.y,rot_z=LocalRotation.z,rot_w=LocalRotation.w,alpha=1 };return 1;}
+        public uint Draws(ViewDraw[] output,uint max){if(InstanceDraws!=null){if(output!=null)Array.Copy(InstanceDraws,output,Math.Min(InstanceDraws.Length,(int)max));return(uint)InstanceDraws.Length;}if(output!=null&&max>0)output[0]=new ViewDraw { key=1,flags=drawFlags,pos=new ViewVec3(LocalPosition.x,LocalPosition.y,LocalPosition.z),rot_x=LocalRotation.x,rot_y=LocalRotation.y,rot_z=LocalRotation.z,rot_w=LocalRotation.w,alpha=1 };return 1;}
         public IntPtr Positions(out uint count)=>Native.ssbm_view_positions(Handle,out count);
         public IntPtr Normals(out uint count)=>Native.ssbm_view_normals(Handle,out count);
         public IntPtr Colors(out uint count)=>Native.ssbm_view_colors(Handle,out count);
@@ -106,7 +109,15 @@ namespace Samus
             }
             // Return value is the number of fixed ticks, including zero at high refresh.
             Advance(in pad,dt);
-            if(upSpecialStarted){if(Native.ssbm_sim_state(sim,out var state)!=1)throw new InvalidOperationException(Native.Error);UpSpecialFinished=state.move_id!=23;}
+            if(upSpecialStarted){
+                if(Native.ssbm_sim_state(sim,out var state)!=1)throw new InvalidOperationException(Native.Error);
+                if(state.move_id!=23){
+                    UpSpecialFinished=true;upSpecialStarted=false;
+                    // Lobby adaptation: finish at idle instead of waiting for a
+                    // gameplay helpless fall. Continue advancing Wait afterward.
+                    Native.ssbm_sim_place(sim,default,0);Advance(in pad,1f/60);
+                }
+            }
             view.Pose(sim,dt);
             // Viewer front-view validation: authored Wait faces +Z.
             view.LocalRotation=previewRotation;

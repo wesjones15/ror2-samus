@@ -83,6 +83,7 @@ namespace Samus
                 var rotation=Quaternion.LookRotation(new Vector3(f.x,f.y,f.z),new Vector3(u.x,u.y,u.z));
                 if(placement.HasValue){position=placement.Value.MultiplyPoint3x4(position);rotation=placement.Value.rotation*rotation;}
                 float size=transform.GetColumn(0).magnitude*scale;
+                effect.view.FaceCamera(position,rotation,size);
                 effect.view.Models.Update(size,d=>(position,rotation));
             }
         }

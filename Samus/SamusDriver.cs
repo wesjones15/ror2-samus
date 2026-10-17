@@ -10,7 +10,7 @@ using UnityEngine.Networking;
 namespace Samus
 {
     [DefaultExecutionOrder(-200)]
-    public sealed class SamusDriver:MonoBehaviour
+    public sealed class SamusDriver:MonoBehaviour,IMeleeArrival
     {
         static readonly Native.CollideFn collideFn=Collide;
         static readonly Native.EventFn eventFn=Event;
@@ -30,10 +30,16 @@ namespace Samus
         internal DiscParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
         internal IntPtr Simulation=>sim;
+        internal float Units=>scale;
+        internal SamusGrab Grab {get;private set;}
+        public bool Arriving {get;set;}
+        public bool ArrivalWaiting {get;private set;}
+        float chargeFraction;
+        public void ReleaseArrival(){if(active&&ArrivalWaiting){ArrivalWaiting=false;Native.ssbm_sim_entry_control(sim,1);}}
         void Awake(){body=GetComponent<CharacterBody>();motor=GetComponent<CharacterMotor>();input=GetComponent<InputBankTest>();native=GetComponent<NativeBody>();direction=GetComponent<CharacterDirection>();}
         void Update()
         {
-            if(failed||!body)return;pad.Read(body,input);
+            if(failed||!body)return;pad.Read(body,input,Grab?.Holding??false);
             if(body.healthComponent&&!body.healthComponent.alive){audio?.Dispose();return;}
             audio?.Update();
             if(active) { smoother.Smooth();cameraPivot.Use(true); }
@@ -76,6 +82,8 @@ namespace Samus
                 if(body.isSprinting)speedScale/=Mathf.Max(0.1f,body.sprintingSpeedMultiplier);
                 Native.ssbm_sim_tuning(sim,new Native.Tuning { speed_scale=speedScale,jump_scale=Plugin.JumpScale.Value*NativeBody.JumpScale(body),extra_jumps=extra,hold_charge=Plugin.HoldCharge.Value?1u:0u,smash_max_frames=60 });
                 Native.ssbm_sim_step(sim,in host,in p,Time.fixedDeltaTime);
+                if(Arriving&&!ArrivalWaiting&&Native.ssbm_sim_entry_control(sim,2)==0)Arriving=false;
+                Grab?.AfterStep(Time.fixedDeltaTime);
                 Present(()=>Effects?.Step(sim,Time.fixedDeltaTime));
                 Present(()=>Particles?.Step(Time.fixedDeltaTime));
                 uint count=Native.ssbm_sim_hitboxes(sim,null,0);
@@ -86,6 +94,7 @@ namespace Samus
                     if(permitDamage)hits.Apply(body,hitboxes,(int)count,scale);
                 }
                 if(Native.ssbm_sim_state(sim,out state)!=1){Fallback(Native.Error);return;}
+                chargeFraction=Native.ssbm_sim_charge_fraction(sim);
                 var feet=ToWorld(state.position);
                 bool supported=RecoveryGround(feet,0.45f,0.45f,out var support)&&Mathf.Abs(support.y-feet.y)<0.15f;
                 bool embedded=WorldProbe.InsideSolid(feet+Vector3.up*0.9f);
@@ -115,8 +124,10 @@ namespace Samus
             audio=new SamusAudio(sim);
             Particles=new DiscParticles(scale);
             Effects=new MeleeEffects(Particles,scale);
+            Grab=new SamusGrab(this,body);
             entryPlatform=SamusView.EntryPlatform();
             if(Native.ssbm_sim_begin_entry(sim,NativeLib.CString(Plugin.AssetsDir))!=1)throw new InvalidOperationException(Native.Error);
+            if(Arriving){Native.ssbm_sim_entry_control(sim,0);ArrivalWaiting=true;}
             host=new Native.Host { user=GCHandle.ToIntPtr(self),collide=Marshal.GetFunctionPointerForDelegate(collideFn),evt=Marshal.GetFunctionPointerForDelegate(eventFn) };
             WorldProbe.UseBodyCollision(motor,gameObject);motor.Motor.enabled=false;
             smoother=new StepSmoother(transform);cameraPivot=new CameraPivot(body);cameraPivot.Use(true);active=true;
@@ -142,7 +153,19 @@ namespace Samus
                 }
                 Present(()=>Particles?.Draw());
                 Present(()=>Effects?.Draw());
+                Present(()=>Grab?.Draw());
             }catch(Exception e){Fallback(e.ToString());}
+        }
+        void OnGUI()
+        {
+            if(!active||failed||!body||!body.isPlayerControlled||!body.hasEffectiveAuthority||!body.healthComponent.alive)return;
+            if(ArrivalWaiting)GUI.Box(new Rect(Screen.width/2f-180,Screen.height*0.72f,360,36),"Interact to bring Samus to life");
+            else if(chargeFraction>0) {
+                string label=(state.phase==4?"Charging":"Stored Charge Shot")+": "+Mathf.RoundToInt(chargeFraction*100)+"%";
+                if(chargeFraction>=1)label="Charge Shot ready";
+                GUI.Box(new Rect(Screen.width/2f-110,Screen.height-130,220,30),label);
+            }
+            if(Grab?.Holding??false)GUI.Box(new Rect(Screen.width/2f-180,Screen.height-165,360,30),"LS direction + A/B: throw    Neutral A/B: pummel");
         }
         Native.Vec3 ToSim(Vector3 v)=>new Native.Vec3(v.x/scale,v.y/scale,v.z/scale);
         void Present(Action draw)
@@ -192,6 +215,7 @@ namespace Samus
                 bool own=skill.skillDef==Skills.Definitions[slot];permitDamage=NativeSkills.Spend(skill,Skills.Definitions[slot])&&own;
                 NativeBody.MarkCombat(body);
             } else if(e.kind==2&&permitDamage)Combat.Attack(body,e,scale);
+            else if(e.kind==6)Grab?.Throw(e);
             else if(e.kind==3)native.Jumped();
             else if(e.kind==4)native.Landed(Vector3.down*e.strength*scale*60f);
         }
@@ -209,10 +233,12 @@ namespace Samus
         }
         void Cleanup()
         {
+            Arriving=false;ArrivalWaiting=false;
             active=false;cameraPivot?.Use(false);view?.Dispose();view=null;
             entryPlatform?.Dispose();entryPlatform=null;
             audio?.Dispose();audio=null;
             Effects?.Dispose();Effects=null;Particles?.Dispose();Particles=null;
+            Grab?.Dispose();Grab=null;
             if(sim!=IntPtr.Zero){Native.ssbm_sim_free(sim);sim=IntPtr.Zero;}if(self.IsAllocated)self.Free();
             if(motor&&motor.Motor)motor.Motor.enabled=true;
             if(body&&body.modelLocator&&body.modelLocator.modelTransform){GameSettings.HideRenderers(body.modelLocator.modelTransform,false);var a=body.modelLocator.modelTransform.GetComponent<Animator>();if(a)a.enabled=true;}

@@ -9,6 +9,9 @@ namespace Samus
         public const uint AbiVersion = 4;
         const string Dll = "ssbm";
         public static bool HasOverlay {get;private set;}
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_object_camera(IntPtr view,Vec3 camera);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern float ssbm_sim_charge_fraction(IntPtr sim);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_entry_control(IntPtr sim,uint kind);
         [StructLayout(LayoutKind.Sequential)] public struct Vec3
         {
             public float x, y, z;
@@ -62,9 +65,15 @@ namespace Samus
         public static string Error => NativeLib.Utf8(ssbm_last_error());
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_overlay(IntPtr sim,[Out]float[] rgba);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_charge_visual(IntPtr sim,[Out]float[] matrix);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_set_grabbed(IntPtr sim,uint held);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_grabbed(IntPtr sim);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern float ssbm_sim_motion_frame(IntPtr sim);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_grapple_points(IntPtr sim,[Out]Vec3[] points,uint max);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_grapple_new(byte[] dir,uint part);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_hit_feedback(IntPtr audio,uint element,uint kind,uint severity);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_projectile_new(byte[] dir,uint kind,uint state,float charge,Vec3 direction);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_projectile_step(IntPtr projectile,double dt,Vec3 target,uint hasTarget);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_projectile_lifetime(IntPtr projectile,float frames);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_projectile_state(IntPtr projectile,out ProjectileState state);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_projectile_place(IntPtr projectile,Vec3 relative,uint grounded);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_projectile_impact(IntPtr projectile,IntPtr audio);

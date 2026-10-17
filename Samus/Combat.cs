@@ -15,6 +15,13 @@ namespace Samus
             if(!NetworkServer.active)return;
             var aim=new Vector3(e.direction.x,e.direction.y,e.direction.z).normalized;
             var origin=new Vector3(e.position.x,e.position.y,e.position.z)*scale;
+            if(e.move_id!=24&&body.inputBank) {
+                // Converge the cannon on the live crosshair rather than the
+                // aim snapshot captured before several seconds of charging.
+                var ray=body.inputBank.GetAimRay();
+                var point=Physics.Raycast(ray,out var hit,Mathf.Infinity,WorldProbe.Mask|LayerIndex.entityPrecise.mask,QueryTriggerInteraction.Ignore)?hit.point:ray.origin+ray.direction*10000f;
+                aim=(point-origin).normalized;
+            }
             switch(e.move_id) {
                 case 20: Shot.Spawn(body,origin,aim,1,(uint)Mathf.Clamp(Mathf.RoundToInt(e.strength*7)+1,1,8),e.strength,scale);break;
                 case 21: Shot.Spawn(body,origin,aim,2,0,0,scale);break;
@@ -33,6 +40,8 @@ namespace Samus
                 if(!NetworkServer.active)return;
                 for(int i=0;i<count;i++) {
                     var hit=samples[i];
+                    var grab=owner.GetComponent<SamusDriver>()?.Grab;
+                    if(grab!=null&&grab.Pummel(in hit))continue;
                     if(serial!=hit.serial){serial=hit.serial;victims.Clear();previous.Clear();}
                     var forward=new Vector3(hit.facing.x,0,hit.facing.z);
                     var rotation=forward.sqrMagnitude>0.0001f?Quaternion.LookRotation(forward):Quaternion.identity;
@@ -56,6 +65,8 @@ namespace Samus
                         if(!target||!target.teamComponent||target.teamComponent.teamIndex==owner.teamComponent.teamIndex)continue;
                         bool ground=target.characterMotor&&target.characterMotor.isGrounded;
                         if((hit.flags&(ground?1u:2u))==0)continue;
+                        if(hit.element==8&&hit.damage==0){grab?.TryCapture(hurt.healthComponent);continue;}
+                        if(hit.damage<=0)continue;
                         float angle=hit.angle==361?45f:Mathf.Min(hit.angle,360u);
                         var direction=forward.normalized*Mathf.Cos(angle*Mathf.Deg2Rad)+Vector3.up*Mathf.Sin(angle*Mathf.Deg2Rad);
                         var type=hit.element==1?DamageType.IgniteOnHit:DamageType.Generic;
@@ -72,14 +83,19 @@ namespace Samus
                 }
             }
         }
-        internal static void Area(CharacterBody owner,Vector3 point,float radius,float coefficient,float proc,Vector3 direction,HashSet<HealthComponent> seen=null)
+        internal static void Area(CharacterBody owner,Vector3 point,float radius,float coefficient,float proc,Vector3 direction,HashSet<HealthComponent> seen=null,uint element=0)
         {
+            if(coefficient<=0||radius<=0)return;
             if(seen==null)seen=new HashSet<HealthComponent>();var search=new SphereSearch { origin=point,radius=radius,mask=LayerIndex.entityPrecise.mask };
             search.RefreshCandidates().FilterCandidatesByHurtBoxTeam(TeamMask.GetEnemyTeams(owner.teamComponent.teamIndex)).FilterCandidatesByDistinctHurtBoxEntities();
             foreach(var hurt in search.GetHurtBoxes()) {
                 if(!hurt||!hurt.healthComponent||!seen.Add(hurt.healthComponent))continue;
-                NativeHit.Deal(owner,hurt.healthComponent,new NativeHitSpec { coefficient=coefficient,position=hurt.transform.position,
-                    force=direction*500f,procCoefficient=proc,damageType=DamageType.Generic,color=DamageColorIndex.Default });
+                if(NativeHit.Deal(owner,hurt.healthComponent,new NativeHitSpec { coefficient=coefficient,position=hurt.transform.position,
+                    force=direction*500f,procCoefficient=proc,damageType=element==1?DamageType.IgniteOnHit:DamageType.Generic,color=DamageColorIndex.Default })) {
+                    var driver=owner.GetComponent<SamusDriver>();
+                    uint effect=Native.ssbm_hit_feedback(driver?driver.Simulation:System.IntPtr.Zero,element,element==2?7u:2u,2);
+                    if(effect!=0)driver?.Effects?.Spawn(effect,DiscParticles.At(hurt.transform.position,Quaternion.identity,driver.Units));
+                }
             }
         }
     }
@@ -97,6 +113,7 @@ namespace Samus
             try {
                 shot.projectile=Native.ssbm_projectile_new(NativeLib.CString(Plugin.AssetsDir),article,state,charge,new Native.Vec3(direction.x,direction.y,direction.z));
                 if(shot.projectile==System.IntPtr.Zero)throw new System.InvalidOperationException(Native.Error);
+                if(article==1)Native.ssbm_projectile_lifetime(shot.projectile,0); // RoR2 gun travel: no offscreen lifetime cutoff.
                 shot.view=new SamusView(article,state);
                 shot.ReadState();
             }
@@ -130,7 +147,7 @@ namespace Samus
                 } else transform.position=next;
             }
             if((state.flags&2)!=0){Destroy(gameObject);return;}
-            if(impacted&&particleKind==0&&state.damage>0)Combat.Area(owner,transform.position,state.radius*modelScale,state.damage/3f,1f,Vector3.up,explosionVictims);
+            if(impacted&&particleKind==0&&state.damage>0)Combat.Area(owner,transform.position,state.radius*modelScale,state.damage/3f,1f,Vector3.up,explosionVictims,state.element);
             var particleTransform=DiscParticles.At(transform.position,velocity.sqrMagnitude>0?Quaternion.LookRotation(velocity):Quaternion.identity,modelScale);
             particles?.Attach(particleKey,particleTransform);
             uint frame=(uint)state.frame;if(!impacted)SourceEffects(particleFrame,frame,particleTransform);particleFrame=frame;
@@ -146,10 +163,10 @@ namespace Samus
             var force=velocity.sqrMagnitude>0?velocity.normalized:Vector3.up;
             uint cue=Native.ssbm_projectile_impact(projectile,driver?driver.Simulation:System.IntPtr.Zero);ReadState();
             if(cue!=0)driver?.Effects?.Spawn(cue,DiscParticles.At(at,Quaternion.identity,modelScale));
-            Combat.Area(owner,at,state.radius*modelScale,state.damage/3f,1f,force,explosionVictims);
+            Combat.Area(owner,at,state.radius*modelScale,state.damage/3f,1f,force,explosionVictims,state.element);
             if((state.flags&2)==0){view.Dispose();view=new SamusView(particleKind,state.state);}
         }
-        void LateUpdate(){if(view==null)return;view.ObjectPose(state.animation_frame);var rotation=velocity.sqrMagnitude>0.0001f?Quaternion.LookRotation(velocity):Quaternion.identity;view.Models.Update(modelScale,d=>(transform.position,rotation));}
+        void LateUpdate(){if(view==null)return;view.ObjectPose(state.animation_frame);var rotation=velocity.sqrMagnitude>0.0001f?Quaternion.LookRotation(velocity):Quaternion.identity;view.FaceCamera(transform.position,rotation,modelScale);view.Models.Update(modelScale,d=>(transform.position,rotation));}
         void SourceEffects(uint previous,uint frame,Matrix4x4 transform)
         {
             uint count=Native.ssbm_article_cues(particleKind,particleState,previous,frame,fullCharge?1u:0u,effectCues,(uint)effectCues.Length);

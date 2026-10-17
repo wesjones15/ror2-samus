@@ -9,10 +9,10 @@ static class Program
 {
     static readonly Native.CollideFn collide=Collide;
     static readonly Native.EventFn evt=Event;
-    static int jumps, hits;
+    static int jumps, hits,throws;
     static void Collide(IntPtr user,in Native.Vec3 from,in Native.Vec3 to,out Native.Collision result)
     { result=new Native.Collision { position=new Native.Vec3(to.x,Math.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
-    static void Event(IntPtr user,in Native.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++; }
+    static void Event(IntPtr user,in Native.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++;if(e.kind==6)throws++; }
     static void Check(bool ok,string what) { if(!ok) throw new Exception(what); }
     static int Main(string[] args)
     {
@@ -44,6 +44,7 @@ static class Program
             return;
         }
         var host=new Native.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
+        PresentationRegressions(assets,in host);
         for(uint c=0;c<5;c++) {
             Check(Native.ssbm_portrait(NativeLib.CString(assets),c,out var portrait,null,0)==1,Native.Error);
             var rgba=new byte[portrait.width*portrait.height*4];
@@ -154,6 +155,9 @@ static class Program
                 for(int vertex=0;vertex<restored.Length;vertex++)Check(idleVertices[vertex]==restored[vertex],"portrait retained attack/landing pose");
                 Check(Native.ssbm_view_pose(view,NativeLib.CString("missing-clip"),0)==0,"unknown portrait clip accepted");
                 Native.ssbm_view_model(view,out var model);Check(model.vertex_count>0&&model.batch_count>0,"empty model");
+                var uvs=new float[model.vertex_count*2];Array.Fill(uvs,float.NaN);
+                Check(Native.ssbm_view_uvs(view,uvs,model.vertex_count)==model.vertex_count,"UV export must count pairs");
+                foreach(float coordinate in uvs)Check(float.IsFinite(coordinate),"UV export left half the source texture coordinates unwritten");
                 var pos=Native.ssbm_view_positions(view,out uint n);Check(n==model.vertex_count&&pos!=IntPtr.Zero,"position pointer/count");
                 var indices=new int[model.index_count];Native.ssbm_view_indices(view,indices,(uint)indices.Length);
                 foreach(int i in indices) Check(i>=0&&i<model.vertex_count,"index outside vertices");
@@ -231,5 +235,46 @@ static class Program
             }
             Console.WriteLine("PASS: ABI 4 + 14 layouts, trophy entry, grid tile, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
         } finally { if(view!=IntPtr.Zero)Native.ssbm_view_free(view);Native.ssbm_sim_free(sim); }
+    }
+    static void PresentationRegressions(string assets,in Native.Host host)
+    {
+        var effect=Native.ssbm_effect_new(NativeLib.CString(assets),2000);Check(effect!=IntPtr.Zero,Native.Error);
+        try {Check(Native.ssbm_object_update(effect,12)==1,Native.Error);var colors=Native.ssbm_view_colors(effect,out uint count);var rgba=new float[count*4];Marshal.Copy(colors,rgba,0,rgba.Length);for(int i=3;i<rgba.Length;i+=4)Check(rgba[i]>0.1f,"Screw Attack was made transparent at native/C# boundary");}
+        finally {Native.ssbm_view_free(effect);}
+        var chargeView=Native.ssbm_article_new(NativeLib.CString(assets),1,8);Check(chargeView!=IntPtr.Zero,Native.Error);
+        try {
+            Check(Native.ssbm_object_update(chargeView,12)==1,Native.Error);var before=Native.ssbm_view_positions(chargeView,out uint vertices);var first=new float[vertices*3];Marshal.Copy(before,first,0,first.Length);
+            Check(Native.ssbm_object_camera(chargeView,new Native.Vec3(100,25,-50))==1,Native.Error);var after=Native.ssbm_view_positions(chargeView,out vertices);var second=new float[vertices*3];Marshal.Copy(after,second,0,second.Length);bool changed=false;for(int i=0;i<first.Length;i++){Check(float.IsFinite(second[i]),"camera-facing article produced invalid vertices");changed|=Math.Abs(second[i]-first[i])>0.001f;}Check(changed,"source charge core never faced the camera");
+            Native.ssbm_view_model(chargeView,out var info);for(uint texture=0;texture<info.texture_count;texture++){Check(Native.ssbm_view_texture(chargeView,texture,out var tex,null,0)==1,Native.Error);Check(tex.wrap_s==2&&tex.wrap_t==2,"source mirrored shot quadrants lost at C# boundary");}
+        } finally {Native.ssbm_view_free(chargeView);}
+        for(uint part=0;part<8;part++){var view=Native.ssbm_grapple_new(NativeLib.CString(assets),part);Check(view!=IntPtr.Zero,"grapple part: "+Native.Error);Native.ssbm_view_model(view,out var info);Check(info.vertex_count>0,"empty source grapple part");Native.ssbm_view_free(view);}
+        foreach(int fps in new[]{30,60,144}) {
+            var sim=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,Native.Error);
+            try {
+                var pad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=15};Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                pad.buttons=128;Native.ssbm_sim_step(sim,in host,in pad,1.0/60);pad.buttons=0;
+                bool beam=false,grabWindow=false;
+                for(int f=0;f<fps*2;f++) {
+                    Native.ssbm_sim_step(sim,in host,in pad,1.0/fps);
+                    uint n=Native.ssbm_sim_hitboxes(sim,null,0);var boxes=new Native.HitboxSample[n];Check(Native.ssbm_sim_hitboxes(sim,boxes,n)==n,"grab virtual joint 0x8B: "+Native.Error);foreach(var hit in boxes)grabWindow|=hit.element==8;
+                    uint p=Native.ssbm_sim_grapple_points(sim,null,0);if(p>0){var points=new Native.Vec3[p];Check(Native.ssbm_sim_grapple_points(sim,points,p)==p,Native.Error);beam=true;foreach(var point in points)Check(float.IsFinite(point.x)&&float.IsFinite(point.y)&&float.IsFinite(point.z),"invalid grapple point");}
+                    uint g=Native.ssbm_sim_gfx(sim,null,0);var cues=new Native.Event[g];Check(Native.ssbm_sim_gfx(sim,cues,g)==g,"grab GFX: "+Native.Error);foreach(var cue in cues)Check(Native.ssbm_effect_target(cue.kind)!=int.MaxValue,"unresolved grab effect "+cue.kind);
+                }
+                Check(beam&&grabWindow,"B grab did not run source beam/contact windows");
+                Native.ssbm_sim_set_grabbed(sim,1);pad.movement=new Native.Vec3(0,1,0);pad.buttons=2;Native.ssbm_sim_step(sim,in host,in pad,1.0/60);pad.buttons=0;pad.movement=default;
+                Native.ssbm_sim_state(sim,out var state);Check(state.move_id==31,"captured LS up + attack did not select up throw");int before=throws;
+                for(int f=0;f<fps*2;f++)Native.ssbm_sim_step(sim,in host,in pad,1.0/fps);
+                Check(throws==before+1&&Native.ssbm_sim_grabbed(sim)==0,"source throw release missing/duplicated");
+                Native.ssbm_sim_begin_entry(sim,NativeLib.CString(assets));Native.ssbm_sim_entry_control(sim,0);
+                for(int f=0;f<fps*3;f++)Native.ssbm_sim_step(sim,in host,in pad,1.0/fps);
+                Check(Native.ssbm_sim_entry_control(sim,2)==1,"figurine activated without Interact");Native.ssbm_sim_entry_control(sim,1);
+                for(int f=0;f<fps;f++)Native.ssbm_sim_step(sim,in host,in pad,1.0/fps);
+                Check(Native.ssbm_sim_entry_control(sim,2)==0,"figurine failed to activate after Interact");
+            } finally {Native.ssbm_sim_free(sim);}
+        }
+        var shot=Native.ssbm_projectile_new(NativeLib.CString(assets),1,8,1,new Native.Vec3(0,0.6f,0.8f));Check(shot!=IntPtr.Zero,Native.Error);
+        try {Native.ssbm_projectile_lifetime(shot,0);for(int i=0;i<600;i++)Native.ssbm_projectile_step(shot,1.0/60,default,0);Native.ssbm_projectile_state(shot,out var state);Check((state.flags&2)==0&&state.position.z>1000,"RoR2 charge shot still expires at short source range");Check(Math.Abs(state.position.y/state.position.z-0.75f)<0.001f,"charge shot changed aimed pitch");}
+        finally {Native.ssbm_projectile_free(shot);}
+        Console.WriteLine("PASS: visible Screw Attack, source grapple geometry/contact, directional throw release, Interact-gated figurine at 30/60/144 Hz, and long aimed charge-shot travel");
     }
 }

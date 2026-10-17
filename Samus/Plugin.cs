@@ -13,7 +13,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Samus from Melee","0.2.4")]
+    [BepInPlugin(Guid,"Samus from Melee","0.2.5")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -47,7 +47,7 @@ namespace Samus
             Language.onCurrentLanguageChanged+=Tokens;
             ItemHooks.Install();GlyphOverride.Install();Skins.Install();
             RunAudio.Initialize(SamusAudio.StopAll);
-            Logger.LogInfo("Samus 0.2.4 registered; native initialization waits for RoR2 startup completion.");
+            Logger.LogInfo("Samus 0.2.5 registered; native initialization waits for RoR2 startup completion.");
         }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         void InitializeAssets()
@@ -71,7 +71,7 @@ namespace Samus
                         finally { AssetsBusy=false; }
                     }) { IsBackground=true,Name="Samus first-run extraction" }.Start();
                 } else AssetsBusy=false;
-                Logger.LogInfo("Samus 0.2.4 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Samus 0.2.5 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
                 } catch(Exception e) {AssetsReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
         }
         static string FindDisc(string configured,string here)
@@ -97,14 +97,15 @@ namespace Samus
             var body=Prefabs.Clone(commando,"MeleeSamusBody",Guid);var cb=body.GetComponent<CharacterBody>();
             cb.baseNameToken="SSBM_SAMUS_NAME";cb.subtitleNameToken="SSBM_SAMUS_SUBTITLE";cb.bodyColor=new Color(1f,0.48f,0.06f);
             cb.baseMaxHealth=140f;cb.levelMaxHealth=42f;cb.baseArmor=10f;cb.baseJumpCount=2;
-            foreach(var state in body.GetComponents<EntityStateMachine>()) if(state.customName=="Body")state.mainStateType=new SerializableEntityStateType(typeof(SamusMain));
+            cb.preferredPodPrefab=null;cb.preferredInitialStateType=new SerializableEntityStateType(typeof(MeleeArrival));
+            foreach(var state in body.GetComponents<EntityStateMachine>()) if(state.customName=="Body"){state.mainStateType=new SerializableEntityStateType(typeof(SamusMain));state.initialStateType=new SerializableEntityStateType(typeof(MeleeArrival));}
             body.AddComponent<NativeBody>();body.AddComponent<SamusDriver>();Skills.Add(body,pack);
             var lobby=Prefabs.Clone(display,"MeleeSamusDisplay",Guid);DisplayModel.Attach(lobby,Guid,SamusDisplay.Make);Portrait.RequestTexture(body,SamusPortrait.Load);
             Skins.Add(body,pack);
             var survivor=ScriptableObject.CreateInstance<SurvivorDef>();survivor.cachedName="MeleeSamus";survivor.bodyPrefab=body;survivor.displayPrefab=lobby;
             survivor.displayNameToken="SSBM_SAMUS_NAME";survivor.descriptionToken="SSBM_SAMUS_DESCRIPTION";survivor.outroFlavorToken="SSBM_SAMUS_OUTRO";
             survivor.mainEndingEscapeFailureFlavorToken="SSBM_SAMUS_FAIL";survivor.primaryColor=cb.bodyColor;survivor.desiredSortPosition=102f;
-            pack.bodyPrefabs.Add(new[]{body});pack.survivorDefs.Add(new[]{survivor});pack.entityStateTypes.Add(new[]{typeof(SamusMain)});
+            pack.bodyPrefabs.Add(new[]{body});pack.survivorDefs.Add(new[]{survivor});pack.entityStateTypes.Add(new[]{typeof(SamusMain),typeof(MeleeArrival)});
             GlyphOverride.Set(body.name,()=>true,new System.Collections.Generic.Dictionary<SkillSlot,PadButton[]> {
                 [SkillSlot.Primary]=new[]{PadButton.RT},[SkillSlot.Secondary]=new[]{PadButton.LT},
                 [SkillSlot.Utility]=new[]{PadButton.LT},[SkillSlot.Special]=new[]{PadButton.LT,PadButton.LB} });
@@ -114,7 +115,7 @@ namespace Samus
         {
             var l=Language.currentLanguage;if(l==null)return;
             l.SetStringByToken("SSBM_SAMUS_NAME","Samus");l.SetStringByToken("SSBM_SAMUS_SUBTITLE","Intergalactic Bounty Hunter");
-            l.SetStringByToken("SSBM_SAMUS_DESCRIPTION","Samus brings her Melee Power Suit to Petrichor V.\n\nRT attacks; combine a quick direction or LB/RB with RT for charged smashes. LT uses Charge Shot; a direction selects missiles, LB selects Screw Attack, and RB drops bombs. A jumps, LS click sprints, X interacts, and B stores charge.\n\nOffline prototype: original attack timing, sound and complete item integration are still in progress.");
+            l.SetStringByToken("SSBM_SAMUS_DESCRIPTION","Samus brings her Melee Power Suit to Petrichor V.\n\nRT attacks; combine a quick direction or LB/RB with RT for charged smashes. LT uses Charge Shot; a direction selects missiles, LB selects Screw Attack, and RB drops bombs. A jumps, LS click sprints, X interacts, and B grabs or stores a charging shot. While holding an enemy, LS and A/B select throws; neutral A/B pummels.\n\nOffline prototype: full material fidelity, capture escape rules and item integration remain in progress.");
             l.SetStringByToken("SSBM_SAMUS_OUTRO","..and so she left, mission complete.");l.SetStringByToken("SSBM_SAMUS_FAIL","..and so she vanished, beyond the blast zone.");Skills.Tokens(l);Skins.Tokens(l);
         }
         void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;Skins.Uninstall();}
