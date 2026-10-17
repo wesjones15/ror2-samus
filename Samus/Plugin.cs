@@ -26,6 +26,8 @@ namespace Samus
         void Awake()
         {
             CommonLog.Log=Logger;Log=Logger;
+            if(Config.Bind("Debug","StartupTrace",true,"Log original Steam startup checks and hidden exceptions while investigating startup compatibility.").Value)
+                StartupDiagnostics.Install();
             string here=Path.GetDirectoryName(Info.Location);
             var assets=Config.Bind("Paths","AssetsDir","","Extracted Melee cache. Empty uses assets_dir.txt or assets beside the plugin. Never distribute it.");
             var disc=Config.Bind("Paths","Disc","","Your Melee GALE01 revision 2 ISO/GCM/CISO, used to extract missing assets at first launch.");
