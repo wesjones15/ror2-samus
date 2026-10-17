@@ -35,7 +35,7 @@ static class Program
         }
         if(Native.ssbm_assets_complete(NativeLib.CString(assets))!=1) {
             // Clean release builds, like Mario/Olimar, need neither a disc nor a cache.
-            Console.WriteLine("PASS: ABI + 11 layouts; SKIP: asset-dependent checks (no complete local cache)");
+            Console.WriteLine("PASS: ABI + 12 layouts; SKIP: asset-dependent checks (no complete local cache)");
             return;
         }
         var host=new Native.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
@@ -48,7 +48,17 @@ static class Program
             Check(jumps==1,"jump callback/layout failed");
             pad.buttons=0;for(int i=0;i<180;i++) Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
             Native.ssbm_sim_state(sim,out var state);Check(state.grounded==1&&state.jumps_used==0,"landing state mismatch");
-            pad.buttons=2;for(int i=0;i<10;i++) Native.ssbm_sim_step(sim,in host,in pad,1.0/60);Check(hits==1,"hit callback failed");
+            bool gotHitboxes=false;
+            pad.buttons=2;for(int i=0;i<10;i++) {
+                Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                uint count=Native.ssbm_sim_hitboxes(sim,null,0);
+                if(count==0)continue;
+                var samples=new Native.HitboxSample[count];
+                Check(Native.ssbm_sim_hitboxes(sim,samples,count)==count,"hitbox transfer failed");
+                foreach(var hit in samples)Check(hit.radius>0&&hit.damage>0&&float.IsFinite(hit.local_position.x)&&float.IsFinite(hit.local_position.y)&&float.IsFinite(hit.local_position.z),"invalid posed hitbox");
+                gotHitboxes=true;
+            }
+            Check(gotHitboxes&&hits==0,"disc melee hitboxes must replace the placeholder hit callback");
             for(uint costume=0;costume<5;costume++) {
                 view=Native.ssbm_view_new(NativeLib.CString(assets),costume);Check(view!=IntPtr.Zero,Native.Error);
                 Check(Native.ssbm_view_update(view,sim,1f/60)==1,Native.Error);
@@ -64,7 +74,7 @@ static class Program
                 Native.ssbm_view_free(view);view=IntPtr.Zero;
             }
             Check(Native.ssbm_view_new(NativeLib.CString(assets),99)==IntPtr.Zero,"bad costume not rejected");
-            Console.WriteLine("PASS: ABI + 11 layouts, real DLL callbacks, jump/landing/attack, 5 costumes, mesh arrays and texture transfers");
+            Console.WriteLine("PASS: ABI + 12 layouts, real DLL callbacks, jump/landing, posed disc hitboxes, 5 costumes, mesh arrays and texture transfers");
         } finally { if(view!=IntPtr.Zero)Native.ssbm_view_free(view);Native.ssbm_sim_free(sim); }
     }
 }

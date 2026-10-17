@@ -6,7 +6,7 @@ namespace Samus
 {
     internal static class Native
     {
-        public const uint AbiVersion = 1;
+        public const uint AbiVersion = 2;
         const string Dll = "ssbm";
         [StructLayout(LayoutKind.Sequential)] public struct Vec3
         {
@@ -26,17 +26,26 @@ namespace Samus
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void EventFn(IntPtr user, in Event ev);
         [StructLayout(LayoutKind.Sequential)] public struct Host { public IntPtr user, collide, evt; }
         [StructLayout(LayoutKind.Sequential)] public struct Tuning { public float speed_scale, jump_scale; public uint extra_jumps, hold_charge, smash_max_frames; }
+        [StructLayout(LayoutKind.Sequential)] public struct HitboxSample
+        {
+            public ulong serial;
+            public uint generation,group,id;
+            public float damage,radius;
+            public Vec3 local_position,origin,facing;
+            public uint angle,growth,fixed_knockback,base_knockback,element,flags;
+        }
 
         public static void Load(string path)
         {
             if (!NativeLib.Load(path, out string error)) throw new InvalidOperationException(error);
             if (ssbm_abi_version() != AbiVersion) throw new InvalidOperationException("Samus native ABI mismatch");
-            var sizes = new uint[11]; uint count=ssbm_struct_sizes(sizes,(uint)sizes.Length);
+            var sizes = new uint[12]; uint count=ssbm_struct_sizes(sizes,(uint)sizes.Length);
             error=NativeLib.CompareSizes(sizes,count,new[] {
                 ("Vec3",NativeLib.Size<Vec3>()),("Pad",NativeLib.Size<Pad>()),("State",NativeLib.Size<State>()),
                 ("Collision",NativeLib.Size<Collision>()),("Event",NativeLib.Size<Event>()),("Host",NativeLib.Size<Host>()),
                 ("Tuning",NativeLib.Size<Tuning>()),("ViewModelInfo",NativeLib.Size<ViewModelInfo>()),
-                ("ViewBatch",NativeLib.Size<ViewBatch>()),("ViewTexture",NativeLib.Size<ViewTexture>()),("ViewDraw",NativeLib.Size<ViewDraw>()) });
+                ("ViewBatch",NativeLib.Size<ViewBatch>()),("ViewTexture",NativeLib.Size<ViewTexture>()),("ViewDraw",NativeLib.Size<ViewDraw>()),
+                ("HitboxSample",NativeLib.Size<HitboxSample>()) });
             if (error!=null) throw new InvalidOperationException(error);
         }
         public static string Error => NativeLib.Utf8(ssbm_last_error());
@@ -49,6 +58,7 @@ namespace Samus
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_free(IntPtr sim);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_step(IntPtr sim,in Host host,in Pad pad,double dt);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_state(IntPtr sim,out State state);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_hitboxes(IntPtr sim,[Out]HitboxSample[] output,uint max);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_tuning(IntPtr sim,Tuning tuning);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_place(IntPtr sim,Vec3 vector,uint kind);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_interrupt(IntPtr sim);

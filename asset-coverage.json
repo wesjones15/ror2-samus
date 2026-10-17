@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "character": "Samus (Melee GALE01 revision 2)",
+  "categories": {
+    "sounds": {
+      "paths": ["audio/us/samus.ssm", "audio/us/main.ssm", "audio/us/smash2.sem"],
+      "source_references": ["melee/lb/lbaudio_ax.c: ssm_files and initialization", "sysdolphin/baselib/synth.c: HSD_SynthSFXLoad", "sysdolphin/baselib/axdriver.c: AXDriver_8038DA70"],
+      "status": "extracted",
+      "verification": [],
+      "notes": "Sound bank and SEM decoding/playback are in progress. No claim of working original audio."
+    },
+    "effects": {
+      "paths": ["EfSsData.dat", "EfCoData.dat", "PlSs.dat"],
+      "source_references": ["melee/ef/efasync.c: effSamusDataTable and effCommonDataTable", "melee/ft/ftaction.c: ftAction_80071028"],
+      "status": "extracted",
+      "verification": [],
+      "notes": "Original effect rendering and event routing are in progress. Generic effects do not satisfy coverage."
+    },
+    "particles": {
+      "paths": ["EfSsData.dat", "EfCoData.dat"],
+      "source_references": ["melee/ef/efasync.c: effect data loading", "sysdolphin/baselib: particle/emitter subsystem"],
+      "status": "unresolved",
+      "verification": [],
+      "notes": "Resolve all referenced emitter/texture bank dependencies and implement their playback."
+    },
+    "animations": {
+      "paths": ["PlSsAJ.dat", "PlSs.dat", "PlCo.dat"],
+      "source_references": ["melee/lb/lbanim.c: FigaTree loading", "sysdolphin/baselib/fobj.c", "melee/ft/ftwalkcommon.c", "melee/ft/ftaction.c"],
+      "status": "wired",
+      "verification": ["Headless gait clock matches at 30, 60 and 144 Hz; jump continuation and gait phase tests pass.", "Real-disc clips decode to finite poses; WalkFast pose inspected in the native viewer."],
+      "notes": "Remaining movement transitions and all attack animations require completion and visual verification."
+    },
+    "models": {
+      "paths": ["PlSsNr.dat", "PlSsPi.dat", "PlSsBk.dat", "PlSsGr.dat", "PlSsLa.dat", "PlSs.dat"],
+      "source_references": ["melee/ft/kinds/ftSamus/ftsamus.c: costume and article setup", "sysdolphin/baselib/jobj.c", "sysdolphin/baselib/pobj.c"],
+      "status": "wired",
+      "verification": ["NativeCheck validates meshes for all five costumes; default costume rendered and inspected."],
+      "notes": "Native article/projectile models and remaining effect model dependencies are in progress."
+    },
+    "textures": {
+      "paths": ["PlSsNr.dat", "PlSsPi.dat", "PlSsBk.dat", "PlSsGr.dat", "PlSsLa.dat", "PlSs.dat", "EfSsData.dat", "EfCoData.dat"],
+      "source_references": ["sysdolphin/baselib/tobj.c", "sysdolphin/baselib/mobj.c", "melee/ef/efasync.c"],
+      "status": "decoded",
+      "verification": ["Five costume texture transfers pass NativeCheck; viewer uses extracted diffuse textures."],
+      "notes": "Effect/article textures and animated materials require integration and visual verification."
+    }
+  }
+}

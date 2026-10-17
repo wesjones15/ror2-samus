@@ -3,10 +3,11 @@
 Offline prototype for RoR2 DLC4 / Unity 2021.3.45f2, BepInEx 5. Uses libssbm for
 gameplay and disc presentation; ror2-common for the host. No R2API required.
 
-Status: prototype; Rust viewer visually checked and native C# boundary tested.
-**The user reports a Steamworks startup failure with Samus enabled and successful
-startup with Samus disabled. Runtime compatibility remains under investigation.**
-RoR2 gameplay has not been playtested. Full behavior fidelity is in
+Status: incomplete; Rust viewer visually checked and native C# boundary tested.
+The user successfully started single player as Samus with the diagnostic build,
+then reported broken locomotion and placeholder attacks. The earlier startup
+failure's cause remains unresolved. Subsequent changes require a new playtest.
+Full behavior fidelity is in
 the sibling libssbm/docs/behavior-spec.md when building from source.
 
 No game data is shipped. Supply your own GALE01 revision 2 ISO/GCM/CISO. Models,
@@ -61,9 +62,13 @@ airborne Charge Shot, missile/bomb damage, Screw Attack landing, chests/equipmen
 jump pads, stun/freeze and falling off the stage. Finish a teleporter and check the
 costume unlock after restarting. Diagnostics are in BepInEx/LogOutput.log.
 
-Known limits: original attack hitbox/command timing, audio and full TEV materials
-remain unfinished. Projectile shapes and impact effects are procedural placeholders.
-Screw Attack currently lands one area hit. Attack speed, all item-specific effects,
+Disc subaction commands now drive normal/Screw Attack hit windows and posed bone
+hitboxes; gait clocks use fixed ticks and disc speed scaling. ABI 2 adds the posed
+hitbox transfer. These changes pass native checks but await RoR2 playtesting.
+
+Known limits: audio, effects/particles, remaining movement transitions and full TEV
+materials remain unfinished. Projectile shapes and impact effects are procedural
+placeholders. Attack speed, all item-specific effects,
 AI companions/clones and fall damage need further integration. Grabs, ledges,
 percent/stock HUD, blast-zone effects and multiplayer are not implemented. Use
 single-player offline; remote-player native simulation is not supported.

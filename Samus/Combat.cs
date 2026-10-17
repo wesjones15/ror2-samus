@@ -6,8 +6,8 @@ using UnityEngine.Networking;
 
 namespace Samus
 {
-    // Host damage coefficients and simplified projectiles. These are RoR2 balance,
-    // not copied Melee hitbox/frame data. NativeHit supplies item procs and credit.
+    // Disc-command hitboxes are posed on their original bones. The host converts
+    // their geometry and maps Melee damage to the survivor's RoR2 damage stat.
     internal static class Combat
     {
         internal static void Attack(CharacterBody body,Native.Event e,float scale)
@@ -20,11 +20,51 @@ namespace Samus
                 case 21: Shot.Spawn(body,origin,aim,3f,24f,0.18f,true,false);break;
                 case 22: Shot.Spawn(body,origin,aim,6f,45f,0.22f,false,false);break;
                 case 24: Shot.Spawn(body,origin-Vector3.up*0.8f,Vector3.zero,4f,0,0.3f,false,true);break;
-                case 23: Area(body,origin,2.4f,4.5f,0.5f,aim);break;
-                default:
-                    bool smash=e.move_id>=10&&e.move_id<=12;
-                    float damage=smash?6f*e.strength:e.move_id==1?1.5f:2.5f;
-                    Area(body,origin+aim*(smash?1.4f:0.8f),smash?2.4f:1.8f,damage,1f,aim);break;
+            }
+        }
+        internal sealed class HitTracker
+        {
+            ulong serial=ulong.MaxValue;
+            readonly Dictionary<(uint,uint),HashSet<HealthComponent>> victims=new Dictionary<(uint,uint),HashSet<HealthComponent>>();
+            readonly Dictionary<(uint,uint,uint),Vector3> previous=new Dictionary<(uint,uint,uint),Vector3>();
+            Collider[] candidates=new Collider[64];
+            internal void Apply(CharacterBody owner,Native.HitboxSample[] samples,int count,float scale)
+            {
+                if(!NetworkServer.active)return;
+                for(int i=0;i<count;i++) {
+                    var hit=samples[i];
+                    if(serial!=hit.serial){serial=hit.serial;victims.Clear();previous.Clear();}
+                    var forward=new Vector3(hit.facing.x,0,hit.facing.z);
+                    var rotation=forward.sqrMagnitude>0.0001f?Quaternion.LookRotation(forward):Quaternion.identity;
+                    var local=new Vector3(-hit.local_position.x,hit.local_position.y,hit.local_position.z);
+                    var point=new Vector3(hit.origin.x,hit.origin.y,hit.origin.z)*scale+rotation*local*scale;
+                    var key=(hit.group,hit.generation,hit.id);
+                    if(!previous.TryGetValue(key,out var from))from=point;
+                    previous[key]=point;
+                    int n;
+                    while(true) {
+                        n=Physics.OverlapCapsuleNonAlloc(from,point,hit.radius*scale,candidates,LayerIndex.entityPrecise.mask,QueryTriggerInteraction.Collide);
+                        if(n<candidates.Length||candidates.Length>=1024)break;
+                        candidates=new Collider[candidates.Length*2];
+                    }
+                    var group=(hit.group,hit.generation);
+                    if(!victims.TryGetValue(group,out var seen)){seen=new HashSet<HealthComponent>();victims[group]=seen;}
+                    for(int j=0;j<n;j++) {
+                        var hurt=candidates[j]?candidates[j].GetComponent<HurtBox>():null;
+                        if(!hurt||!hurt.healthComponent||!hurt.healthComponent.alive||seen.Contains(hurt.healthComponent))continue;
+                        var target=hurt.healthComponent.body;
+                        if(!target||!target.teamComponent||target.teamComponent.teamIndex==owner.teamComponent.teamIndex)continue;
+                        bool ground=target.characterMotor&&target.characterMotor.isGrounded;
+                        if((hit.flags&(ground?1u:2u))==0)continue;
+                        float angle=hit.angle==361?45f:Mathf.Min(hit.angle,360u);
+                        var direction=forward.normalized*Mathf.Cos(angle*Mathf.Deg2Rad)+Vector3.up*Mathf.Sin(angle*Mathf.Deg2Rad);
+                        var type=hit.element==1?DamageType.IgniteOnHit:DamageType.Generic;
+                        if(NativeHit.Deal(owner,hurt.healthComponent,new NativeHitSpec {
+                            coefficient=hit.damage/3f,position=hurt.collider.ClosestPoint(point),force=direction*(hit.base_knockback+hit.growth)*5f,
+                            procCoefficient=1f,damageType=type,color=DamageColorIndex.Default
+                        }))seen.Add(hurt.healthComponent);
+                    }
+                }
             }
         }
         internal static void Area(CharacterBody owner,Vector3 point,float radius,float coefficient,float proc,Vector3 direction)

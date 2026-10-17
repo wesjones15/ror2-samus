@@ -20,6 +20,8 @@ namespace Samus
         readonly GroundGate ground=new GroundGate();readonly SamusPad pad=new SamusPad();
         readonly List<Vector3> walls=new List<Vector3>();
         bool active,failed,permitDamage;float scale;
+        Native.HitboxSample[] hitboxes=new Native.HitboxSample[64];
+        readonly Combat.HitTracker hits=new Combat.HitTracker();
         void Awake(){body=GetComponent<CharacterBody>();motor=GetComponent<CharacterMotor>();input=GetComponent<InputBankTest>();native=GetComponent<NativeBody>();direction=GetComponent<CharacterDirection>();}
         void Update()
         {
@@ -52,6 +54,13 @@ namespace Samus
                 uint extra=(uint)Math.Max(0,body.maxJumpCount-2);
                 Native.ssbm_sim_tuning(sim,new Native.Tuning { speed_scale=body.moveSpeed/Mathf.Max(0.1f,body.baseMoveSpeed),jump_scale=Plugin.JumpScale.Value*NativeBody.JumpScale(body),extra_jumps=extra,hold_charge=Plugin.HoldCharge.Value?1u:0u,smash_max_frames=60 });
                 Native.ssbm_sim_step(sim,in host,in p,Time.fixedDeltaTime);
+                uint count=Native.ssbm_sim_hitboxes(sim,null,0);
+                if(count>1024)throw new InvalidOperationException("Native hitbox sample budget exceeded");
+                if(count>hitboxes.Length)hitboxes=new Native.HitboxSample[count];
+                if(count>0) {
+                    if(Native.ssbm_sim_hitboxes(sim,hitboxes,(uint)hitboxes.Length)!=count)throw new InvalidOperationException(Native.Error);
+                    if(permitDamage)hits.Apply(body,hitboxes,(int)count,scale);
+                }
                 if(Native.ssbm_sim_state(sim,out state)!=1){Fallback(Native.Error);return;}
                 var feet=ToWorld(state.position);
                 if(state.grounded!=0&&WorldProbe.StandingGround(feet,0.2f,0.4f,1.8f,0.3f,out _))safe=feet;
