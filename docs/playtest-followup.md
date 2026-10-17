@@ -1,5 +1,20 @@
 # User playtest notes, 2026-10-16
 
+## Latest installed: 0.2.3 (supersedes the 0.2.2 checkpoint below)
+
+Source entry colour program 0x75 is now decoded from PlCo and supplied through an
+optional ABI-4 presentation export to ModelView's overlay input. Directional
+fall/air-fall/helpless poses blend local joint transforms with the disc response.
+Source commits: libssbm 02f7956, Samus a1fa99c (code d90629d), common 06cf0c8.
+Rust suite, pose blend endpoints, native overlay checks and sixty-second C# GFX
+regression pass. The 0.2.3 ZIP contains exactly five allowed files. Both installed
+D: DLLs directly replaced and hash-verified, with no backups. No new gameplay log
+or user playtest reply has arrived; the async one-minute test request is pending.
+
+Remaining full-fidelity work: animated texture/UV and complete TEV semantics,
+other animation transitions, particle trail/mirror/alpha-compare details, and
+in-game visual/listening verification. Do not mark the whole original task done.
+
 ## 2026-10-17 / deployed 0.2.2 checkpoint
 
 Both D: installed DLLs were replaced directly and SHA-256 verified against the
