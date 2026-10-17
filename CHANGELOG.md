@@ -1,8 +1,8 @@
-# Unreleased
+# 0.2.3 prototype
 
 - Decode the original shared entry colour overlay from PlCo and feed the common
   model renderer. Blend directional fall poses locally with source response.
-- Rust/native checks and C# compile pass; these additions are not yet deployed.
+- Rust/native checks and C# compile pass; in-game visual checks remain pending.
 
 # 0.2.2 prototype
 

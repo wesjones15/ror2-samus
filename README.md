@@ -104,10 +104,10 @@ drive native fixed-tick speed, gravity, homing, lifetime and explosion duration.
 The shared trophy platform and growing figurine entry are implemented with source
 tuning, sound and effect. Host collision feet stay on clear ground while the
 presentation rises. Source entry colour program 0x75 is connected to the common
-renderer's overlay input in the unreleased follow-up, alongside local-joint
+renderer's overlay input, alongside local-joint
 blending for directional fall/air-fall/helpless poses.
 
-Known limits: full TEV/animated texture and UV fidelity, source transition blending,
+Known limits: full TEV/animated texture and UV fidelity, other source transition blending,
 complete particle trail/mirror/alpha-compare semantics, and gameplay visual/audio
 validation remain unfinished. Attack speed, all item-specific effects,
 AI companions/clones and fall damage need further integration. Grabs, ledges,

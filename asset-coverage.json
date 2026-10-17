@@ -14,7 +14,7 @@
       "source_references": ["melee/ef/efasync.c: effSamusDataTable and effCommonDataTable", "melee/ft/ftaction.c: ftAction_80071028"],
       "status": "wired",
       "verification": ["Samus/shared effect readers decode 50 models and their object animations.", "All 207 source GFX attachments resolve; C# consumed 174 live attack cues over sixty simulated seconds, with source model/particle snapshots and PCM.", "Original trophy platform and growing figurine, Screw Attack effect model, and grid tile inspected in local viewers."],
-      "notes": "Gameplay/select attack effects and source impact callbacks are wired; diagnostic explosion spheres removed. In-game rendering, entry colour animation 0x75 and complete TEV/texture animation remain open."
+      "notes": "Gameplay/select attack effects, source impact callbacks and entry colour animation 0x75 are wired; diagnostic explosion spheres removed. In-game rendering and complete TEV/texture animation remain open."
     },
     "particles": {
       "paths": ["EfSsData.dat", "EfCoData.dat"],
@@ -28,7 +28,7 @@
       "source_references": ["melee/lb/lbanim.c: FigaTree loading", "sysdolphin/baselib/fobj.c", "melee/ft/ftwalkcommon.c", "melee/ft/ftaction.c"],
       "status": "wired",
       "verification": ["Headless gait clock matches at 30, 60 and 144 Hz; jump continuation and gait phase tests pass.", "Real-disc clips decode to finite poses; WalkFast pose inspected in the native viewer."],
-      "notes": "Shared disc jump momentum/sounds, air drift, directional falls, aerial landing and hurt/fall/bounce/stand poses are connected. Walk/run have at least 18 distinct poses over 20 samples. Full transition blending and gameplay visual verification remain open."
+      "notes": "Shared disc jump momentum/sounds, air drift, directional falls, aerial landing and hurt/fall/bounce/stand poses are connected. Walk/run have at least 18 distinct poses over 20 samples. Directional fall poses blend locally using source response. Other transition blending and gameplay visual verification remain open."
     },
     "models": {
       "paths": ["PlSsNr.dat", "PlSsPi.dat", "PlSsBk.dat", "PlSsGr.dat", "PlSsLa.dat", "PlSs.dat"],
