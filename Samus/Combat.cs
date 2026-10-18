@@ -63,7 +63,7 @@ namespace Samus
                         if(!target||!target.teamComponent||target.teamComponent.teamIndex==owner.teamComponent.teamIndex)continue;
                         bool ground=target.characterMotor&&target.characterMotor.isGrounded;
                         if((hit.flags&(ground?1u:2u))==0)continue;
-                        if(hit.element==8&&hit.damage==0){grab?.TryCapture(hurt.healthComponent);continue;}
+                        if(hit.element==8&&hit.damage==0)continue; // The shared aimed grapple trace owns captures.
                         if(hit.damage<=0)continue;
                         float angle=hit.angle==361?45f:Mathf.Min(hit.angle,360u);
                         var direction=forward.normalized*Mathf.Cos(angle*Mathf.Deg2Rad)+Vector3.up*Mathf.Sin(angle*Mathf.Deg2Rad);

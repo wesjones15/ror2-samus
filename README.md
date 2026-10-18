@@ -9,7 +9,7 @@ model/particle rendering and PCM device output. Samus's special behavior remains
 character-specific; the gameplay state machine is not yet a generic fighter API.
 See the sibling `libssbm/docs/reuse.md` for the ownership and remaining split.
 
-Character select plays up-B (LB+B), using the shared Melee selection rule and the
+Character select plays up-B, using the shared Melee selection rule and the
 attack's original animation, effects and sounds. Samus plays Screw Attack once,
 then returns to an animated idle on the UI clock. The preview stays at the mannequin's
 origin. The icon uses Samus's original 64x56 CSS grid tile from MnSlChr.usd,
@@ -51,26 +51,34 @@ load logs an error; an initialized body that fails returns to Commando behavior.
 | Action | Xbox | Keyboard/mouse |
 | --- | --- | --- |
 | Move / aim | LS / RS | RoR2 movement / mouse |
-| A attacks | RT | Primary (left mouse by default) |
-| B specials | LT | Secondary (right mouse by default) |
-| Up / down modifier | LB / RB | Utility / special bindings |
-| Jump / short hop | A, tap during jump squat | Jump |
+| Neutral-B / Charge Shot | RT | Primary (left mouse by default) |
+| Contextual A / smash | LT; LS direction selects attack | Secondary (right mouse by default) |
+| Side-B / missiles | RB | Utility |
+| Up-B / Screw Attack | LB | Special |
+| Fifth skill: down-B / Bomb | X | Interact, away from prompts |
+| Fifth skill alternate: Shield / Air Feint | Select in loadout; X shields on ground, evades in air | Interact, away from prompts |
+| Jump | A; every jump has Commando's standard height | Jump |
 | Sprint | LS click | Sprint |
 | Grab / aerial Z-air | B | C |
 | Store Charge Shot while charging | B or jump | C or jump |
-| Throw a captured enemy | LS direction + A or B (RT/LT also work) | WASD + primary/secondary |
-| Pummel a captured enemy | Neutral A or B | Neutral primary/secondary |
+| Throw a captured non-boss | LS direction + LT/RT | WASD + primary/secondary |
+| Pummel a captured non-boss | Neutral LT/RT | Neutral primary/secondary |
+| Boss grapple | Hold B to pull self / stay attached; LT contextual attacks; A jumps off | Hold C; secondary attacks; jump detaches |
 | Interact / equipment | X / Y | RoR2 bindings |
 
 Neutral special starts charging, another press fires, and jump/cancel stores the
 charge. `Controls.HoldCharge` optionally changes this to hold/release. Side special
 uses missiles; a quick directional flick selects a super missile. Up special is
-Screw Attack; down special drops a bomb. Flick direction + attack, hold, then
-release for a smash. Tap up/down + attack for vertical smashes. LB/RB take priority over LS for move selection. No bubble shield.
+Screw Attack; X's default down-B drops a bomb. Select Shield / Air Feint in the
+fifth loadout row to replace X's bomb with ground shielding and one air evade per
+airtime. Shield drains when held/hit, regenerates when released and stuns on
+depletion. Its source models, player palette, scale, sounds and dodge hurt-state
+window are native-driven. An existing vanilla Interact prompt owns X until release.
+Flick direction + LT, hold, then release for a smash. LB always remains up-B.
 
 With LS held above 0.3, camera pitch selects up attacks from 20 degrees above
-level and down attacks from 50 degrees below. This applies to RT and LT; LB/RB
-still force up/down independently of camera pitch. Neutral controls remain neutral,
+level and down attacks from 50 degrees below. This applies to contextual LT only;
+RT/RB/LB/X each explicitly select their assigned B move. Neutral controls remain neutral,
 and captured throws retain raw LS axes. These selection bands are a 3D adaptation.
 
 Ordinary facing uses RoR2's real CharacterBody.shouldAim decision (aim vs movement,
@@ -100,7 +108,11 @@ This preserves RoR2 health and does not add stocks. Initial arrival shares the
 same return phase; ordinary wall/unstuck correction stays immediate. In-game
 verification is pending.
 The shared MeleeArrival state replaces the vanilla pod. Ground B grabs; air B uses
-the Z-air hitbox. Captured enemies enable Melee-style LS axes and A/B pummel or throws.
+Z-air. Both extend original tether geometry along the live camera vector to 20m,
+stopping at walls. Ordinary captured enemies enable Melee-style LS axes and LT/RT
+pummel or throws; A releases to jump. Boss/champion targets pull Samus toward the
+contact instead. Hold B to remain attached and use contextual LT; they never enter
+native capture or throw states and their AI/position is not changed.
 RoR2 capture stops on interruption, death, release or an eight-second timeout; player
 bodies and stationary encounter objects are excluded. Constrained tether/ledge physics
 and Melee escape/percent knockback rules remain incomplete.
@@ -110,7 +122,12 @@ colour pulse. Firing aims from the cannon at the live crosshair and travels unti
 collision without the source offscreen timeout. Charge article size and opacity use
 disc values. Melee and projectile damage request source elemental hit effects/sounds.
 
-Skill slots hold host charges: attacks, Charge Shot, missiles/bombs, Screw Attack.
+Five skill slots hold host charges: Charge Shot, contextual A, missiles, Screw
+Attack and Bomb/Shield. The fifth has its own loadout row and HUD stock/cooldown
+icon, above the fourth icon. Pad bindings, extra-skill registration/HUD, boss
+grapple and defensive incoming-damage adaptation live in ror2-common; libssbm owns
+fighter behavior. Ground/short/aerial jumps use the same Commando-based apex,
+including jump-power item scaling. Special-attack launch velocities stay separate.
 Cooldowns and damage coefficients are RoR2 adaptations. Four alternate disc
 costumes unlock persistently after stage 1, 2, 3 and 4 teleporter events as Samus.
 
@@ -130,7 +147,10 @@ For the first offline playtest, check selection/skin preview, spawn/camera, anal
 movement, short/double/Feather jumps, each modifier and smash release, stored and
 airborne Charge Shot, missile/bomb damage, Screw Attack landing, chests/equipment,
 jump pads, stun/freeze and falling off the stage. Finish a teleporter and check the
-costume unlock after restarting. Diagnostics are in BepInEx/LogOutput.log.
+costume unlock after restarting. New controls, fifth-slot HUD/loadout, shield
+appearance and boss tether still need an in-game controller playtest. Shield tilt,
+powershield reflection, source hitlag and source escape/percent rules remain
+incomplete. Diagnostics are in BepInEx/LogOutput.log.
 
 Disc subaction commands now drive normal/Screw Attack hit windows and posed bone
 hitboxes; gait clocks use fixed ticks and disc speed scaling. ABI 4 transfers posed

@@ -8,23 +8,48 @@ namespace Samus
     internal sealed class SamusGrab:IDisposable
     {
         readonly SamusDriver driver;readonly CharacterBody owner;readonly EnemyCapture capture;
+        readonly MeleeGrapple boss;
+        Vector3 beamStart,beamEnd;bool beamVisible,contactSpent;
+        public bool Attached=>boss.Attached;
+        public void Detach(){boss.Release();beamVisible=false;}
+        public void ReleaseCapture(){capture.Dispose();Native.ssbm_sim_set_grabbed(driver.Simulation,0);}
         readonly SamusView[] views=new SamusView[4];
         readonly SamusView[] throwViews=new SamusView[4];readonly float[] attachment=new float[16];
         readonly Native.Vec3[] points=new Native.Vec3[64];
         readonly HashSet<(ulong,uint)> pummels=new HashSet<(ulong,uint)>();
         Native.Event? release;
         public bool Holding=>capture.Target;
-        public SamusGrab(SamusDriver driver,CharacterBody owner){this.driver=driver;this.owner=owner;capture=new EnemyCapture(owner);}
+        public SamusGrab(SamusDriver driver,CharacterBody owner){this.driver=driver;this.owner=owner;capture=new EnemyCapture(owner);boss=new MeleeGrapple(owner);}
         public bool TryCapture(HealthComponent target)
         {
             Native.ssbm_sim_state(driver.Simulation,out var state);
-            if(state.move_id!=25&&state.move_id!=26)return false;
+            if(state.move_id!=25&&state.move_id!=26&&state.move_id!=27)return false;
+            if(MeleeGrapple.IsBoss(target.body))return false;
             if(!capture.TryCapture(target))return false;
             Native.ssbm_sim_set_grabbed(driver.Simulation,1);pummels.Clear();return true;
         }
-        public void Throw(Native.Event cue){release=cue;}
+        public void Throw(Native.Event cue){if(!boss.Attached)release=cue;}
         public void AfterStep(float dt)
         {
+            Native.ssbm_sim_state(driver.Simulation,out var current);
+            bool catching=current.move_id>=25&&current.move_id<=27;
+            if(!catching&&!boss.Attached)contactSpent=false;
+            beamVisible=false;
+            if(boss.Attached){
+                if(boss.Step(driver.GrabHeld,driver.ControlsInterrupted,dt,out var desired)){
+                    driver.AnchorGrapple(desired);beamStart=Cannon();beamEnd=boss.Anchor;beamVisible=true;return;
+                }
+            }
+            uint nativeCount=Native.ssbm_sim_grapple_points(driver.Simulation,points,(uint)points.Length);
+            if(catching&&nativeCount>0&&!capture.Target&&!contactSpent){
+                float frame=Native.ssbm_sim_motion_frame(driver.Simulation),start=current.move_id==27?8f:17f,end=current.move_id==27?28f:41f;
+                float length=MeleeGrapple.Range*Mathf.Clamp01((frame-start)/6f)*Mathf.Clamp01((end-frame)/6f);
+                beamStart=Cannon();var aim=MeleeAim.CameraRay(owner,owner.inputBank).direction.normalized;beamEnd=beamStart+aim*length;beamVisible=length>0.01f;
+                if(length>0&&MeleeGrapple.Trace(owner,beamStart,aim,length,out var contact,out var hurt)){
+                    beamEnd=contact.point;
+                    if(hurt&&hurt.healthComponent){contactSpent=true;if(MeleeGrapple.IsBoss(hurt.healthComponent.body)){boss.Attach(hurt.healthComponent,contact.point);}else TryCapture(hurt.healthComponent);}
+                }
+            }
             if(release.HasValue){
                 var cue=release.Value;release=null;var target=capture.Target;capture.Dispose();
                 if(target&&target.alive){var direction=new Vector3(cue.direction.x,cue.direction.y,cue.direction.z);
@@ -38,6 +63,7 @@ namespace Samus
                 if(!capture.Step(new Vector3(state.facing.x,0,state.facing.z),dt,at))Native.ssbm_sim_set_grabbed(driver.Simulation,0);
             }
         }
+        Vector3 Cannon(){if(Native.ssbm_sim_bone(driver.Simulation,50,attachment)==1)return new Vector3(attachment[12],attachment[13],attachment[14])*driver.Units;return owner.corePosition;}
         public bool Pummel(in Native.HitboxSample hit)
         {
             if(!capture.Target)return false;
@@ -61,19 +87,18 @@ namespace Samus
                     }
                 }else throwViews[i]?.Models.HideAll();
             }
-            uint count=Native.ssbm_sim_grapple_points(driver.Simulation,points,(uint)points.Length);
+            int count=beamVisible?Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(beamStart,beamEnd)/0.15f)+1,2,256):0;
             var draws=new List<ViewDraw>[] {new List<ViewDraw>(),new List<ViewDraw>(),new List<ViewDraw>(),new List<ViewDraw>()};
             for(int i=0;i<count;i++){
                 int part=i==count-1?3:i==0?0:i%3;
-                var p=points[i];var next=points[Math.Min(i+1,(int)count-1)];
-                var direction=new Vector3(next.x-p.x,next.y-p.y,next.z-p.z);var rotation=direction.sqrMagnitude>0.001f?Quaternion.LookRotation(direction):Quaternion.identity;
-                draws[part].Add(new ViewDraw {key=(ulong)i+1,pos=new ViewVec3(p.x,p.y,p.z),rot_x=rotation.x,rot_y=rotation.y,rot_z=rotation.z,rot_w=rotation.w,alpha=1});
+                var p=Vector3.Lerp(beamStart,beamEnd,(float)i/(count-1));var direction=beamEnd-beamStart;var rotation=direction.sqrMagnitude>0.001f?Quaternion.LookRotation(direction):Quaternion.identity;
+                draws[part].Add(new ViewDraw {key=(ulong)i+1,pos=new ViewVec3(p.x/driver.Units,p.y/driver.Units,p.z/driver.Units),rot_x=rotation.x,rot_y=rotation.y,rot_z=rotation.z,rot_w=rotation.w,alpha=1});
             }
             for(int part=0;part<4;part++){
                 if(draws[part].Count>0&&views[part]==null)views[part]=SamusView.Grapple((uint)part);
                 if(views[part]!=null){views[part].InstanceDraws=draws[part].ToArray();views[part].Models.Update(driver.Units);}
             }
         }
-        public void Dispose(){capture.Dispose();foreach(var view in views)view?.Dispose();foreach(var view in throwViews)view?.Dispose();}
+        public void Dispose(){boss.Release();capture.Dispose();foreach(var view in views)view?.Dispose();foreach(var view in throwViews)view?.Dispose();}
     }
 }

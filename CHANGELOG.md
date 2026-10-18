@@ -1,3 +1,11 @@
+# 0.2.11 five-skill Melee controls
+
+- RT neutral-B, LT contextual A/smash, RB side-B, LB up-B. X becomes a real fifth loadout/HUD skill: down-B by default, with Shield / Air Feint as the alternate. Existing vanilla interact prompts take priority over X.
+- A always jumps, including releasing a held enemy. Ground/short/aerial jumps reach Commando's standard jump height with item scaling. Native movement and special launch rules remain separate.
+- Shared native shield meter, break/recovery, Guard/EscapeAir source animations, common sounds, hurt-state invulnerability, extracted guard models/player palette and health-dependent source radius. Advanced shield tilt/reflection/hitlag remain incomplete.
+- Camera-aimed, wall-occluded 20m Z-grab using repeated original tether parts. Boss/champion targets pull Samus while B stays held and allow contextual LT without capture/throws; normal enemies retain LS-directed pummel/throws.
+- Reuse common pad controls, extra GenericSkill/HUD registration, incoming-damage receiver and boss grapple. Headless/native tests cover bindings, interaction ownership, source defense, jumps, wall occlusion, player-only pull and normal capture restoration. Unity/controller/HUD playtest pending.
+
 # 0.2.10 automatic arrival and earlier falloff
 
 - Initial spawn enters the same native figurine return as falloff recovery, skipping the KO and removing the X/Start prompt. Movement after the minimum arrival or the source timeout triggers transformation and flashing protection.

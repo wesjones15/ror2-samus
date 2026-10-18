@@ -10,13 +10,15 @@ using UnityEngine.Networking;
 namespace Samus
 {
     [DefaultExecutionOrder(-200)]
-    public sealed class SamusDriver:MonoBehaviour,IMeleeArrival,IMeleeRecovery
+    public sealed class SamusDriver:MonoBehaviour,IMeleeArrival,IMeleeRecovery,IMeleeDefense
     {
         static readonly Native.CollideFn collideFn=Collide;
         static readonly Native.EventFn eventFn=Event;
         CharacterBody body;CharacterMotor motor;InputBankTest input;NativeBody native;CharacterDirection direction;
         IntPtr sim;SamusView view;Native.Host host;GCHandle self;Native.State state;
         SamusView entryPlatform;
+        SamusView shieldView;uint shieldModel;
+        public bool BlockMeleeDamage(float amount){if(!active||Recovering)return false;uint flags=Native.ssbm_sim_defense_flags(sim);return (flags&2)!=0||((flags&1)!=0&&Native.ssbm_sim_shield_hit(sim,amount)!=0);}
         MeleeRecovery recovery;uint recoveryFlags;
         public bool Recovering=>(recoveryFlags&1)!=0;
         public bool RecoveryInvulnerable=>(recoveryFlags&2)!=0;
@@ -35,6 +37,10 @@ namespace Samus
         internal IntPtr Simulation=>sim;
         internal float Units=>scale;
         internal SamusGrab Grab {get;private set;}
+        internal bool GrabHeld=>pad.GrabHeld;
+        internal bool JumpHeld=>pad.JumpHeld;
+        internal bool ControlsInterrupted=>Recovering||Arriving||native.Control()!=NativeBody.Hold.None;
+        internal void AnchorGrapple(Vector3 desiredFeet){if(!active)return;Native.ssbm_sim_state(sim,out var current);var contact=Collision(current.position,ToSim(desiredFeet));Native.ssbm_sim_anchor(sim,contact.position,contact.grounded);}
         public bool Arriving {get;set;}
         float chargeFraction;
         bool FacingLocked=>Arriving||Recovering||Native.ssbm_sim_facing_locked(sim)!=0;
@@ -46,7 +52,7 @@ namespace Samus
         void Awake(){body=GetComponent<CharacterBody>();motor=GetComponent<CharacterMotor>();input=GetComponent<InputBankTest>();native=GetComponent<NativeBody>();direction=GetComponent<CharacterDirection>();}
         void Update()
         {
-            if(failed||!body)return;pad.Read(body,input,Grab?.Holding??false,MeleeAim.CameraRay(body,input).direction);
+            if(failed||!body)return;pad.Read(body,input,Grab?.Holding??false,MeleeAim.CameraRay(body,input).direction,Skills.ShieldSelected(body));
             if(body.healthComponent&&!body.healthComponent.alive){audio?.Dispose();return;}
             audio?.Update();
             if(active) { smoother.Smooth();cameraPivot.Use(true);FaceTarget(); }
@@ -78,6 +84,8 @@ namespace Samus
                 if(health<lastHealth-0.001f&&(hitImpulse||native.Control()==NativeBody.Hold.All))Native.ssbm_sim_hurt(sim);
                 lastHealth=health;
                 var control=native.Control();var p=pad.Take(Skills.Allowed(body));
+                if(Grab!=null&&Grab.Attached&&((p.buttons&1)!=0||control!=NativeBody.Hold.None)){Grab.Detach();Native.ssbm_sim_interrupt(sim);}
+                if(Grab!=null&&Grab.Holding&&((p.buttons&1)!=0||control!=NativeBody.Hold.None))Grab.ReleaseCapture();
                 if(control==NativeBody.Hold.All){p.buttons=0;p.movement=default;p.allowed=0;Native.ssbm_sim_interrupt(sim);}
                 else if(control==NativeBody.Hold.Move)p.movement=default;
                 bool sprint=native.UpdateSprint((p.buttons&32)!=0,new Vector3(p.movement.x,0,p.movement.z).sqrMagnitude>0.01f,control==NativeBody.Hold.None);
@@ -88,6 +96,7 @@ namespace Samus
                 // scaling without applying RoR2's base sprint bonus a second time.
                 if(body.isSprinting)speedScale/=Mathf.Max(0.1f,body.sprintingSpeedMultiplier);
                 Native.ssbm_sim_tuning(sim,new Native.Tuning { speed_scale=speedScale,jump_scale=Plugin.JumpScale.Value*NativeBody.JumpScale(body),extra_jumps=extra,hold_charge=Plugin.HoldCharge.Value?1u:0u,smash_max_frames=60 });
+                Native.ssbm_sim_jump_height(sim,MeleeControls.JumpHeight(body.jumpPower,Physics.gravity.y,motor.jumpPowerPenaltyCoefficient)/scale);
                 FaceTarget();
                 if(direction){var facing=direction.forward;Native.ssbm_sim_facing(sim,new Native.Vec3(facing.x,0,facing.z));}
                 Native.ssbm_sim_step(sim,in host,in p,Time.fixedDeltaTime);
@@ -119,9 +128,9 @@ namespace Samus
                 bool fallen=state.grounded==0&&state.velocity.y<=0;
                 if(!Recovering&&recovery!=null&&recovery.CheckFall(unstuck,feet,1.8f,RecoveryGround)) {
                     Plugin.Log.LogInfo("Samus falloff: common threshold, Melee KO and figurine recovery");
-                } else if(!Recovering&&unstuck.Step(feet,fallen||blocked,state.grounded!=0&&supported,control!=NativeBody.Hold.None,Time.fixedDeltaTime,1.8f,RecoveryGround,out var recovered)) {
+                } else if(!Recovering&&unstuck.Step(feet,fallen||blocked,state.grounded!=0&&supported,control!=NativeBody.Hold.None||(Grab?.Attached??false),Time.fixedDeltaTime,1.8f,RecoveryGround,out var recovered)) {
                     Recover(recovered);feet=ToWorld(state.position);Plugin.Log.LogInfo("Samus recovered using common Unstuck");
-                } else if(!Recovering&&wallGuard.Step(feet,1.8f,sweepHeights,0.6f,control!=NativeBody.Hold.None,false,out var back,out var why)) {
+                } else if(!Recovering&&wallGuard.Step(feet,1.8f,sweepHeights,0.6f,control!=NativeBody.Hold.None||(Grab?.Attached??false),false,out var back,out var why)) {
                     Recover(back);feet=ToWorld(state.position);Plugin.Log.LogInfo("Samus wall recovery: "+why);
                 }
                 smoother.Stepped(feet+feetOffset);native.WroteVelocity(ToWorld(state.velocity)*60f);
@@ -166,6 +175,15 @@ namespace Samus
                 var facing=new Vector3(state.facing.x,0,state.facing.z);
                 var rotation=facing.sqrMagnitude>0.0001f?Quaternion.LookRotation(facing):Quaternion.identity;
                 view.Models.Update(scale,d=>(at,rotation));
+                Present(()=>{
+                uint defense=Native.ssbm_sim_defense_flags(sim);
+                if((defense&16)!=0){
+                    uint model=(defense&32)!=0?11u:(defense&1)!=0?13u:14u;
+                    if(shieldView==null||shieldModel!=model){shieldView?.Dispose();shieldView=SamusView.Effect(model);shieldModel=model;}
+                    shieldView.ObjectPose(Native.ssbm_sim_motion_frame(sim));
+                    shieldView.Models.Update(scale*Native.ssbm_sim_shield_scale(sim),d=>(body.corePosition,rotation));
+                }else shieldView?.Models.HideAll();
+                });
                 if(entryPlatform!=null) {
                     if(Native.ssbm_entry_platform_update(entryPlatform.Handle,sim)==1)entryPlatform.Models.Update(scale,d=>(at,rotation));
                     else {entryPlatform.Dispose();entryPlatform=null;}
@@ -183,7 +201,7 @@ namespace Samus
                 if(chargeFraction>=1)label="Charge Shot ready";
                 GUI.Box(new Rect(Screen.width/2f-110,Screen.height-130,220,30),label);
             }
-            if(Grab?.Holding??false)GUI.Box(new Rect(Screen.width/2f-180,Screen.height-165,360,30),"LS direction + A/B: throw    Neutral A/B: pummel");
+            if(Grab?.Holding??false)GUI.Box(new Rect(Screen.width/2f-180,Screen.height-165,360,30),"LS + LT/RT: throw    Neutral LT/RT: pummel");
         }
         Native.Vec3 ToSim(Vector3 v)=>new Native.Vec3(v.x/scale,v.y/scale,v.z/scale);
         void Present(Action draw)
@@ -238,8 +256,8 @@ namespace Samus
         void Receive(Native.Event e)
         {
             if(e.kind==1) {
-                int slot=Skills.Slot(e.move_id);var skill=body.skillLocator.GetSkill(Skills.Slots[slot]);
-                bool own=skill.skillDef==Skills.Definitions[slot];permitDamage=NativeSkills.Spend(skill,Skills.Definitions[slot])&&own;
+                int slot=Skills.Slot(e.move_id);var skill=Skills.Get(body,slot);
+                var expected=Skills.Expected(body,slot);bool own=skill.skillDef==expected;permitDamage=NativeSkills.Spend(skill,expected)&&own;
                 NativeBody.MarkCombat(body);
                 MeleeAim.BeginAttack(body,direction,MeleeAim.CameraRay(body,input).direction);
             } else if(e.kind==2&&permitDamage)Combat.Attack(body,e,scale);
@@ -250,6 +268,7 @@ namespace Samus
         void Fallback(string reason)
         {
             if(failed)return;failed=true;Plugin.Log.LogError("Samus falls back to Commando: "+reason);Cleanup();
+            var extraIcon=GetComponent<ExtraSkillIcon>();if(extraIcon)extraIcon.enabled=false;
             var machine=EntityStateMachine.FindByCustomName(gameObject,"Body");if(machine){machine.mainStateType=new SerializableEntityStateType(typeof(GenericCharacterMain));machine.SetNextStateToMain();}
             var commando=LegacyResourcesAPI.Load<GameObject>("Prefabs/CharacterBodies/CommandoBody");
             var stock=commando?commando.GetComponent<SkillLocator>():null;
@@ -261,6 +280,8 @@ namespace Samus
         }
         void Cleanup()
         {
+            pad.ReleaseInteraction();
+            shieldView?.Dispose();shieldView=null;
             Arriving=false;recoveryFlags=0;recovery?.Refresh();
             active=false;cameraPivot?.Use(false);view?.Dispose();view=null;
             entryPlatform?.Dispose();entryPlatform=null;

@@ -13,7 +13,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Samus from Melee","0.2.10")]
+    [BepInPlugin(Guid,"Samus from Melee","0.2.11")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -71,7 +71,7 @@ namespace Samus
                         finally { AssetsBusy=false; }
                     }) { IsBackground=true,Name="Samus first-run extraction" }.Start();
                 } else AssetsBusy=false;
-                Logger.LogInfo("Samus 0.2.10 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Samus 0.2.11 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
                 } catch(Exception e) {AssetsReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
         }
         static string FindDisc(string configured,string here)
@@ -99,7 +99,7 @@ namespace Samus
             cb.baseMaxHealth=140f;cb.levelMaxHealth=42f;cb.baseArmor=10f;cb.baseJumpCount=2;
             cb.preferredPodPrefab=null;cb.preferredInitialStateType=new SerializableEntityStateType(typeof(MeleeArrival));
             foreach(var state in body.GetComponents<EntityStateMachine>()) if(state.customName=="Body"){state.mainStateType=new SerializableEntityStateType(typeof(SamusMain));state.initialStateType=new SerializableEntityStateType(typeof(MeleeArrival));}
-            body.AddComponent<NativeBody>();body.AddComponent<SamusDriver>();body.AddComponent<MeleeRecovery>();Skills.Add(body,pack);
+            body.AddComponent<NativeBody>();body.AddComponent<SamusDriver>();body.AddComponent<MeleeRecovery>();body.AddComponent<MeleeDefense>();Skills.Add(body,pack);
             var lobby=Prefabs.Clone(display,"MeleeSamusDisplay",Guid);DisplayModel.Attach(lobby,Guid,SamusDisplay.Make);Portrait.RequestTexture(body,SamusPortrait.Load);
             Skins.Add(body,pack);
             var survivor=ScriptableObject.CreateInstance<SurvivorDef>();survivor.cachedName="MeleeSamus";survivor.bodyPrefab=body;survivor.displayPrefab=lobby;
@@ -108,14 +108,14 @@ namespace Samus
             pack.bodyPrefabs.Add(new[]{body});pack.survivorDefs.Add(new[]{survivor});pack.entityStateTypes.Add(new[]{typeof(SamusMain),typeof(MeleeArrival)});
             GlyphOverride.Set(body.name,()=>true,new System.Collections.Generic.Dictionary<SkillSlot,PadButton[]> {
                 [SkillSlot.Primary]=new[]{PadButton.RT},[SkillSlot.Secondary]=new[]{PadButton.LT},
-                [SkillSlot.Utility]=new[]{PadButton.LT},[SkillSlot.Special]=new[]{PadButton.LT,PadButton.LB} });
+                [SkillSlot.Utility]=new[]{PadButton.RB},[SkillSlot.Special]=new[]{PadButton.LB} });
             Tokens();Log.LogInfo("Melee Samus survivor registered");
         }
         static void Tokens()
         {
             var l=Language.currentLanguage;if(l==null)return;
             l.SetStringByToken("SSBM_SAMUS_NAME","Samus");l.SetStringByToken("SSBM_SAMUS_SUBTITLE","Intergalactic Bounty Hunter");
-            l.SetStringByToken("SSBM_SAMUS_DESCRIPTION","Samus brings her Melee Power Suit to Petrichor V.\n\nRT attacks; combine a quick direction or LB/RB with RT for charged smashes. LT uses Charge Shot; a direction selects missiles, LB selects Screw Attack, and RB drops bombs. A jumps, LS click sprints, X interacts, and B grabs or stores a charging shot. While holding an enemy, LS and A/B select throws; neutral A/B pummels.\n\nOffline prototype: full material fidelity, capture escape rules and item integration remain in progress.");
+            l.SetStringByToken("SSBM_SAMUS_DESCRIPTION","Samus brings her Melee Power Suit to Petrichor V.\n\nRT: Charge Shot. LT: contextual A; LS + LT selects camera-directed attacks and a timed flick charges smashes. RB: missiles. LB: Screw Attack. X: Bomb, with Shield / Air Feint as the fifth skill loadout alternate. Interact prompts take priority.\n\nA jumps at Commando height, LS click sprints and B aims a 20m Z-grab. Captured enemies use LS + LT/RT to throw or neutral LT/RT to pummel. Bosses pull Samus instead; hold B and use contextual LT, or A to detach.\n\nOffline prototype: advanced shield rules, full material fidelity, capture escape rules and item integration remain in progress.");
             l.SetStringByToken("SSBM_SAMUS_OUTRO","..and so she left, mission complete.");l.SetStringByToken("SSBM_SAMUS_FAIL","..and so she vanished, beyond the blast zone.");Skills.Tokens(l);Skins.Tokens(l);
         }
         void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;Skins.Uninstall();}

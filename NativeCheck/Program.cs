@@ -48,15 +48,16 @@ static class Program
         PresentationRegressions(assets,in host);
         RebirthRegressions(assets,in host);
         AimingRegressions(assets,in host);
+        DefenseRegressions(assets,in host);
         jumps=hits=throws=0;
         foreach(int fps in new[]{30,60,144}) {
             var dash=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(dash!=IntPtr.Zero,Native.Error);
             try {
-                var pad=new Native.Pad {aim=new Native.Vec3(0,0,1),movement=new Native.Vec3(0,0,1),allowed=15,buttons=32};
+                var pad=new Native.Pad {aim=new Native.Vec3(0,0,1),movement=new Native.Vec3(0,0,1),allowed=31,buttons=32};
                 for(int f=0;f<60;f++)Native.ssbm_sim_step(dash,in host,in pad,1.0/60);
                 Native.ssbm_sim_state(dash,out var before);pad.buttons|=2;
                 Native.ssbm_sim_step(dash,in host,in pad,1.0/60);
-                Native.ssbm_sim_state(dash,out var state);Check(state.move_id==5,"sprinting RT did not select Dash Attack");
+                Native.ssbm_sim_state(dash,out var state);Check(state.move_id==5,"sprinting LT did not select Dash Attack");
                 pad.buttons=0;pad.movement=default;float furthest=state.position.z;
                 for(int f=0;f<fps*2;f++) {
                     Native.ssbm_sim_step(dash,in host,in pad,1.0/fps);Native.ssbm_sim_state(dash,out state);
@@ -65,7 +66,7 @@ static class Program
                 Check(state.move_id==0&&state.position.z-before.position.z>10,"dash did not retain source movement after returning to idle");
             }finally{Native.ssbm_sim_free(dash);}
         }
-        Console.WriteLine("PASS: sprint + RT retains Dash Attack travel through the native boundary at 30/60/144 FPS");
+        Console.WriteLine("PASS: sprint + LT retains Dash Attack travel through the native boundary at 30/60/144 FPS");
         for(uint c=0;c<5;c++) {
             Check(Native.ssbm_portrait(NativeLib.CString(assets),c,out var portrait,null,0)==1,Native.Error);
             var rgba=new byte[portrait.width*portrait.height*4];
@@ -84,7 +85,7 @@ static class Program
                     foreach(float channel in tint)Check(float.IsFinite(channel)&&channel>=0&&channel<=1,"entry overlay channel outside bounds");
                 }
                 bool entrySound=false;var entryPcm=new float[1066];
-                var entryPad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=15,buttons=2|4};
+                var entryPad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=31,buttons=2|4};
                 for(int f=0;f<60;f++) {
                     Native.ssbm_sim_step(sim,in host,in entryPad,1.0/60);
                     Native.ssbm_sim_state(sim,out var entryState);Check(entryState.move_id==0,"entry allowed an attack");
@@ -94,7 +95,7 @@ static class Program
                 }
                 Check(entrySound,"entry source sound missing");Check(Native.ssbm_entry_platform_update(platform,sim)==0,"entry did not finish");
             } finally {Native.ssbm_view_free(platform);}
-            var pad=new Native.Pad { aim=new Native.Vec3(1,0,0),allowed=15 };
+            var pad=new Native.Pad { aim=new Native.Vec3(1,0,0),allowed=31 };
             Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
             pad.buttons=1;for(int i=0;i<6;i++) Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
             Check(jumps==1,"jump callback/layout failed");
@@ -223,7 +224,7 @@ static class Program
                 var pcm=new float[1066];var matrix=new float[16];int gfxCount=0,chargeFrames=0;
                 for(int frame=0;frame<3600;frame++) {
                     int f=frame%600;
-                    var p=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=15,
+                    var p=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=31,
                         buttons=f==1?4u|8u:f==150||f==280?4u:f==350?4u|16u:f==450?2u|8u:f==500?2u:0u};
                     Native.ssbm_sim_step(longRun,in host,in p,1.0/60);
                     Check(Native.ssbm_sim_audio(longRun,pcm,533)==533,Native.Error);
@@ -263,7 +264,7 @@ static class Program
             foreach(var example in new[]{(pitch:.6f,button:2u,want:11u),(pitch:-.9f,button:2u,want:12u),(pitch:.6f,button:4u,want:23u),(pitch:-.9f,button:4u,want:24u),(pitch:.9f,button:2u|16u,want:12u)}) {
                 var sim=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,Native.Error);
                 try {
-                    var pad=new Native.Pad{aim=new Native.Vec3(0,example.pitch,(float)Math.Sqrt(1-example.pitch*example.pitch)),allowed=15};
+                    var pad=new Native.Pad{aim=new Native.Vec3(0,example.pitch,(float)Math.Sqrt(1-example.pitch*example.pitch)),allowed=31};
                     Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
                     Native.ssbm_sim_facing(sim,new Native.Vec3(1,0,0));pad.movement=new Native.Vec3(0,0,1);
                     pad.buttons=example.button;
@@ -273,7 +274,7 @@ static class Program
             }
             var actor=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(actor!=IntPtr.Zero,Native.Error);
             try {
-                var pad=new Native.Pad{aim=new Native.Vec3(0,0,1),movement=new Native.Vec3(0,0,-1),allowed=15};
+                var pad=new Native.Pad{aim=new Native.Vec3(0,0,1),movement=new Native.Vec3(0,0,-1),allowed=31};
                 Native.ssbm_sim_facing(actor,new Native.Vec3(0,0,1));
                 for(int i=0;i<fps/2;i++)Native.ssbm_sim_step(actor,in host,in pad,1.0/fps);
                 Native.ssbm_sim_state(actor,out var state);Check(state.facing.z>.999f&&state.velocity.z<0,"native yaw override changed backpedal momentum");
@@ -294,6 +295,38 @@ static class Program
         }
         Native.ssbm_sim_facing(IntPtr.Zero,default);Check(Native.ssbm_sim_facing_locked(IntPtr.Zero)==0,"null facing boundary");
         Console.WriteLine("PASS: camera directional moves, independent host yaw/backpedal and stored-shot live aim through native DLL at 30/60/144 Hz");
+    }
+    static void DefenseRegressions(string assets,in Native.Host host)
+    {
+        foreach(uint model in new uint[]{11,13,14}) {
+            var effect=Native.ssbm_effect_new(NativeLib.CString(assets),model);Check(effect!=IntPtr.Zero,"shield model: "+Native.Error);
+            try {Check(Native.ssbm_object_update(effect,4)==1,Native.Error);Native.ssbm_view_model(effect,out var info);Check(info.vertex_count>0,"empty shield geometry");
+                var p=Native.ssbm_view_positions(effect,out uint count);var xyz=new float[count*3];Marshal.Copy(p,xyz,0,xyz.Length);foreach(float v in xyz)Check(float.IsFinite(v),"invalid shield position");
+            }finally{Native.ssbm_view_free(effect);}
+        }
+        foreach(int fps in new[]{30,60,144}) {
+            var actor=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(actor!=IntPtr.Zero,"defense tuning: "+Native.Error);
+            var view=Native.ssbm_view_new(NativeLib.CString(assets),0);Check(view!=IntPtr.Zero,Native.Error);
+            try {
+                var pad=new Native.Pad{aim=new Native.Vec3(0,0,1),allowed=31};Native.ssbm_sim_step(actor,in host,in pad,1.0/60);
+                pad.buttons=4096;bool pcm=false;var samples=new float[1066];
+                for(int frame=0;frame<fps;frame++) {Native.ssbm_sim_step(actor,in host,in pad,1.0/fps);Check(Native.ssbm_view_update(view,actor,0)==1,"Guard pose: "+Native.Error);Native.ssbm_sim_audio(actor,samples,533);foreach(float sample in samples)pcm|=Math.Abs(sample)>0.0001f;}
+                Check((Native.ssbm_sim_defense_flags(actor)&1)!=0,"held source Guard failed");Check(pcm,"shield-on source sound missing");
+                float meter=Native.ssbm_sim_shield_fraction(actor);Check(meter>0&&meter<1,"source shield drain absent");
+                Check(Native.ssbm_sim_shield_hit(actor,.1f)==1&&Native.ssbm_sim_shield_fraction(actor)<meter,"shield hit did not drain");
+                Check(Native.ssbm_sim_shield_hit(actor,100)==1&&(Native.ssbm_sim_defense_flags(actor)&4)!=0,"shield break absent");
+                Native.ssbm_sim_step(actor,in host,in pad,1.0/fps);Check(Native.ssbm_view_update(view,actor,0)==1,"Furafura pose: "+Native.Error);
+                Native.ssbm_sim_interrupt(actor);Native.ssbm_sim_place(actor,new Native.Vec3(0,1000,0),2);
+                pad.buttons=0;Native.ssbm_sim_step(actor,in host,in pad,1.0/60);pad.buttons=4096;pad.movement=new Native.Vec3(1,0,0);
+                bool immune=false,ended=false;
+                for(int frame=0;frame<fps*2;frame++) {Native.ssbm_sim_step(actor,in host,in pad,1.0/fps);uint flags=Native.ssbm_sim_defense_flags(actor);immune|=(flags&2)!=0;ended|=immune&&(flags&8)==0;Check(Native.ssbm_view_update(view,actor,0)==1,"EscapeAir pose: "+Native.Error);}
+                Check(immune&&ended,"source air-feint hurt-state window absent");
+                Native.ssbm_sim_state(actor,out var state);float before=Native.ssbm_sim_motion_frame(actor);Native.ssbm_sim_anchor(actor,new Native.Vec3(10,50,20),0);Native.ssbm_sim_state(actor,out var anchored);
+                Check(anchored.position.x==10&&anchored.move_id==state.move_id&&Native.ssbm_sim_motion_frame(actor)==before,"boss anchor reset action clock");
+                Native.ssbm_sim_jump_height(actor,40);Native.ssbm_sim_jump_height(actor,0);
+            }finally{Native.ssbm_view_free(view);Native.ssbm_sim_free(actor);}
+        }
+        Console.WriteLine("PASS: extracted shield models, Guard/Furafura/EscapeAir poses, common sound, source meter/hurt-state window and grapple clock preservation at 30/60/144 FPS");
     }
     static void PresentationRegressions(string assets,in Native.Host host)
     {
@@ -321,7 +354,7 @@ static class Program
         foreach(int fps in new[]{30,60,144}) {
             var sim=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,Native.Error);
             try {
-                var pad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=15};Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                var pad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=31};Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
                 pad.buttons=128;Native.ssbm_sim_step(sim,in host,in pad,1.0/60);pad.buttons=0;
                 bool beam=false,grabWindow=false;
                 for(int f=0;f<fps*2;f++) {
@@ -358,7 +391,7 @@ static class Program
                     Check((initial?Native.ssbm_sim_begin_arrival(sim,NativeLib.CString(assets)):Native.ssbm_sim_begin_rebirth(sim,NativeLib.CString(assets),default))==1,Native.Error);
                     if(initial)Check((Native.ssbm_sim_rebirth_flags(sim)&12)==8,"initial arrival did not start as a visible figurine");
                     Check(Native.ssbm_sim_begin_rebirth(sim,NativeLib.CString(assets),default)==0,"duplicate falloff restarted KO");
-                    var pad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=15};int ko=0,transform=0;bool figurine=false,protectedState=false,koPcm=false,flashOn=false,flashOff=false;
+                    var pad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=31};int ko=0,transform=0;bool figurine=false,protectedState=false,koPcm=false,flashOn=false,flashOff=false;
                     var pcm=new float[1024];var overlay=new float[4];
                     for(int f=0;f<fps*10;f++) {
                         uint before=Native.ssbm_sim_rebirth_flags(sim);pad.movement=move&&(before&8)!=0?new Native.Vec3(0,0,1):default;
