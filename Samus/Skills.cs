@@ -29,7 +29,7 @@ namespace Samus
             Defense=NativeSkills.Make("MeleeShield","SSBM_SHIELD","SSBM_SHIELD_DESC",null,0f,1,false);
             NativeSkills.AddExtra(body,ExtraName,"SSBM_EXTRA_SLOT",pack,DownB,Defense);
             var hud=body.AddComponent<ExtraSkillIcon>();hud.skillName=ExtraName;hud.actionName="Interact";
-            VanillaIcons.Use(DownB,"EngiBodyPlaceSpiderMine");VanillaIcons.Use(Defense,"EngiBodyBubbleShield");
+            VanillaIcons.Use(DownB,"EngiBodyPlaceSpiderMine");VanillaIcons.Use(Defense,"EngiBodyPlaceBubbleShield");
         }
         internal static void Tokens(Language l){for(int i=0;i<4;i++){l.SetStringByToken("SSBM_SKILL_"+i,Names[i]);l.SetStringByToken("SSBM_SKILL_DESC_"+i,Descriptions[i]);}l.SetStringByToken("SSBM_EXTRA_SLOT","X Skill");l.SetStringByToken("SSBM_BOMB","Bomb");l.SetStringByToken("SSBM_BOMB_DESC","X: down-B drops Samus's original timed bomb. Interact prompts take priority.");l.SetStringByToken("SSBM_SHIELD","Shield / Air Feint");l.SetStringByToken("SSBM_SHIELD_DESC","X: hold a shield on the ground or evade once in the air. Shield drains when held or hit; it regenerates while released and breaks when depleted. Interact prompts take priority.");}
         internal static GenericSkill Get(CharacterBody body,int slot)=>slot==4?body.skillLocator.FindSkill(ExtraName):body.skillLocator.GetSkill(Slots[slot]);
