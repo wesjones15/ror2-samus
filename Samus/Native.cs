@@ -72,7 +72,8 @@ namespace Samus
                 ssbm_sim_jump_height(IntPtr.Zero,0);ssbm_sim_anchor(IntPtr.Zero,default,0);
                 ssbm_sim_defense_flags(IntPtr.Zero);ssbm_sim_shield_hit(IntPtr.Zero,0);
                 ssbm_sim_shield_fraction(IntPtr.Zero);ssbm_sim_shield_scale(IntPtr.Zero);
-            }catch(EntryPointNotFoundException e){throw new InvalidOperationException("Samus 0.2.11 requires its matching ssbm.dll behavior exports.",e);}
+                ssbm_sim_mobile_moves(IntPtr.Zero,0);
+            }catch(EntryPointNotFoundException e){throw new InvalidOperationException("Samus requires its matching ssbm.dll behavior exports.",e);}
         }
         public static string Error => NativeLib.Utf8(ssbm_last_error());
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_overlay(IntPtr sim,[Out]float[] rgba);
@@ -111,6 +112,7 @@ namespace Samus
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_hitboxes(IntPtr sim,[Out]HitboxSample[] output,uint max);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_audio(IntPtr sim,[Out]float[] stereo,uint frames);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_tuning(IntPtr sim,Tuning tuning);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_mobile_moves(IntPtr sim,ulong mask);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_place(IntPtr sim,Vec3 vector,uint kind);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_facing(IntPtr sim,Vec3 facing);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_jump_height(IntPtr sim,float height);

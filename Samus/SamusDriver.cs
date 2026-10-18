@@ -90,6 +90,9 @@ namespace Samus
                 else if(control==NativeBody.Hold.Move)p.movement=default;
                 bool sprint=native.UpdateSprint((p.buttons&32)!=0,new Vector3(p.movement.x,0,p.movement.z).sqrMagnitude>0.01f,control==NativeBody.Hold.None);
                 if(sprint)p.buttons|=32;
+                // Starting RT from an already latched vanilla sprint drops to a
+                // walk. A fresh LS-click during the charge is the store gesture.
+                if(state.move_id!=20&&(p.buttons&256)!=0&&sprint){native.UpdateSprint(false,false);p.buttons&=~32u;}
                 uint extra=(uint)Math.Max(0,body.maxJumpCount-2);
                 float speedScale=body.moveSpeed/Mathf.Max(0.1f,body.baseMoveSpeed);
                 // Native Run already supplies Melee's run/walk ratio. Keep item
@@ -148,6 +151,9 @@ namespace Samus
             // The common standing probe starts above it and checks full clearance.
             if(RecoveryGround(safe,0.6f,0.8f,out var standing)){safe=standing;transform.position=standing+feetOffset;}
             sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),ToSim(safe));if(sim==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
+            // Charge Shot is a mobile upper-body action; the generic sim keeps
+            // walking legs on a separate 60 Hz clock and sprint stores charge.
+            if(Native.ssbm_sim_mobile_moves(sim,1UL<<20)!=1)throw new InvalidOperationException("Native mobile Charge Shot unavailable: "+Native.Error);
             view=new SamusView(Math.Min(body.skinIndex,4));self=GCHandle.Alloc(this);
             audio=new SamusAudio(sim);
             Particles=new DiscParticles(scale);

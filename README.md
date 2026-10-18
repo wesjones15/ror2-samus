@@ -58,16 +58,19 @@ load logs an error; an initialized body that fails returns to Commando behavior.
 | Fifth skill: down-B / Bomb | X | Interact, away from prompts |
 | Fifth skill alternate: Shield / Air Feint | Select in loadout; X shields on ground, evades in air | Interact, away from prompts |
 | Jump | A; every jump has Commando's standard height | Jump |
-| Sprint | LS click | Sprint |
+| Sprint / interrupt Charge Shot | LS click | Sprint |
 | Grab / aerial Z-air | B | C |
-| Store Charge Shot while charging | B or jump | C or jump |
+| Store Charge Shot while charging | Sprint, B or jump | Sprint, C or jump |
 | Throw a captured non-boss | LS direction + LT/RT | WASD + primary/secondary |
 | Pummel a captured non-boss | Neutral LT/RT | Neutral primary/secondary |
 | Boss grapple | Hold B to pull self / stay attached; LT contextual attacks; A jumps off | Hold C; secondary attacks; jump detaches |
 | Interact / equipment | X / Y | RoR2 bindings |
 
 Neutral special starts charging, another press fires, and jump/cancel stores the
-charge. `Controls.HoldCharge` optionally changes this to hold/release. Side special
+charge. Samus can walk during Charge Shot startup, hold and firing recovery;
+the original upper-body attack plays over a continuous Melee walk cycle on her
+legs. Sprint during startup or charging stores the current shot and resumes
+sprinting. `Controls.HoldCharge` optionally changes firing to hold/release. Side special
 uses missiles; a quick directional flick selects a super missile. Up special is
 Screw Attack; X's default down-B drops a bomb. Select Shield / Air Feint in the
 fifth loadout row to replace X's bomb with ground shielding and one air evade per

@@ -13,7 +13,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Samus from Melee","0.2.11")]
+    [BepInPlugin(Guid,"Samus from Melee","0.2.12")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -33,7 +33,7 @@ namespace Samus
             var disc=Config.Bind("Paths","Disc","","Your Melee GALE01 revision 2 ISO/GCM/CISO, used to extract missing assets at first launch.");
             MetresPerUnit=Config.Bind("Sim","MetresPerUnit",0.1f,new ConfigDescription("World metres per Melee unit. Movement, reach and model share this scale.",new AcceptableValueRange<float>(0.03f,0.3f)));
             JumpScale=Config.Bind("Sim","JumpScale",1f,new ConfigDescription("Takeoff speed multiplier. 1 uses Melee tuning; increase for RoR2 traversal.",new AcceptableValueRange<float>(0.5f,3f)));
-            HoldCharge=Config.Bind("Controls","HoldCharge",false,"False: tap neutral special to charge, tap again to fire; jump/B stores. True: hold and release to fire.");
+            HoldCharge=Config.Bind("Controls","HoldCharge",false,"False: tap neutral special to charge, tap again to fire; sprint/jump/B stores. True: hold and release to fire.");
             string hint=Path.Combine(here,"assets_dir.txt");
             AssetsDir=Path.GetFullPath(!string.IsNullOrWhiteSpace(assets.Value)?assets.Value:
                 File.Exists(hint)?File.ReadAllText(hint).Trim():Path.Combine(here,"assets"));
@@ -71,7 +71,7 @@ namespace Samus
                         finally { AssetsBusy=false; }
                     }) { IsBackground=true,Name="Samus first-run extraction" }.Start();
                 } else AssetsBusy=false;
-                Logger.LogInfo("Samus 0.2.11 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Samus 0.2.12 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
                 } catch(Exception e) {AssetsReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
         }
         static string FindDisc(string configured,string here)

@@ -1,3 +1,9 @@
+# 0.2.12 mobile Charge Shot
+
+- Grounded RT Charge Shot permits walking during startup, charge and firing recovery. Source upper-body animation plays over a separate, continuous walk cycle on Samus's legs; cannon, effects and hitboxes use the same posed skeleton.
+- Sprint during startup or charging stores the current shot and continues into sprint. The generic Melee core exposes opt-in mobile moves and a fighter-defined upper-body joint root for future characters.
+- Fixed-rate movement/storage tests, real-disc all-costume pose checks, viewer capture and native boundary checks; Unity playtest pending.
+
 # 0.2.11 five-skill Melee controls
 
 - RT neutral-B, LT contextual A/smash, RB side-B, LB up-B. X becomes a real fifth loadout/HUD skill: down-B by default, with Shield / Air Feint as the alternate. Existing vanilla interact prompts take priority over X.

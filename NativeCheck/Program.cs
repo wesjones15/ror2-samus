@@ -46,6 +46,7 @@ static class Program
         }
         var host=new Native.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
         PresentationRegressions(assets,in host);
+        MobileChargeRegressions(assets,in host);
         RebirthRegressions(assets,in host);
         AimingRegressions(assets,in host);
         DefenseRegressions(assets,in host);
@@ -257,6 +258,32 @@ static class Program
             }
             Console.WriteLine("PASS: ABI 4 + 14 layouts, trophy entry, grid tile, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
         } finally { if(view!=IntPtr.Zero)Native.ssbm_view_free(view);Native.ssbm_sim_free(sim); }
+    }
+    static void MobileChargeRegressions(string assets,in Native.Host host)
+    {
+        foreach(int fps in new[]{30,60,144}) {
+            var sim=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,Native.Error);
+            var view=Native.ssbm_view_new(NativeLib.CString(assets),0);Check(view!=IntPtr.Zero,Native.Error);
+            try {
+                Check(Native.ssbm_sim_mobile_moves(sim,1UL<<20)==1,"mobile Charge Shot capability missing");
+                var pad=new Native.Pad {aim=new Native.Vec3(1,0,0),allowed=31};
+                Native.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                pad.movement=new Native.Vec3(1,0,0);pad.buttons=256;
+                for(int f=0;f<fps*3/4;f++)Native.ssbm_sim_step(sim,in host,in pad,1.0/fps);
+                Native.ssbm_sim_state(sim,out var moving);
+                Check(moving.move_id==20&&moving.phase==4&&moving.position.x>1&&moving.shot_charge>0,"Charge Shot stopped walking or charging at "+fps+" FPS");
+                Check(Native.ssbm_view_update(view,sim,1f/fps)==1,"mobile pose: "+Native.Error);
+                var cannon=new float[16];Check(Native.ssbm_sim_bone(sim,50,cannon)==1,"mobile cannon attachment");
+                foreach(float v in cannon)Check(float.IsFinite(v),"mobile cannon attachment nonfinite");
+                var ptr=Native.ssbm_view_positions(view,out uint count);var vertices=new float[count*3];Marshal.Copy(ptr,vertices,0,vertices.Length);
+                foreach(float v in vertices)Check(float.IsFinite(v),"mobile fighter pose nonfinite");
+                pad.buttons=32;uint stored=moving.shot_charge;
+                Native.ssbm_sim_step(sim,in host,in pad,1.0/30);
+                Native.ssbm_sim_state(sim,out var running);
+                Check(running.move_id==0&&running.shot_charge==stored&&running.position.x>moving.position.x,"sprint failed to store charge and continue motion");
+            } finally {Native.ssbm_view_free(view);Native.ssbm_sim_free(sim);}
+        }
+        Console.WriteLine("PASS: mobile Charge Shot pose/cannon, grounded travel and sprint storage at 30/60/144 FPS");
     }
     static void AimingRegressions(string assets,in Native.Host host)
     {

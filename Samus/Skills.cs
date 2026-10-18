@@ -13,7 +13,7 @@ namespace Samus
         internal static readonly SkillSlot[] Slots={SkillSlot.Primary,SkillSlot.Secondary,SkillSlot.Utility,SkillSlot.Special};
         static readonly string[] Names={"Charge Shot","Power Suit","Missile","Screw Attack"};
         static readonly string[] Descriptions={
-            "Neutral special starts charging. Tap again to fire; jump or cancel to store. Airborne neutral special fires stored charge immediately.",
+            "Walk while charging. Tap again to fire; sprint, jump or grab to store. Airborne neutral special fires stored charge immediately.",
             "LT: neutral A while stationary. LS + LT selects camera-directed A attacks; a timed flick charges a smash.",
             "RB: side-B fires a homing missile; a quick direction fires a super missile.",
             "LB: up-B launches Screw Attack, followed by helpless fall."};
