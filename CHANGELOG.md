@@ -1,3 +1,10 @@
+# 0.2.14 knockdown protection, down-B selection and aimed side-B pose
+
+- Melee knockdown and get-up now reject repeated damage, with one second of protection after control returns. RoR2 stun extends that window; buffered LT can fire when control is available.
+- Samus's character-select intro plays down-B once and idles on the floor. The shared presenter now accepts a character-selected intro move.
+- Side-B and Super Missile pitch and yaw Samus's upper body/cannon toward the camera aim while the legs retain their independent gait. The posed muzzle uses the same aim correction.
+- Native, shared presenter and build checks pass; in-game control and visual playtesting remain pending.
+
 # 0.2.13 mobile specials, death and input recovery
 
 - Grounded Melee special moves share independent walking legs and upper-body attack pose. Contextual A remains a full-body attack. Samus's special recharge is shorter.

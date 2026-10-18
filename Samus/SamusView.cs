@@ -58,14 +58,14 @@ namespace Samus
         uint costume;
         readonly IntPtr sim;
         readonly Native.Host host;
-        bool requestUpSpecial,upSpecialStarted;
+        bool requestIntro,introStarted;
         readonly bool idleOnly;
         DiscParticles particles;
         MeleeEffects effects;
         readonly float[] anchorMatrix=new float[16];
         Vector3 drawOffset;
         static readonly Quaternion previewRotation=Quaternion.identity;
-        public bool UpSpecialFinished { get; private set; }
+        public bool IntroFinished { get; private set; }
         public int AudioRate=>32000;
         public Vector3 DrawOffset {set{drawOffset=value;}}
         public Vector3 PoseAnchor {
@@ -94,36 +94,35 @@ namespace Samus
         }
         static void Floor(IntPtr user,in Native.Vec3 from,in Native.Vec3 to,out Native.Collision c)
         { c=new Native.Collision { position=new Native.Vec3(to.x,Mathf.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
-        public void BeginUpSpecial(){Native.ssbm_sim_place(sim,default,0);UpSpecialFinished=false;requestUpSpecial=true;}
+        public void BeginIntro(){Native.ssbm_sim_place(sim,default,0);IntroFinished=false;requestIntro=true;}
         public bool RenderAudio(float[] stereo)=>Native.ssbm_sim_audio(sim,stereo,(uint)stereo.Length/2)==stereo.Length/2;
         public void Step(float dt)
         {
             uint selected=Skins.Selected();if(selected!=costume){var replacement=new SamusView(selected);view.Dispose();view=replacement;costume=selected;}
             if(idleOnly){view.IdlePose();view.LocalPosition=drawOffset;view.LocalRotation=previewRotation;return;}
             var pad=new Native.Pad { aim=new Native.Vec3(0,0,1),allowed=0 };
-            if(requestUpSpecial) {
-                // Settle the preview's flat floor before the ground up-special.
+            if(requestIntro) {
+                // Settle the preview's flat floor before Samus's ground down-B.
                 Advance(in pad,1f/60);
-                requestUpSpecial=false;upSpecialStarted=true;
-                pad.buttons=4|8;pad.allowed=8; // libssbm SPECIAL|UP, up-special slot.
+                requestIntro=false;introStarted=true;
+                pad.buttons=4|16;pad.allowed=16; // libssbm SPECIAL|DOWN, down-B slot.
                 // One complete native tick latches the press even at high refresh.
                 Advance(in pad,1f/60);
                 pad.buttons=0;pad.allowed=0;
             }
             // Return value is the number of fixed ticks, including zero at high refresh.
             Advance(in pad,dt);
-            if(upSpecialStarted){
+            if(introStarted){
                 if(Native.ssbm_sim_state(sim,out var state)!=1)throw new InvalidOperationException(Native.Error);
-                if(state.move_id!=23){
-                    UpSpecialFinished=true;upSpecialStarted=false;
-                    // Lobby adaptation: finish at idle instead of waiting for a
-                    // gameplay helpless fall. Continue advancing Wait afterward.
+                if(state.move_id!=24){
+                    IntroFinished=true;introStarted=false;
+                    // Leave Samus standing on the lobby floor after the bomb pose.
                     Native.ssbm_sim_place(sim,default,0);Advance(in pad,1f/60);
                 }
             }
             view.Pose(sim,dt);
             // Source animation pose is local to the fighter. Add the native
-            // airborne displacement so Screw Attack rises from the lobby floor.
+            // authored displacement for any selection move remains visible.
             if(Native.ssbm_sim_state(sim,out var rendered)!=1)throw new InvalidOperationException(Native.Error);
             view.LocalPosition=drawOffset+new Vector3(rendered.position.x,rendered.position.y,rendered.position.z);
             // Viewer front-view validation: authored Wait faces +Z.

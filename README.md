@@ -9,10 +9,10 @@ model/particle rendering and PCM device output. Samus's special behavior remains
 character-specific; the gameplay state machine is not yet a generic fighter API.
 See the sibling `libssbm/docs/reuse.md` for the ownership and remaining split.
 
-Character select plays up-B, using the shared Melee selection rule and the
-attack's original animation, effects and sounds. Samus plays Screw Attack once,
-then returns to an animated idle on the UI clock. The preview starts and ends
-on its floor, rising with the original Screw Attack. The icon uses Samus's
+Character select plays Samus's down-B once, with its extracted animation,
+effects and sounds, then returns to animated idle on the UI clock. The shared
+Melee selection presenter lets each fighter choose its own intro. The preview
+starts and ends on its floor. The icon uses Samus's
 original 64x56 CSS grid tile from MnSlChr.usd,
 with its palette and aspect ratio preserved. The shared
 portrait queue installs this texture after extraction; no 3D icon capture is used.
@@ -80,6 +80,12 @@ airtime. Shield drains when held/hit, regenerates when released and stuns on
 depletion. Its source models, player palette, scale, sounds and dodge hurt-state
 window are native-driven. An existing vanilla Interact prompt owns X until release.
 Flick direction + LT, hold, then release for a smash. LB always remains up-B.
+Side-B rotates Samus's upper body and cannon from the disc's vertical pose
+toward the live camera aim while her legs and travel continue independently.
+After a knockdown, repeated ordinary hits are rejected through get-up and for
+one second afterward. Existing RoR2 stun extends this protection until control
+returns; a buffered LT attack can start during that window. This anti-stunlock
+timing is a RoR2 adaptation and awaits an in-game playtest.
 
 With LS held above 0.3, camera pitch selects up attacks from 20 degrees above
 level and down attacks from 50 degrees below. This applies to contextual LT only;

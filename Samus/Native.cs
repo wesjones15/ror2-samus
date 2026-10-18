@@ -74,6 +74,7 @@ namespace Samus
                 ssbm_sim_shield_fraction(IntPtr.Zero);ssbm_sim_shield_scale(IntPtr.Zero);
                 ssbm_sim_mobile_moves(IntPtr.Zero,0);
                 ssbm_sim_play_sound(IntPtr.Zero,0);
+                ssbm_sim_hold_knockdown(IntPtr.Zero);
             }catch(EntryPointNotFoundException e){throw new InvalidOperationException("Samus requires its matching ssbm.dll behavior exports.",e);}
         }
         public static string Error => NativeLib.Utf8(ssbm_last_error());
@@ -126,6 +127,7 @@ namespace Samus
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_facing_locked(IntPtr sim);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_interrupt(IntPtr sim);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_hurt(IntPtr sim);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_hold_knockdown(IntPtr sim);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern void ssbm_sim_launch_pad(IntPtr sim,Vec3 velocity,Vec3 gravity);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_view_new(byte[] dir,uint costume);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_article_new(byte[] dir,uint kind,uint state);

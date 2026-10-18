@@ -47,6 +47,7 @@ class Program{
         Check(aimed.aim.y==.8f&&aimed.aim.z==.6f,"corrected camera aim was replaced by body aim");
         var stunPad=new SamusPad();device.leftTrigger.value=1;stunPad.Read(body,input);stunPad.Take(31,true);
         device.leftTrigger.value=0;stunPad.Read(body,input);
+        for(int tick=0;tick<180;tick++)stunPad.Take(31,true);
         Check((stunPad.Take(31).buttons&2)!=0,"LT tapped during host stun was lost");
         Check((stunPad.Take(31).buttons&2)==0,"buffered LT replayed more than once");
         device.rightTrigger.value=1;device.leftTrigger.value=1;device.leftBumper.value=true;device.rightBumper.value=true;device.a.value=true;device.b.value=true;

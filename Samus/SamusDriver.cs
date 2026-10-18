@@ -18,7 +18,8 @@ namespace Samus
         IntPtr sim;SamusView view;Native.Host host;GCHandle self;Native.State state;
         SamusView entryPlatform;
         SamusView shieldView;uint shieldModel;
-        public bool BlockMeleeDamage(float amount){if(!active||Recovering)return false;uint flags=Native.ssbm_sim_defense_flags(sim);return (flags&2)!=0||((flags&1)!=0&&Native.ssbm_sim_shield_hit(sim,amount)!=0);}
+        public bool MeleeInvulnerable=>active&&!Recovering&&(Native.ssbm_sim_defense_flags(sim)&(2|64))!=0;
+        public bool BlockMeleeDamage(float amount){if(!active||Recovering)return false;uint flags=Native.ssbm_sim_defense_flags(sim);return (flags&1)!=0&&Native.ssbm_sim_shield_hit(sim,amount)!=0;}
         MeleeRecovery recovery;uint recoveryFlags;
         public bool Recovering=>(recoveryFlags&1)!=0;
         public bool RecoveryInvulnerable=>(recoveryFlags&2)!=0;
@@ -85,6 +86,7 @@ namespace Samus
                 if(health<lastHealth-0.001f&&(hitImpulse||native.Control()==NativeBody.Hold.All))Native.ssbm_sim_hurt(sim);
                 lastHealth=health;
                 var control=native.Control();var p=pad.Take(Skills.Allowed(body),control==NativeBody.Hold.All);
+                if(control==NativeBody.Hold.All)Native.ssbm_sim_hold_knockdown(sim);
                 if(Grab!=null&&Grab.Attached&&((p.buttons&1)!=0||control!=NativeBody.Hold.None)){Grab.Detach();Native.ssbm_sim_interrupt(sim);}
                 if(Grab!=null&&Grab.Holding&&((p.buttons&1)!=0||control!=NativeBody.Hold.None))Grab.ReleaseCapture();
                 if(control==NativeBody.Hold.All){p.buttons=0;p.movement=default;p.allowed=0;Native.ssbm_sim_interrupt(sim);}

@@ -193,29 +193,29 @@ static class Program
                 Native.ssbm_view_free(view);view=IntPtr.Zero;
             }
             Check(Native.ssbm_view_new(NativeLib.CString(assets),99)==IntPtr.Zero,"bad costume not rejected");
-            // Character select uses the actual native up-special and sound cues.
+            // Samus character select uses one native down-B and its sound cues.
             // Different host rates must accept zero/multiple ticks per call.
             foreach(int fps in new[]{30,60,144}) {
                 var select=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(select!=IntPtr.Zero,Native.Error);
                 try {
                     var selectPad=new Native.Pad {aim=new Native.Vec3(0,0,1),allowed=0};
                     Native.ssbm_sim_step(select,in host,in selectPad,1.0/60);
-                    selectPad.buttons=4|8;selectPad.allowed=8;
+                    selectPad.buttons=4|16;selectPad.allowed=16;
                     Native.ssbm_sim_step(select,in host,in selectPad,1.0/60);
-                    Native.ssbm_sim_state(select,out var selectState);Check(selectState.move_id==23,"selection did not start up-special");
+                    Native.ssbm_sim_state(select,out var selectState);Check(selectState.move_id==24,"selection did not start down-B");
                     selectPad.buttons=0;selectPad.allowed=0;
-                    bool audible=false,completed=false;float peak=0;
+                    bool audible=false,completed=false;
                     var pcm=new float[2048];
                     for(int frame=0;frame<fps*4;frame++) {
                         Native.ssbm_sim_step(select,in host,in selectPad,1.0/fps);
                         Check(Native.ssbm_sim_audio(select,pcm,1024)==1024,Native.Error);
                         foreach(float sample in pcm){Check(float.IsFinite(sample),"selection PCM nonfinite");if(Math.Abs(sample)>0.00001f)audible=true;}
-                        Native.ssbm_sim_state(select,out selectState);peak=Math.Max(peak,selectState.position.y);if(selectState.move_id!=23)completed=true;
+                        Native.ssbm_sim_state(select,out selectState);if(selectState.move_id!=24)completed=true;
                     }
-                    Check(audible&&completed&&peak>1,"up-special selection rise/sound/completion failed at "+fps+" Hz");
+                    Check(audible&&completed&&Math.Abs(selectState.position.y)<0.1f,"down-B selection sound/completion/floor failed at "+fps+" Hz");
                 } finally {Native.ssbm_sim_free(select);}
             }
-            Console.WriteLine("PASS: character-select up-special and source PCM at 30/60/144 Hz");
+            Console.WriteLine("PASS: character-select down-B and source PCM at 30/60/144 Hz");
             // Reproduce the user's delayed failure through the exact C# bindings,
             // consuming GFX after each step rather than merely decoding archives.
             var longRun=Native.ssbm_sim_new(NativeLib.CString(assets),default);
