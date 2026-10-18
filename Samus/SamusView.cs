@@ -34,6 +34,7 @@ namespace Samus
             if(drawFlags!=0)Models.FlashColor=new Color(overlay[0],overlay[1],overlay[2],overlay[3]);
         }
         internal void IdlePose(){if(Native.ssbm_view_pose(Handle,NativeLib.CString("Wait"),0)!=1)throw new InvalidOperationException(Native.Error);}
+        internal void ClipPose(string clip,float frame){if(Native.ssbm_view_pose(Handle,NativeLib.CString(clip),frame)!=1)throw new InvalidOperationException(Native.Error);}
         internal void ObjectPose(float frame){if(Native.ssbm_object_update(Handle,frame)!=1)throw new InvalidOperationException(Native.Error);}
         internal void FaceCamera(Vector3 position,Quaternion rotation,float scale){var camera=GameSettings.PlayerCamera();if(!camera||scale<=0)return;var local=Quaternion.Inverse(rotation)*(camera.position-position)/scale;local.x=-local.x;if(Native.ssbm_object_camera(Handle,new Native.Vec3(local.x,local.y,local.z))!=1)throw new InvalidOperationException(Native.Error);}
         public uint ModelCount()=>1;
@@ -62,10 +63,11 @@ namespace Samus
         DiscParticles particles;
         MeleeEffects effects;
         readonly float[] anchorMatrix=new float[16];
+        Vector3 drawOffset;
         static readonly Quaternion previewRotation=Quaternion.identity;
         public bool UpSpecialFinished { get; private set; }
         public int AudioRate=>32000;
-        public Vector3 DrawOffset {set{view.LocalPosition=value;}}
+        public Vector3 DrawOffset {set{drawOffset=value;}}
         public Vector3 PoseAnchor {
             get {
                 if(Native.ssbm_sim_state(sim,out var state)!=1 || Native.ssbm_sim_bone(sim,4,anchorMatrix)!=1)throw new InvalidOperationException(Native.Error);
@@ -97,7 +99,7 @@ namespace Samus
         public void Step(float dt)
         {
             uint selected=Skins.Selected();if(selected!=costume){var replacement=new SamusView(selected);view.Dispose();view=replacement;costume=selected;}
-            if(idleOnly){view.IdlePose();view.LocalRotation=previewRotation;return;}
+            if(idleOnly){view.IdlePose();view.LocalPosition=drawOffset;view.LocalRotation=previewRotation;return;}
             var pad=new Native.Pad { aim=new Native.Vec3(0,0,1),allowed=0 };
             if(requestUpSpecial) {
                 // Settle the preview's flat floor before the ground up-special.
@@ -120,6 +122,10 @@ namespace Samus
                 }
             }
             view.Pose(sim,dt);
+            // Source animation pose is local to the fighter. Add the native
+            // airborne displacement so Screw Attack rises from the lobby floor.
+            if(Native.ssbm_sim_state(sim,out var rendered)!=1)throw new InvalidOperationException(Native.Error);
+            view.LocalPosition=drawOffset+new Vector3(rendered.position.x,rendered.position.y,rendered.position.z);
             // Viewer front-view validation: authored Wait faces +Z.
             view.LocalRotation=previewRotation;
         }

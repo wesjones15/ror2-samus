@@ -46,6 +46,7 @@ static class Program
         }
         var host=new Native.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
         PresentationRegressions(assets,in host);
+        GameCueRegressions(assets);
         MobileChargeRegressions(assets,in host);
         RebirthRegressions(assets,in host);
         AimingRegressions(assets,in host);
@@ -203,15 +204,15 @@ static class Program
                     Native.ssbm_sim_step(select,in host,in selectPad,1.0/60);
                     Native.ssbm_sim_state(select,out var selectState);Check(selectState.move_id==23,"selection did not start up-special");
                     selectPad.buttons=0;selectPad.allowed=0;
-                    bool audible=false,completed=false;
+                    bool audible=false,completed=false;float peak=0;
                     var pcm=new float[2048];
                     for(int frame=0;frame<fps*4;frame++) {
                         Native.ssbm_sim_step(select,in host,in selectPad,1.0/fps);
                         Check(Native.ssbm_sim_audio(select,pcm,1024)==1024,Native.Error);
                         foreach(float sample in pcm){Check(float.IsFinite(sample),"selection PCM nonfinite");if(Math.Abs(sample)>0.00001f)audible=true;}
-                        Native.ssbm_sim_state(select,out selectState);if(selectState.move_id!=23)completed=true;
+                        Native.ssbm_sim_state(select,out selectState);peak=Math.Max(peak,selectState.position.y);if(selectState.move_id!=23)completed=true;
                     }
-                    Check(audible&&completed,"up-special selection sound/completion failed at "+fps+" Hz");
+                    Check(audible&&completed&&peak>1,"up-special selection rise/sound/completion failed at "+fps+" Hz");
                 } finally {Native.ssbm_sim_free(select);}
             }
             Console.WriteLine("PASS: character-select up-special and source PCM at 30/60/144 Hz");
@@ -258,6 +259,19 @@ static class Program
             }
             Console.WriteLine("PASS: ABI 4 + 14 layouts, trophy entry, grid tile, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
         } finally { if(view!=IntPtr.Zero)Native.ssbm_view_free(view);Native.ssbm_sim_free(sim); }
+    }
+    static void GameCueRegressions(string assets)
+    {
+        var sim=Native.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,Native.Error);
+        try {
+            Check(Native.ssbm_sim_play_sound(sim,0x7c855)==1,"source GAME cue missing: "+Native.Error);
+            var pcm=new float[32000*2];Check(Native.ssbm_sim_audio(sim,pcm,32000)==32000,Native.Error);
+            Check(Array.Exists(pcm,x=>Math.Abs(x)>0.0001f),"GAME cue decoded silence");
+            var view=Native.ssbm_view_new(NativeLib.CString(assets),0);Check(view!=IntPtr.Zero,Native.Error);
+            try{Check(Native.ssbm_view_pose(view,NativeLib.CString("DownBoundU"),12)==1,"death fall pose unavailable: "+Native.Error);}
+            finally{Native.ssbm_view_free(view);}
+        }finally{Native.ssbm_sim_free(sim);}
+        Console.WriteLine("PASS: extracted Melee GAME voice and grounded death fall pose through C#");
     }
     static void MobileChargeRegressions(string assets,in Native.Host host)
     {

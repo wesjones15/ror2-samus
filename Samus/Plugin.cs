@@ -13,7 +13,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Samus from Melee","0.2.12")]
+    [BepInPlugin(Guid,"Samus from Melee","0.2.13")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -33,7 +33,7 @@ namespace Samus
             var disc=Config.Bind("Paths","Disc","","Your Melee GALE01 revision 2 ISO/GCM/CISO, used to extract missing assets at first launch.");
             MetresPerUnit=Config.Bind("Sim","MetresPerUnit",0.1f,new ConfigDescription("World metres per Melee unit. Movement, reach and model share this scale.",new AcceptableValueRange<float>(0.03f,0.3f)));
             JumpScale=Config.Bind("Sim","JumpScale",1f,new ConfigDescription("Takeoff speed multiplier. 1 uses Melee tuning; increase for RoR2 traversal.",new AcceptableValueRange<float>(0.5f,3f)));
-            HoldCharge=Config.Bind("Controls","HoldCharge",false,"False: tap neutral special to charge, tap again to fire; sprint/jump/B stores. True: hold and release to fire.");
+            HoldCharge=Config.Bind("Controls","HoldCharge",false,"False: tap neutral special to charge, tap again to fire; sprint/jump/X grab stores. True: hold and release to fire.");
             string hint=Path.Combine(here,"assets_dir.txt");
             AssetsDir=Path.GetFullPath(!string.IsNullOrWhiteSpace(assets.Value)?assets.Value:
                 File.Exists(hint)?File.ReadAllText(hint).Trim():Path.Combine(here,"assets"));
@@ -47,7 +47,12 @@ namespace Samus
             Language.onCurrentLanguageChanged+=Tokens;
             ItemHooks.Install();GlyphOverride.Install();Skins.Install();
             RunAudio.Initialize(SamusAudio.StopAll);
-            Logger.LogInfo("Samus 0.2.8 registered; native initialization waits for RoR2 startup completion.");
+            Run.onClientGameOverGlobal+=(run,report)=>{
+                if(run!=SamusDriver.LocalRun||!AssetsReady)return;
+                try{MeleeGameBanner.Show(new SamusGameSound());}
+                catch(Exception e){Logger.LogError("Melee GAME presentation: "+e);MeleeGameBanner.Show(null);}
+            };
+            Logger.LogInfo("Samus 0.2.13 registered; native initialization waits for RoR2 startup completion.");
         }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         void InitializeAssets()
@@ -71,7 +76,7 @@ namespace Samus
                         finally { AssetsBusy=false; }
                     }) { IsBackground=true,Name="Samus first-run extraction" }.Start();
                 } else AssetsBusy=false;
-                Logger.LogInfo("Samus 0.2.12 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Samus 0.2.13 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
                 } catch(Exception e) {AssetsReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
         }
         static string FindDisc(string configured,string here)
@@ -115,7 +120,7 @@ namespace Samus
         {
             var l=Language.currentLanguage;if(l==null)return;
             l.SetStringByToken("SSBM_SAMUS_NAME","Samus");l.SetStringByToken("SSBM_SAMUS_SUBTITLE","Intergalactic Bounty Hunter");
-            l.SetStringByToken("SSBM_SAMUS_DESCRIPTION","Samus brings her Melee Power Suit to Petrichor V.\n\nRT: Charge Shot. LT: contextual A; LS + LT selects camera-directed attacks and a timed flick charges smashes. RB: missiles. LB: Screw Attack. X: Bomb, with Shield / Air Feint as the fifth skill loadout alternate. Interact prompts take priority.\n\nA jumps at Commando height, LS click sprints and B aims a 20m Z-grab. Captured enemies use LS + LT/RT to throw or neutral LT/RT to pummel. Bosses pull Samus instead; hold B and use contextual LT, or A to detach.\n\nOffline prototype: advanced shield rules, full material fidelity, capture escape rules and item integration remain in progress.");
+            l.SetStringByToken("SSBM_SAMUS_DESCRIPTION","Samus brings her Melee Power Suit to Petrichor V.\n\nRT: Charge Shot. LT: contextual A; LS + LT selects camera-directed attacks and a timed flick charges smashes. RB: missiles. LB: Screw Attack. B: Bomb, with Shield / Air Feint as the fifth skill loadout alternate.\n\nA jumps at Commando height, LS click sprints and X aims a 20m Z-grab. X yields to visible interact prompts. Captured enemies use LS + LT/RT to throw or neutral LT/RT to pummel. Bosses pull Samus instead; hold X and use contextual LT, or A to detach.\n\nOffline prototype: advanced shield rules, full material fidelity, capture escape rules and item integration remain in progress.");
             l.SetStringByToken("SSBM_SAMUS_OUTRO","..and so she left, mission complete.");l.SetStringByToken("SSBM_SAMUS_FAIL","..and so she vanished, beyond the blast zone.");Skills.Tokens(l);Skins.Tokens(l);
         }
         void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;Skins.Uninstall();}

@@ -47,7 +47,7 @@ namespace Samus
             if(effect.view!=null||effect.attached||effect.stop)active.Add(effect);
             if(active.Count>128){var old=active[0];old.view?.Dispose();particles.Stop(old.key);active.RemoveAt(0);}
         }
-        public void Step(IntPtr sim,float dt)
+        public void Step(IntPtr sim,float dt,bool readCues=true)
         {
             if(Native.ssbm_sim_charge_visual(sim,boneMatrix)==1) {
                 if(charge==null)charge=new Effect {view=new SamusView(1,0)};
@@ -62,6 +62,7 @@ namespace Samus
                 }
                 if(effect.attached){effect.transform=effect.chargeAttachment&&charge!=null?charge.transform:Bone(sim,effect.bone);particles.Attach(effect.key,effect.transform);}
             }
+            if(!readCues)return;
             uint count=Native.ssbm_sim_gfx(sim,null,0);if(count>1024)throw new InvalidOperationException("Native GFX cue budget exceeded");
             if(count>cues.Length)cues=new Native.Event[count];
             if(count>0&&Native.ssbm_sim_gfx(sim,cues,(uint)cues.Length)!=count)throw new InvalidOperationException(Native.Error);

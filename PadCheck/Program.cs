@@ -33,27 +33,31 @@ class Program{
     static void Main(){
         var body=new RoR2.CharacterBody();var user=new RoR2.LocalUser{cachedBody=body};RoR2.LocalUserManager.readOnlyLocalUsersList.Add(user);
         var device=user.inputPlayer.controllers.controller.pad;var input=new RoR2.InputBankTest{moveVector=new UnityEngine.Vector3(1,0,0)};var pad=new SamusPad();
-        device.b.value=true;pad.Read(body,input);Check(pad.Take(15).buttons==128,"B must grab outside charging/capture");
-        pad.Read(body,input,true);Check((pad.Take(15).buttons&7)==0,"B held through capture must not instantly throw/pummel");
-        device.b.value=false;pad.Read(body,input,true);pad.Take(15);
+        device.x.value=true;pad.Read(body,input);Check(pad.Take(15).buttons==128,"X must grab outside charging/capture");
+        pad.Read(body,input,true);Check((pad.Take(15).buttons&7)==0,"X held through capture must not instantly throw/pummel");
+        device.x.value=false;pad.Read(body,input,true);pad.Take(15);
         device.leftTrigger.value=1;device.leftStick.value=new UnityEngine.Vector2(.1f,1);
         pad.Read(body,input,true);var held=pad.Take(0);Check((held.buttons&2)!=0&&held.movement.y==1&&held.allowed==31,"captured LT must attack with raw LS axes");
         device.leftTrigger.value=0;device.rightTrigger.value=1;pad.Read(body,input,true);Check((pad.Take(31).buttons&4)!=0,"captured RT must select a throw/pummel");
-        device.rightTrigger.value=0;device.b.value=true;
-        pad.Read(body,input,false);Check((pad.Take(15).buttons&128)==0,"B held across release must not instantly re-grab");
-        device.b.value=false;pad.Read(body,input);pad.Take(15);device.b.value=true;pad.Read(body,input);device.b.value=false;pad.Read(body,input);Check((pad.Take(15).buttons&128)!=0,"short B press between fixed ticks was lost");
+        device.rightTrigger.value=0;device.x.value=true;
+        pad.Read(body,input,false);Check((pad.Take(15).buttons&128)==0,"X held across release must not instantly re-grab");
+        device.x.value=false;pad.Read(body,input);pad.Take(15);device.x.value=true;pad.Read(body,input);device.x.value=false;pad.Read(body,input);Check((pad.Take(15).buttons&128)!=0,"short X press between fixed ticks was lost");
         user.isUIFocused=true;pad.Read(body,input);Check(pad.Take(15).buttons==0,"UI focus must clear gameplay presses");
         user.isUIFocused=false;pad.Read(body,input,false,new UnityEngine.Vector3(0,.8f,.6f));var aimed=pad.Take(15);
         Check(aimed.aim.y==.8f&&aimed.aim.z==.6f,"corrected camera aim was replaced by body aim");
-        device.rightTrigger.value=1;device.leftTrigger.value=1;device.leftBumper.value=true;device.rightBumper.value=true;device.a.value=true;device.x.value=true;
+        var stunPad=new SamusPad();device.leftTrigger.value=1;stunPad.Read(body,input);stunPad.Take(31,true);
+        device.leftTrigger.value=0;stunPad.Read(body,input);
+        Check((stunPad.Take(31).buttons&2)!=0,"LT tapped during host stun was lost");
+        Check((stunPad.Take(31).buttons&2)==0,"buffered LT replayed more than once");
+        device.rightTrigger.value=1;device.leftTrigger.value=1;device.leftBumper.value=true;device.rightBumper.value=true;device.a.value=true;device.b.value=true;
         pad.Read(body,input);uint all=pad.Take(31).buttons;Check((all&(256|2|1024|512|1|2048))==(256|2|1024|512|1|2048),"five skills and jump mapping");
-        pad.Read(body,input,false,null,true);all=pad.Take(31).buttons;Check((all&4096)!=0&&(all&2048)==0&&(all&1024)!=0,"X shield alternate changed LB");
-        device.x.value=false;pad.Read(body,input);pad.Take(31);body.interaction.prompt=new UnityEngine.Object();device.x.value=true;pad.Read(body,input);Check((pad.Take(31).buttons&2048)==0&&body.interaction.enabled,"X with prompt must stay vanilla");
-        body.interaction.prompt=null;pad.Read(body,input);Check((pad.Take(31).buttons&2048)==0,"prompt ownership lost mid-hold");
-        device.x.value=false;pad.Read(body,input);pad.Take(31);device.x.value=true;pad.Read(body,input);Check((pad.Take(31).buttons&2048)!=0&&!body.interaction.enabled,"native X must suppress repeat interaction");
-        body.interaction.prompt=new UnityEngine.Object();pad.Read(body,input);Check((pad.Take(31).buttons&2048)!=0&&!body.interaction.enabled,"native hold lost ownership on entering prompt");
+        pad.Read(body,input,false,null,true);all=pad.Take(31).buttons;Check((all&4096)!=0&&(all&2048)==0&&(all&1024)!=0,"B shield alternate changed LB");
+        device.x.value=false;pad.Read(body,input);pad.Take(31);body.interaction.prompt=new UnityEngine.Object();device.x.value=true;pad.Read(body,input);Check((pad.Take(31).buttons&128)==0&&body.interaction.enabled,"X with prompt must stay vanilla");
+        body.interaction.prompt=null;pad.Read(body,input);Check((pad.Take(31).buttons&128)==0,"prompt ownership lost mid-hold");
+        device.x.value=false;pad.Read(body,input);pad.Take(31);device.x.value=true;pad.Read(body,input);Check((pad.Take(31).buttons&128)!=0&&!body.interaction.enabled,"native X must suppress repeat interaction");
+        body.interaction.prompt=new UnityEngine.Object();pad.Read(body,input);Check((pad.Take(31).buttons&128)!=0&&!body.interaction.enabled,"native hold lost ownership on entering prompt");
         pad.ReleaseInteraction();Check(body.interaction.enabled,"cleanup left interaction disabled");
         Check(Math.Abs(Ror2Common.MeleeControls.JumpHeight(15,-30)-3.75f)<1e-6,"Commando height conversion");
-        Console.WriteLine("PASS: five skill bindings, X loadout alternate, vanilla interaction ownership, capture LT/RT axes, jump, edge suppression, UI focus and camera aim");
+        Console.WriteLine("PASS: five skill bindings, B down-B alternate, X grapple and vanilla interaction ownership, capture LT/RT axes, jump, edge suppression, UI focus and camera aim");
     }
 }

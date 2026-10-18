@@ -11,8 +11,9 @@ See the sibling `libssbm/docs/reuse.md` for the ownership and remaining split.
 
 Character select plays up-B, using the shared Melee selection rule and the
 attack's original animation, effects and sounds. Samus plays Screw Attack once,
-then returns to an animated idle on the UI clock. The preview stays at the mannequin's
-origin. The icon uses Samus's original 64x56 CSS grid tile from MnSlChr.usd,
+then returns to an animated idle on the UI clock. The preview starts and ends
+on its floor, rising with the original Screw Attack. The icon uses Samus's
+original 64x56 CSS grid tile from MnSlChr.usd,
 with its palette and aspect ratio preserved. The shared
 portrait queue installs this texture after extraction; no 3D icon capture is used.
 Selection audio stops when the intro completes and on deselection.
@@ -55,25 +56,26 @@ load logs an error; an initialized body that fails returns to Commando behavior.
 | Contextual A / smash | LT; LS direction selects attack | Secondary (right mouse by default) |
 | Side-B / missiles | RB | Utility |
 | Up-B / Screw Attack | LB | Special |
-| Fifth skill: down-B / Bomb | X | Interact, away from prompts |
-| Fifth skill alternate: Shield / Air Feint | Select in loadout; X shields on ground, evades in air | Interact, away from prompts |
+| Fifth skill: down-B / Bomb | B | C |
+| Fifth skill alternate: Shield / Air Feint | Select in loadout; B shields on ground, evades in air | C |
 | Jump | A; every jump has Commando's standard height | Jump |
 | Sprint / interrupt Charge Shot | LS click | Sprint |
-| Grab / aerial Z-air | B | C |
-| Store Charge Shot while charging | Sprint, B or jump | Sprint, C or jump |
+| Grab / aerial Z-air | X, except visible interact prompts | Interact, away from prompts |
+| Store Charge Shot while charging | Sprint, X or jump | Sprint, Interact or jump |
 | Throw a captured non-boss | LS direction + LT/RT | WASD + primary/secondary |
 | Pummel a captured non-boss | Neutral LT/RT | Neutral primary/secondary |
-| Boss grapple | Hold B to pull self / stay attached; LT contextual attacks; A jumps off | Hold C; secondary attacks; jump detaches |
+| Boss grapple | Hold X to pull self / stay attached; LT contextual attacks; A jumps off | Hold Interact; secondary attacks; jump detaches |
 | Interact / equipment | X / Y | RoR2 bindings |
 
 Neutral special starts charging, another press fires, and jump/cancel stores the
 charge. Samus can walk during Charge Shot startup, hold and firing recovery;
 the original upper-body attack plays over a continuous Melee walk cycle on her
-legs. Sprint during startup or charging stores the current shot and resumes
+legs. All grounded special abilities use this generic mobile pose; contextual A,
+grabs and authored dashes remain full-body. Sprint during startup or charging stores the current shot and resumes
 sprinting. `Controls.HoldCharge` optionally changes firing to hold/release. Side special
 uses missiles; a quick directional flick selects a super missile. Up special is
-Screw Attack; X's default down-B drops a bomb. Select Shield / Air Feint in the
-fifth loadout row to replace X's bomb with ground shielding and one air evade per
+Screw Attack; B's default down-B drops a bomb. Select Shield / Air Feint in the
+fifth loadout row to replace B's bomb with ground shielding and one air evade per
 airtime. Shield drains when held/hit, regenerates when released and stuns on
 depletion. Its source models, player palette, scale, sounds and dodge hurt-state
 window are native-driven. An existing vanilla Interact prompt owns X until release.
@@ -81,7 +83,7 @@ Flick direction + LT, hold, then release for a smash. LB always remains up-B.
 
 With LS held above 0.3, camera pitch selects up attacks from 20 degrees above
 level and down attacks from 50 degrees below. This applies to contextual LT only;
-RT/RB/LB/X each explicitly select their assigned B move. Neutral controls remain neutral,
+RT/RB/LB/B each explicitly select their assigned B move. Neutral controls remain neutral,
 and captured throws retain raw LS axes. These selection bands are a 3D adaptation.
 
 Ordinary facing uses RoR2's real CharacterBody.shouldAim decision (aim vs movement,
@@ -110,11 +112,11 @@ sound play once; two seconds of source flashing/invulnerability follow release.
 This preserves RoR2 health and does not add stocks. Initial arrival shares the
 same return phase; ordinary wall/unstuck correction stays immediate. In-game
 verification is pending.
-The shared MeleeArrival state replaces the vanilla pod. Ground B grabs; air B uses
+The shared MeleeArrival state replaces the vanilla pod. Ground X grabs; air X uses
 Z-air. Both extend original tether geometry along the live camera vector to 20m,
 stopping at walls. Ordinary captured enemies enable Melee-style LS axes and LT/RT
 pummel or throws; A releases to jump. Boss/champion targets pull Samus toward the
-contact instead. Hold B to remain attached and use contextual LT; they never enter
+contact instead. Hold X to remain attached and use contextual LT; they never enter
 native capture or throw states and their AI/position is not changed.
 RoR2 capture stops on interruption, death, release or an eight-second timeout; player
 bodies and stationary encounter objects are excluded. Constrained tether/ledge physics
@@ -133,6 +135,15 @@ fighter behavior. Ground/short/aerial jumps use the same Commando-based apex,
 including jump-power item scaling. Special-attack launch velocities stay separate.
 Cooldowns and damage coefficients are RoR2 adaptations. Four alternate disc
 costumes unlock persistently after stage 1, 2, 3 and 4 teleporter events as Samus.
+Special recharge is shorter in 0.2.13: Charge Shot 0.75s, missile 1s, Screw
+Attack 3s and Bomb 1s. LT presses made during host stun or native knockdown
+are buffered briefly and execute once when Samus regains control.
+
+At final death Samus plays her source grounded knockdown pose, then the same
+Melee KO beam and sound as falloff recovery, and vanishes. At run end a shared
+GAME! banner plays the disc's GAME cue from the newly extracted nr_name.ssm.
+The banner typography/timing is a RoR2 rendering of Melee's UI; in-game visual
+and audio validation is pending.
 
 Build from this workspace with `./build.ps1`; `-Deploy` stages the two built DLLs
 in `../target/BepInEx/plugins/MeleeSamus/` for manual copying into the game folder.

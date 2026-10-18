@@ -27,7 +27,8 @@ namespace Samus
         readonly Unstuck unstuck=new Unstuck();readonly WallGuard wallGuard=new WallGuard();
         static readonly float[] sweepHeights={0.1f,0.6f,1.2f,1.7f};
         readonly List<Vector3> walls=new List<Vector3>();
-        bool active,failed,permitDamage;float scale,lastHealth;
+        bool active,failed,permitDamage,deathStarted;float scale,lastHealth;
+        internal static Run LocalRun {get;private set;}
         Native.HitboxSample[] hitboxes=new Native.HitboxSample[64];
         readonly Combat.HitTracker hits=new Combat.HitTracker();
         readonly HashSet<string> presentationErrors=new HashSet<string>();
@@ -53,7 +54,7 @@ namespace Samus
         void Update()
         {
             if(failed||!body)return;pad.Read(body,input,Grab?.Holding??false,MeleeAim.CameraRay(body,input).direction,Skills.ShieldSelected(body));
-            if(body.healthComponent&&!body.healthComponent.alive){audio?.Dispose();return;}
+            if(body.healthComponent&&!body.healthComponent.alive){BeginDeath();return;}
             audio?.Update();
             if(active) { smoother.Smooth();cameraPivot.Use(true);FaceTarget(); }
         }
@@ -83,7 +84,7 @@ namespace Samus
                 float health=body.healthComponent.combinedHealth;
                 if(health<lastHealth-0.001f&&(hitImpulse||native.Control()==NativeBody.Hold.All))Native.ssbm_sim_hurt(sim);
                 lastHealth=health;
-                var control=native.Control();var p=pad.Take(Skills.Allowed(body));
+                var control=native.Control();var p=pad.Take(Skills.Allowed(body),control==NativeBody.Hold.All);
                 if(Grab!=null&&Grab.Attached&&((p.buttons&1)!=0||control!=NativeBody.Hold.None)){Grab.Detach();Native.ssbm_sim_interrupt(sim);}
                 if(Grab!=null&&Grab.Holding&&((p.buttons&1)!=0||control!=NativeBody.Hold.None))Grab.ReleaseCapture();
                 if(control==NativeBody.Hold.All){p.buttons=0;p.movement=default;p.allowed=0;Native.ssbm_sim_interrupt(sim);}
@@ -151,9 +152,10 @@ namespace Samus
             // The common standing probe starts above it and checks full clearance.
             if(RecoveryGround(safe,0.6f,0.8f,out var standing)){safe=standing;transform.position=standing+feetOffset;}
             sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),ToSim(safe));if(sim==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
-            // Charge Shot is a mobile upper-body action; the generic sim keeps
-            // walking legs on a separate 60 Hz clock and sprint stores charge.
-            if(Native.ssbm_sim_mobile_moves(sim,1UL<<20)!=1)throw new InvalidOperationException("Native mobile Charge Shot unavailable: "+Native.Error);
+            // The shared Melee presenter layers all grounded special abilities
+            // over walking legs. A attacks and authored grabs remain full-body.
+            const ulong mobileSpecials=(1UL<<20)|(1UL<<21)|(1UL<<22)|(1UL<<23)|(1UL<<24);
+            if(Native.ssbm_sim_mobile_moves(sim,mobileSpecials)!=1)throw new InvalidOperationException("Native mobile specials unavailable: "+Native.Error);
             view=new SamusView(Math.Min(body.skinIndex,4));self=GCHandle.Alloc(this);
             audio=new SamusAudio(sim);
             Particles=new DiscParticles(scale);
@@ -167,6 +169,7 @@ namespace Samus
             smoother=new StepSmoother(transform);cameraPivot=new CameraPivot(body);cameraPivot.Use(true);active=true;
             unstuck.Reset();unstuck.Step(safe,false,true,false,0.25f,1.8f,RecoveryGround,out _);wallGuard.Placed(safe);
             Plugin.Log.LogInfo("Samus sim started with costume "+body.skinIndex);
+            if(body.isPlayerControlled&&body.hasEffectiveAuthority)LocalRun=Run.instance;
         }
         void LateUpdate()
         {
@@ -284,6 +287,17 @@ namespace Samus
                     skill.SetSkillOverride(this,replacement.skillFamily.variants[0].skillDef,GenericSkill.SkillOverridePriority.Contextual);
             }
         }
+        void BeginDeath()
+        {
+            if(deathStarted||!active)return;deathStarted=true;
+            try {
+                var feet=transform.position-feetOffset;
+                var facing=new Vector3(state.facing.x,0,state.facing.z);
+                var rotation=facing.sqrMagnitude>0.001f?Quaternion.LookRotation(facing):transform.rotation;
+                MeleeDeathSequence.Begin(new SamusDeath(Math.Min(body.skinIndex,4),feet,rotation,scale));
+            } catch(Exception e){Plugin.Log.LogError("Samus death presentation failed: "+e);}
+            Cleanup();
+        }
         void Cleanup()
         {
             pad.ReleaseInteraction();
@@ -296,8 +310,8 @@ namespace Samus
             Grab?.Dispose();Grab=null;
             if(sim!=IntPtr.Zero){Native.ssbm_sim_free(sim);sim=IntPtr.Zero;}if(self.IsAllocated)self.Free();
             if(motor&&motor.Motor)motor.Motor.enabled=true;
-            if(body&&body.modelLocator&&body.modelLocator.modelTransform){GameSettings.HideRenderers(body.modelLocator.modelTransform,false);var a=body.modelLocator.modelTransform.GetComponent<Animator>();if(a)a.enabled=true;}
+            if(body&&body.modelLocator&&body.modelLocator.modelTransform){if(!deathStarted)GameSettings.HideRenderers(body.modelLocator.modelTransform,false);var a=body.modelLocator.modelTransform.GetComponent<Animator>();if(a)a.enabled=!deathStarted;}
         }
-        void OnDestroy(){Cleanup();}
+        void OnDestroy(){if(active&&body&&body.healthComponent&&!body.healthComponent.alive)BeginDeath();Cleanup();}
     }
 }

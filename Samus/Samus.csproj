@@ -6,8 +6,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>Samus</AssemblyName>
     <RootNamespace>Samus</RootNamespace>
-    <!-- The game install to compile against and deploy into. Its own DLLs are the reference
-         assemblies, so the plugin always matches that build (RoR2 DLC4 (2026)). -->
+    <!-- Compile against the game's own reference assemblies to match its build.
+         The release is staged under the workspace target directory for manual installation. -->
     <RoR2Dir Condition="'$(RoR2Dir)' == ''">$(MSBuildThisFileDirectory)..\..\2026 Mod Stuff\RiskOfRain2_DLC4</RoR2Dir>
     <Managed>$(RoR2Dir)\Risk of Rain 2_Data\Managed</Managed>
     <Ror2CommonDir Condition="'$(Ror2CommonDir)' == ''">$(MSBuildThisFileDirectory)..\..\ror2-common</Ror2CommonDir>
@@ -49,6 +49,7 @@
     <Reference Include="UnityEngine.AnimationModule"><HintPath>$(Managed)\UnityEngine.AnimationModule.dll</HintPath></Reference>
     <Reference Include="UnityEngine.ParticleSystemModule"><HintPath>$(Managed)\UnityEngine.ParticleSystemModule.dll</HintPath></Reference>
     <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(Managed)\UnityEngine.IMGUIModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(Managed)\UnityEngine.TextRenderingModule.dll</HintPath></Reference>
     <Reference Include="UnityEngine.UnityWebRequestModule"><HintPath>$(Managed)\UnityEngine.UnityWebRequestModule.dll</HintPath></Reference>
     <Reference Include="com.unity.multiplayer-hlapi.Runtime"><HintPath>$(Managed)\com.unity.multiplayer-hlapi.Runtime.dll</HintPath></Reference>
   </ItemGroup>

@@ -1,3 +1,10 @@
+# 0.2.13 mobile specials, death and input recovery
+
+- Grounded Melee special moves share independent walking legs and upper-body attack pose. Contextual A remains a full-body attack. Samus's special recharge is shorter.
+- B now uses down-B/Shield; X aims the Z-grab while visible vanilla interact prompts retain priority. LT presses during stun or knockdown are buffered and execute once after control returns.
+- Character select preserves Screw Attack's airborne rise and returns to floor idle. Final death plays a disc knockdown, then the falloff KO effect/sound and vanishes. At run end a shared GAME! banner plays the extracted Melee voice cue; first-run extraction now includes nr_name.ssm.
+- Core, disc asset, shared host, controller and native-boundary checks pass. In-game feel, death timing and banner visuals still need a playtest.
+
 # 0.2.12 mobile Charge Shot
 
 - Grounded RT Charge Shot permits walking during startup, charge and firing recovery. Source upper-body animation plays over a separate, continuous walk cycle on Samus's legs; cannon, effects and hitboxes use the same posed skeleton.
