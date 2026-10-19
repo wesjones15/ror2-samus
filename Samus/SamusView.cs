@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Samus
 {
-    internal sealed class SamusView:IViewSource,IDisposable
+    internal sealed class SamusView:IViewSource,IAnimatedTextureSource,IDisposable
     {
         internal IntPtr Handle { get; private set; }
         internal ModelView Models { get; private set; }
@@ -48,7 +48,8 @@ namespace Samus
         public IntPtr Normals(out uint count)=>Native.ssbm_view_normals(Handle,out count);
         public IntPtr Colors(out uint count){var colors=Native.ssbm_view_colors(Handle,out count);if(!Native.HasMaterialAlpha)return colors;var sources=Native.ssbm_view_alpha_sources(Handle,out uint n);return alpha.Resolve(colors,count,sources,n);}
         public IntPtr TextureIds(out uint count)=>Native.ssbm_view_texture_ids(Handle,out count);
-        public IntPtr FrameUvs(out uint count){count=0;return IntPtr.Zero;}
+        public IntPtr FrameUvs(out uint count)=>Native.ssbm_view_frame_uvs(Handle,out count);
+        public uint TextureVersion(uint id)=>Native.ssbm_view_texture_version(Handle,id);
         public void Dispose(){Models?.Dispose();Models=null;alpha.Dispose();if(Handle!=IntPtr.Zero){Native.ssbm_view_free(Handle);Handle=IntPtr.Zero;}}
     }
     internal sealed class SamusDisplay:IMeleeSelectSource,IDisplayEffects
