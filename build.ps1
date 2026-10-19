@@ -36,7 +36,7 @@ if(!$SkipTests) {
 }
 $name='Samus-modern-0.2.17-win-x64'
 $packageRoot=Join-Path $repoRoot ('dist\'+$name)
-$pluginRoot=Join-Path $packageRoot 'BepInEx\plugins\MeleeSamus'
+$pluginRoot=Join-Path $packageRoot 'BepInEx\plugins\Melee'
 $distRoot=[IO.Path]::GetFullPath((Join-Path $repoRoot 'dist'))
 if(![IO.Path]::GetFullPath($packageRoot).StartsWith($distRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) { throw 'Package path is outside dist.' }
 # Remove only the obsolete helpers from previous local builds of this package.
@@ -50,7 +50,7 @@ New-Item -ItemType Directory -Force -Path $pluginRoot | Out-Null
 Copy-Item -LiteralPath (Join-Path $repoRoot 'Samus\bin\Release\netstandard2.1\Samus.dll') -Destination $pluginRoot
 Copy-Item -LiteralPath (Join-Path $libraryRoot 'target\release\ssbm.dll') -Destination $pluginRoot
 Copy-Item -LiteralPath (Join-Path $repoRoot 'README.md'),(Join-Path $repoRoot 'CHANGELOG.md') -Destination $packageRoot
-$payload=@('BepInEx/plugins/MeleeSamus/Samus.dll','BepInEx/plugins/MeleeSamus/ssbm.dll','README.md','CHANGELOG.md')
+$payload=@('BepInEx/plugins/Melee/Samus.dll','BepInEx/plugins/Melee/ssbm.dll','README.md','CHANGELOG.md')
 $commits=[ordered]@{}
 foreach($source in @('libssbm','ror2-samus','ror2-common')) {
     $commits[$source]=(& git -C (Join-Path $repoRoot ('..\'+$source)) rev-parse HEAD)
@@ -74,7 +74,7 @@ $checksum=(Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvaria
 "$checksum  $name.zip" | Set-Content -LiteralPath ($zip+'.sha256') -Encoding ascii
 if($Deploy) {
     # The user copies staged files into their chosen game installation.
-    $destination=Join-Path $repoRoot '..\target\BepInEx\plugins\MeleeSamus'
+    $destination=Join-Path $repoRoot '..\target\BepInEx\plugins\Melee'
     New-Item -ItemType Directory -Force -Path $destination | Out-Null
     foreach($dll in @('Samus.dll','ssbm.dll')) {
         $source=Join-Path $pluginRoot $dll

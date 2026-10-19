@@ -13,11 +13,11 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Samus from Melee","0.2.17")]
+    [BepInPlugin(Guid,"Melee","0.3.0")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
-        public const string Guid="com.libssbm.samus";
+        public const string Guid="com.libssbm.melee";
         internal static ManualLogSource Log;
         internal static string AssetsDir;
         internal static volatile bool AssetsReady,AssetsBusy;
@@ -62,7 +62,7 @@ namespace Samus
                 try{MeleeGameBanner.Show(new MeleeGameEffect(AssetsDir, MeleeNative.FighterSamus, MetresPerUnit.Value));}
                 catch(Exception e){Logger.LogError("Melee GAME presentation: "+e);MeleeGameBanner.Show(null);}
             };
-            Logger.LogInfo("Samus 0.2.17 registered; native initialization waits for RoR2 startup completion.");
+            Logger.LogInfo("Melee 0.3.0 registered; native initialization waits for RoR2 startup completion.");
         }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         void InitializeAssets()
@@ -86,7 +86,7 @@ namespace Samus
                         finally { AssetsBusy=false; }
                     }) { IsBackground=true,Name="Samus first-run extraction" }.Start();
                 } else AssetsBusy=false;
-                Logger.LogInfo("Samus 0.2.17 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Melee 0.3.0 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
                 } catch(Exception e) {AssetsReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
         }
         static string FindDisc(string configured,string here)
