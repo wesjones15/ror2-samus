@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using RoR2;
 using Ror2Common;
@@ -13,8 +13,8 @@ namespace Samus
         public bool Attached=>boss.Attached;
         public void Detach(){boss.Release();beamVisible=false;}
         public void ReleaseCapture(){capture.Dispose();MeleeNative.ssbm_sim_set_grabbed(driver.Simulation,0);}
-        readonly SamusView[] views=new SamusView[4];
-        readonly SamusView[] throwViews=new SamusView[4];readonly float[] attachment=new float[16];
+        readonly MeleeFighterView[] views=new MeleeFighterView[4];
+        readonly MeleeFighterView[] throwViews=new MeleeFighterView[4];readonly float[] attachment=new float[16];
         readonly MeleeNative.Vec3[] points=new MeleeNative.Vec3[64];
         readonly HashSet<(ulong,uint)> pummels=new HashSet<(ulong,uint)>();
         MeleeNative.Event? release;
@@ -72,13 +72,13 @@ namespace Samus
                 NativeHit.Deal(owner,capture.Target,new NativeHitSpec {coefficient=hit.damage/3f,position=at,procCoefficient=1f,damageType=DamageType.Generic,color=DamageColorIndex.Default});Feedback(at,hit.element);}
             return true;
         }
-        void Feedback(Vector3 at,uint element){uint effect=MeleeNative.ssbm_hit_feedback(driver.Simulation,element,2,1);if(effect!=0)driver.Effects.Spawn(effect,DiscParticles.At(at,Quaternion.identity,driver.Units));}
+        void Feedback(Vector3 at,uint element){uint effect=MeleeNative.ssbm_hit_feedback(driver.Simulation,element,2,1);if(effect!=0)driver.Effects.Spawn(effect,MeleeParticles.At(at,Quaternion.identity,driver.Units));}
         public void Draw()
         {
             MeleeNative.ssbm_sim_state(driver.Simulation,out var state);
             for(int i=0;i<4;i++){
                 if(state.move_id==29+i){
-                    if(throwViews[i]==null)throwViews[i]=SamusView.Grapple((uint)i+4);
+                    if(throwViews[i]==null)throwViews[i]=MeleeFighterView.Grapple(Plugin.AssetsDir,(uint)i+4);
                     if(MeleeNative.ssbm_sim_bone(driver.Simulation,51,attachment)==1){
                         var matrix=new Matrix4x4();for(int n=0;n<16;n++)matrix[n]=attachment[n];matrix*=Matrix4x4.Scale(new Vector3(-1,1,1));
                         var f=matrix.GetColumn(2);var u=matrix.GetColumn(1);var rotation=Quaternion.LookRotation(new Vector3(f.x,f.y,f.z),new Vector3(u.x,u.y,u.z));
@@ -95,7 +95,7 @@ namespace Samus
                 draws[part].Add(new ViewDraw {key=(ulong)i+1,pos=new ViewVec3(p.x/driver.Units,p.y/driver.Units,p.z/driver.Units),rot_x=rotation.x,rot_y=rotation.y,rot_z=rotation.z,rot_w=rotation.w,alpha=1});
             }
             for(int part=0;part<4;part++){
-                if(draws[part].Count>0&&views[part]==null)views[part]=SamusView.Grapple((uint)part);
+                if(draws[part].Count>0&&views[part]==null)views[part]=MeleeFighterView.Grapple(Plugin.AssetsDir,(uint)part);
                 if(views[part]!=null){views[part].InstanceDraws=draws[part].ToArray();views[part].Models.Update(driver.Units);}
             }
         }

@@ -55,8 +55,8 @@ namespace Samus
             RoR2Application.onLoad+=InitializeAssets;
             ContentProvider.Register(Guid,AddContent);
             Language.onCurrentLanguageChanged+=Tokens;
-            ItemHooks.Install();GlyphOverride.Install();Skins.Install();
-            RunAudio.Initialize(SamusAudio.StopAll);
+            ItemHooks.Install();GlyphOverride.Install();MeleeSkins.Install();
+            RunAudio.Initialize(MeleeAudio.StopAll);
             Run.onClientGameOverGlobal+=(run,report)=>{
                 if(run!=SamusDriver.LocalRun||!AssetsReady)return;
                 try{MeleeGameBanner.Show(new SamusGameEffect());}
@@ -106,34 +106,15 @@ namespace Samus
         }
         static void AddContent(ContentPack pack)
         {
-            var commando=LegacyResourcesAPI.Load<GameObject>("Prefabs/CharacterBodies/CommandoBody");
-            var display=LegacyResourcesAPI.Load<GameObject>("Prefabs/CharacterDisplays/CommandoDisplay");
-            if(!commando||!display)throw new InvalidOperationException("Commando prefabs unavailable");
-            var body=Prefabs.Clone(commando,"MeleeSamusBody",Guid);var cb=body.GetComponent<CharacterBody>();
-            cb.baseNameToken="SSBM_SAMUS_NAME";cb.subtitleNameToken="SSBM_SAMUS_SUBTITLE";cb.bodyColor=new Color(1f,0.48f,0.06f);
-            cb.baseMaxHealth=140f;cb.levelMaxHealth=42f;cb.baseArmor=Armor.Value;cb.baseJumpCount=2;
-            cb.preferredPodPrefab=null;cb.preferredInitialStateType=new SerializableEntityStateType(typeof(MeleeArrival));
-            foreach(var state in body.GetComponents<EntityStateMachine>()) if(state.customName=="Body"){state.mainStateType=new SerializableEntityStateType(typeof(SamusMain));state.initialStateType=new SerializableEntityStateType(typeof(MeleeArrival));}
-            body.AddComponent<NativeBody>();body.AddComponent<SamusDriver>();body.AddComponent<MeleeRecovery>();body.AddComponent<MeleeDefense>();Skills.Add(body,pack);
-            var lobby=Prefabs.Clone(display,"MeleeSamusDisplay",Guid);DisplayModel.Attach(lobby,Guid,SamusDisplay.Make);Portrait.RequestTexture(body,SamusPortrait.Load);
-            Skins.Add(body,pack);
-            var survivor=ScriptableObject.CreateInstance<SurvivorDef>();survivor.cachedName="MeleeSamus";survivor.bodyPrefab=body;survivor.displayPrefab=lobby;
-            survivor.displayNameToken="SSBM_SAMUS_NAME";survivor.descriptionToken="SSBM_SAMUS_DESCRIPTION";survivor.outroFlavorToken="SSBM_SAMUS_OUTRO";
-            survivor.mainEndingEscapeFailureFlavorToken="SSBM_SAMUS_FAIL";survivor.primaryColor=cb.bodyColor;survivor.desiredSortPosition=102f;
-            pack.bodyPrefabs.Add(new[]{body});pack.survivorDefs.Add(new[]{survivor});pack.entityStateTypes.Add(new[]{typeof(SamusMain),typeof(MeleeArrival)});
-            GlyphOverride.Set(body.name,()=>true,new System.Collections.Generic.Dictionary<SkillSlot,PadButton[]> {
-                [SkillSlot.Primary]=new[]{PadButton.RT},[SkillSlot.Secondary]=new[]{PadButton.LT},
-                [SkillSlot.Utility]=new[]{PadButton.RB},[SkillSlot.Special]=new[]{PadButton.LB} });
+            Skills.Set(MeleeSurvivor.Register(pack,Guid,SamusDef.Def()));
             Tokens();Log.LogInfo("Melee Samus survivor registered");
         }
         static void Tokens()
         {
             var l=Language.currentLanguage;if(l==null)return;
-            l.SetStringByToken("SSBM_SAMUS_NAME","Samus");l.SetStringByToken("SSBM_SAMUS_SUBTITLE","Intergalactic Bounty Hunter");
-            l.SetStringByToken("SSBM_SAMUS_DESCRIPTION","Samus brings her Melee Power Suit to Petrichor V.\n\nRT: Charge Shot. LT: contextual A; LS + LT selects camera-directed attacks and a timed flick charges smashes. RB: missiles. LB: Screw Attack. B: Bomb, with Shield / Air Feint as the fifth skill loadout alternate.\n\nA jumps at Commando height, LS click sprints and X aims a 20m Z-grab. X yields to visible interact prompts. Captured enemies use LS + LT/RT to throw or neutral LT/RT to pummel. Bosses pull Samus instead; hold X and use contextual LT, or A to detach.\n\nOffline prototype: advanced shield rules, full material fidelity, capture escape rules and item integration remain in progress.");
-            l.SetStringByToken("SSBM_SAMUS_OUTRO","..and so she left, mission complete.");l.SetStringByToken("SSBM_SAMUS_FAIL","..and so she vanished, beyond the blast zone.");Skills.Tokens(l);Skins.Tokens(l);
+            MeleeSurvivor.Tokens(l,SamusDef.Def());
         }
-        void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;Skins.Uninstall();}
+        void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;MeleeSkins.Uninstall();}
     }
     public sealed class SamusMain:BaseCharacterMain { }
 }

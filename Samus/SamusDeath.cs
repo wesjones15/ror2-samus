@@ -8,12 +8,14 @@ namespace Samus
     /// extracted fall pose, ftCo_DeadDown KO effect (0x42b) and sound (0x61).
     internal sealed class SamusDeath : IMeleeDeathSource
     {
+        static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Plugin.AssetsDir,MeleeNative.FighterSamus,model);
+        static IMeleeObjectView ChargeView()=>new MeleeFighterView(Plugin.AssetsDir,MeleeNative.FighterSamus,1,0);
         readonly Vector3 feet;
         readonly Quaternion facing;
         readonly float scale;
         IntPtr sim;
-        SamusView view;
-        DiscParticles particles;
+        MeleeFighterView view;
+        MeleeParticles particles;
         MeleeEffects effects;
         PcmStream audio;
         bool vanished;
@@ -21,10 +23,10 @@ namespace Samus
         {
             this.feet=feet;this.facing=facing;this.scale=scale;
             try {
-                view=new SamusView(costume);
+                view=new MeleeFighterView(Plugin.AssetsDir,MeleeNative.FighterSamus,costume);
                 sim=MeleeNative.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),new MeleeNative.Vec3(feet.x/scale,feet.y/scale,feet.z/scale));
                 if(sim==IntPtr.Zero)throw new InvalidOperationException("Melee death sound: "+MeleeNative.Error);
-                particles=new DiscParticles(scale);effects=new MeleeEffects(particles,scale);
+                particles=new MeleeParticles(Plugin.AssetsDir,scale);effects=new MeleeEffects(particles,scale,EffectView,ChargeView,Plugin.LogEffects.Value);
                 try{audio=new PcmStream(32000);}catch(Exception e){Plugin.Log.LogWarning("Melee death audio unavailable: "+e.Message);}
             } catch{Dispose();throw;}
         }
@@ -68,22 +70,17 @@ namespace Samus
         const float TargetWidth=3.6f; // desired on-screen width in metres
         IntPtr sim;
         PcmStream stream;
-        SamusView view;
+        MeleeFighterView view;
         float frame,scale;
         public SamusGameEffect()
         {
             try {
                 sim=MeleeNative.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),default);
                 if(sim==IntPtr.Zero)throw new InvalidOperationException("Melee GAME sound: "+MeleeNative.Error);
-                // if_2F6E.c::ifStatus_803F9628[5] / if_2F72.c::fn_802F7288.
-                // The clip's sample 1513 lives in the user's nr_name.ssm.
                 if(MeleeNative.ssbm_sim_play_sound(sim,0x7c855)!=1)throw new InvalidOperationException("Melee GAME cue: "+MeleeNative.Error);
                 try{stream=new PcmStream(32000);}catch(Exception e){Plugin.Log.LogWarning("Melee GAME audio unavailable: "+e.Message);}
-                // if_2F6E.c::ifStatus_802F7134 loads ScInfCnt_scene_models[5] as
-                // the GAME! burst, replacing the old placeholder GUI text. The
-                // model is presentation-only; keep the voice if it is unavailable.
                 try {
-                    view=SamusView.Game();
+                    view=MeleeFighterView.Game(Plugin.AssetsDir);
                     // The results-screen burst is a screen-space element authored in
                     // the viewer's handedness; render it without the usual model X
                     // mirror so its "GAME!" text reads left-to-right.
@@ -116,4 +113,3 @@ namespace Samus
         public void Dispose(){stream?.Dispose();stream=null;view?.Dispose();view=null;if(sim!=IntPtr.Zero){MeleeNative.ssbm_sim_free(sim);sim=IntPtr.Zero;}}
     }
 }
-

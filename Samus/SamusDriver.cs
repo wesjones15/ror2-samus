@@ -12,13 +12,15 @@ namespace Samus
     [DefaultExecutionOrder(-200)]
     public sealed class SamusDriver : MeleeDriver
     {
-        SamusView view, entryPlatform, shieldView; uint shieldModel;
-        SamusAudio audio;
+        static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Plugin.AssetsDir,MeleeNative.FighterSamus,model);
+        static IMeleeObjectView ChargeView()=>new MeleeFighterView(Plugin.AssetsDir,MeleeNative.FighterSamus,1,0);
+        MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
+        MeleeAudio audio;
         float chargeFraction;
         readonly Combat.HitTracker hits = new Combat.HitTracker();
 
         internal static Run LocalRun { get; private set; }
-        internal DiscParticles Particles { get; private set; }
+        internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
         internal IntPtr Simulation => sim;
         internal float Units => scale;
@@ -53,12 +55,12 @@ namespace Samus
         protected override void UpdateAudio() => audio?.Update();
         protected override void CreatePresentation()
         {
-            view = new SamusView(Math.Min(body.skinIndex, 4));
-            audio = new SamusAudio(sim);
-            Particles = new DiscParticles(scale);
-            Effects = new MeleeEffects(Particles, scale);
+            view = new MeleeFighterView(AssetsDir, MeleeNative.FighterSamus, Math.Min(body.skinIndex, 4));
+            audio = new MeleeAudio(sim);
+            Particles = new MeleeParticles(AssetsDir, scale);
+            Effects = new MeleeEffects(Particles, scale, EffectView, ChargeView, Plugin.LogEffects.Value);
             Grab = new SamusGrab(this, body);
-            entryPlatform = SamusView.EntryPlatform();
+            entryPlatform = MeleeFighterView.EntryPlatform(AssetsDir);
         }
         protected override void DisposePresentation()
         {
@@ -74,12 +76,12 @@ namespace Samus
         {
             Grab?.Dispose(); Grab = new SamusGrab(this, body);
             Effects?.Dispose(); Particles?.Dispose();
-            Particles = new DiscParticles(scale);
-            Effects = new MeleeEffects(Particles, scale);
+            Particles = new MeleeParticles(AssetsDir, scale);
+            Effects = new MeleeEffects(Particles, scale, EffectView, ChargeView, Plugin.LogEffects.Value);
         }
         protected override void ResetEntryPlatform()
         {
-            entryPlatform?.Dispose(); entryPlatform = SamusView.EntryPlatform();
+            entryPlatform?.Dispose(); entryPlatform = MeleeFighterView.EntryPlatform(AssetsDir);
         }
         protected override void StepPresentation(float dt)
         {
@@ -96,7 +98,7 @@ namespace Samus
                 uint defense = MeleeNative.ssbm_sim_defense_flags(sim);
                 if ((defense & 16) != 0) {
                     uint model = (defense & 32) != 0 ? 11u : (defense & 1) != 0 ? 13u : 14u;
-                    if (shieldView == null || shieldModel != model) { shieldView?.Dispose(); shieldView = SamusView.Effect(model); shieldModel = model; }
+                    if (shieldView == null || shieldModel != model) { shieldView?.Dispose(); shieldView = MeleeFighterView.Effect(AssetsDir, MeleeNative.FighterSamus, model); shieldModel = model; }
                     shieldView.ObjectPose(MeleeNative.ssbm_sim_motion_frame(sim));
                     shieldView.Models.Update(scale * MeleeNative.ssbm_sim_shield_scale(sim), d => (body.corePosition, rotation));
                 } else shieldView?.Models.HideAll();

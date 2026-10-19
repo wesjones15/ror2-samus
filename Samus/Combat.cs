@@ -75,7 +75,7 @@ namespace Samus
                             seen.Add(hurt.healthComponent);
                             var driver=owner.GetComponent<SamusDriver>();
                             uint effect=MeleeNative.ssbm_hit_feedback(driver?driver.Simulation:System.IntPtr.Zero,hit.element,(hit.flags>>8)&31,(hit.flags>>16)&7);
-                            if(effect!=0)driver?.Effects?.Spawn(effect,DiscParticles.At(hurt.collider.ClosestPoint(point),Quaternion.identity,scale));
+                            if(effect!=0)driver?.Effects?.Spawn(effect,MeleeParticles.At(hurt.collider.ClosestPoint(point),Quaternion.identity,scale));
                         }
                     }
                 }
@@ -92,7 +92,7 @@ namespace Samus
                     force=direction*500f,procCoefficient=proc,damageType=element==1?DamageType.IgniteOnHit:DamageType.Generic,color=DamageColorIndex.Default })) {
                     var driver=owner.GetComponent<SamusDriver>();
                     uint effect=MeleeNative.ssbm_hit_feedback(driver?driver.Simulation:System.IntPtr.Zero,element,element==2?7u:2u,2);
-                    if(effect!=0)driver?.Effects?.Spawn(effect,DiscParticles.At(hurt.transform.position,Quaternion.identity,driver.Units));
+                    if(effect!=0)driver?.Effects?.Spawn(effect,MeleeParticles.At(hurt.transform.position,Quaternion.identity,driver.Units));
                 }
             }
         }
@@ -102,7 +102,7 @@ namespace Samus
         CharacterBody owner;Vector3 origin,velocity;float modelScale,maxRange;bool impacted;readonly Collider[] assistHits=new Collider[16];
         System.IntPtr projectile;MeleeNative.ProjectileState state;
         readonly HashSet<HealthComponent> explosionVictims=new HashSet<HealthComponent>();
-        HealthComponent target;SamusDriver driver;SamusView view;DiscParticles particles;ulong particleKey;uint particleKind,particleState,particleFrame;bool fullCharge;readonly uint[] effectCues=new uint[32];
+        HealthComponent target;SamusDriver driver;MeleeFighterView view;MeleeParticles particles;ulong particleKey;uint particleKind,particleState,particleFrame;bool fullCharge;readonly uint[] effectCues=new uint[32];
         internal static void Spawn(CharacterBody owner,Vector3 point,Vector3 direction,uint article,uint state,float charge,float scale)
         {
             var go=new GameObject("Samus disc article");go.transform.position=point;
@@ -113,12 +113,12 @@ namespace Samus
                 if(shot.projectile==System.IntPtr.Zero)throw new System.InvalidOperationException(MeleeNative.Error);
                 if(article==1)MeleeNative.ssbm_projectile_lifetime(shot.projectile,0); // RoR2 gun travel: no offscreen lifetime cutoff.
                 if(article==2){MeleeNative.ssbm_projectile_lifetime(shot.projectile,0);shot.maxRange=Plugin.MissileRange.Value;} // Range is the host's cap, not Melee's off-screen cutoff.
-                shot.view=new SamusView(article,state);
+                shot.view=new MeleeFighterView(Plugin.AssetsDir,MeleeNative.FighterSamus,article,state);
                 shot.ReadState();
             }
             catch(System.Exception e) { Plugin.Log.LogError("Samus article presentation failed: "+e.Message);Object.Destroy(go);return; }
             if(article==2&&state==0){var lockOn=new EnemyLock { Range=Mathf.Max(45f,Plugin.MissileRange.Value) };shot.target=lockOn.Update(owner,true,false,Vector2.zero)?.healthComponent;}
-            var transform=DiscParticles.At(point,direction.sqrMagnitude>0?Quaternion.LookRotation(direction):Quaternion.identity,scale);
+            var transform=MeleeParticles.At(point,direction.sqrMagnitude>0?Quaternion.LookRotation(direction):Quaternion.identity,scale);
             // efAlt_Spawn: normal/smash missile source generator graphs.
             shot.SourceEffects(uint.MaxValue,0,transform);
         }
@@ -149,7 +149,7 @@ namespace Samus
             }
             if((state.flags&2)!=0){Destroy(gameObject);return;}
             if(impacted&&particleKind==0&&state.damage>0)Combat.Area(owner,transform.position,state.radius*modelScale,state.damage/3f,1f,Vector3.up,explosionVictims,state.element);
-            var particleTransform=DiscParticles.At(transform.position,velocity.sqrMagnitude>0?Quaternion.LookRotation(velocity):Quaternion.identity,modelScale);
+            var particleTransform=MeleeParticles.At(transform.position,velocity.sqrMagnitude>0?Quaternion.LookRotation(velocity):Quaternion.identity,modelScale);
             particles?.Attach(particleKey,particleTransform);
             uint frame=(uint)state.frame;if(!impacted)SourceEffects(particleFrame,frame,particleTransform);particleFrame=frame;
         }
@@ -185,9 +185,9 @@ namespace Samus
             if(impacted)return;impacted=true;transform.position=at;particles?.Stop(particleKey);
             var force=velocity.sqrMagnitude>0?velocity.normalized:Vector3.up;
             uint cue=MeleeNative.ssbm_projectile_impact(projectile,driver?driver.Simulation:System.IntPtr.Zero);ReadState();
-            if(cue!=0)driver?.Effects?.Spawn(cue,DiscParticles.At(at,Quaternion.identity,modelScale));
+            if(cue!=0)driver?.Effects?.Spawn(cue,MeleeParticles.At(at,Quaternion.identity,modelScale));
             Combat.Area(owner,at,state.radius*modelScale*HitboxScale,state.damage/3f*DamageScale,1f,force,explosionVictims,state.element);
-            if((state.flags&2)==0){view.Dispose();view=new SamusView(particleKind,state.state);}
+            if((state.flags&2)==0){view.Dispose();view=new MeleeFighterView(Plugin.AssetsDir,MeleeNative.FighterSamus,particleKind,state.state);}
         }
         void LateUpdate(){if(view==null)return;view.ObjectPose(state.animation_frame);var rotation=velocity.sqrMagnitude>0.0001f?Quaternion.LookRotation(velocity):Quaternion.identity;view.FaceCamera(transform.position,rotation,modelScale);view.Models.Update(modelScale,d=>(transform.position,rotation));}
         void SourceEffects(uint previous,uint frame,Matrix4x4 transform)

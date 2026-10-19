@@ -5,12 +5,12 @@ using UnityEngine;
 
 namespace Samus
 {
-    // Samus's skill identity only. The shared MeleeSkills builds the SkillDefs,
-    // families, the fifth (B) slot, icons and slot helpers from this layout.
+    // Samus's skill identity only. MeleeSurvivor builds the SkillDefs from this
+    // layout; the built set backs the shared slot helpers the driver reads.
     internal static class Skills
     {
         static MeleeSkillSet set;
-        static readonly MeleeSkillLayout Layout = new MeleeSkillLayout
+        internal static readonly MeleeSkillLayout Layout = new MeleeSkillLayout
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeSamus0",nameToken="SSBM_SKILL_0",descriptionToken="SSBM_SKILL_DESC_0",
@@ -40,8 +40,7 @@ namespace Samus
         };
 
         internal static readonly SkillSlot[] Slots = MeleeSkillSet.Slots;
-        internal static void Add(GameObject body,ContentPack pack)=>set=MeleeSkills.Build(body,pack,Layout);
-        internal static void Tokens(Language l)=>MeleeSkills.Tokens(l,Layout);
+        internal static void Set(MeleeSkillSet built)=>set=built;
         internal static GenericSkill Get(CharacterBody body,int slot)=>set.Get(body,slot);
         internal static bool ShieldSelected(CharacterBody body)=>set.ShieldSelected(body);
         internal static NativeSkillDef Expected(CharacterBody body,int slot)=>set.Expected(body,slot);

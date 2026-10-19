@@ -32,7 +32,7 @@ class Program{
     static void Check(bool ok,string message){if(!ok)throw new Exception(message);}
     static void Main(){
         var body=new RoR2.CharacterBody();var user=new RoR2.LocalUser{cachedBody=body};RoR2.LocalUserManager.readOnlyLocalUsersList.Add(user);
-        var device=user.inputPlayer.controllers.controller.pad;var input=new RoR2.InputBankTest{moveVector=new UnityEngine.Vector3(1,0,0)};var pad=new SamusPad();
+        var device=user.inputPlayer.controllers.controller.pad;var input=new RoR2.InputBankTest{moveVector=new UnityEngine.Vector3(1,0,0)};var pad=new Ror2Common.MeleePad();
         device.x.value=true;pad.Read(body,input);Check(pad.Take(15).buttons==128,"X must grab outside charging/capture");
         pad.Read(body,input,true);Check((pad.Take(15).buttons&7)==0,"X held through capture must not instantly throw/pummel");
         device.x.value=false;pad.Read(body,input,true);pad.Take(15);
@@ -45,7 +45,7 @@ class Program{
         user.isUIFocused=true;pad.Read(body,input);Check(pad.Take(15).buttons==0,"UI focus must clear gameplay presses");
         user.isUIFocused=false;pad.Read(body,input,false,new UnityEngine.Vector3(0,.8f,.6f));var aimed=pad.Take(15);
         Check(aimed.aim.y==.8f&&aimed.aim.z==.6f,"corrected camera aim was replaced by body aim");
-        var stunPad=new SamusPad();device.leftTrigger.value=1;stunPad.Read(body,input);stunPad.Take(31,true);
+        var stunPad=new Ror2Common.MeleePad();device.leftTrigger.value=1;stunPad.Read(body,input);stunPad.Take(31,true);
         device.leftTrigger.value=0;stunPad.Read(body,input);
         for(int tick=0;tick<180;tick++)stunPad.Take(31,true);
         Check((stunPad.Take(31).buttons&2)!=0,"LT tapped during host stun was lost");
