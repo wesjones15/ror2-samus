@@ -25,6 +25,7 @@ namespace Samus
         internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
         internal static ConfigEntry<float> MissileRange,MissileDamageScale,ChargeShotHitboxScale;
+        internal static ConfigEntry<float> StaggerDuration;
         internal static ConfigEntry<bool> LogEffects;
         string nativePath,configuredDisc,pluginDirectory;
         bool nativeStarted,destroyed;
@@ -41,6 +42,7 @@ namespace Samus
             MissileRange=Config.Bind("Combat","MissileRangeMetres",120f,new ConfigDescription("How far a side-B missile flies before it is removed, in metres. 0 is unlimited. Melee's own cutoff is off-screen distance.",new AcceptableValueRange<float>(0f,2000f)));
             MissileDamageScale=Config.Bind("Combat","MissileDamageScale",5f,new ConfigDescription("Multiplier on side-B missile and Super Missile damage, because the move has a cooldown.",new AcceptableValueRange<float>(0.1f,50f)));
             ChargeShotHitboxScale=Config.Bind("Combat","ChargeShotHitboxScale",3f,new ConfigDescription("Charge Shot enemy hit radius multiplier, so shots at range hit more easily. Walls and floor use the shot's own size.",new AcceptableValueRange<float>(1f,10f)));
+            StaggerDuration=Config.Bind("Combat","StaggerDuration",0.25f,new ConfigDescription("Seconds a melee A attack stuns a non-boss enemy. Refreshed per hit so continued attacks lock trash; bosses/elites are exempt. 0 disables.",new AcceptableValueRange<float>(0f,2f)));
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
             string hint=Path.Combine(here,"assets_dir.txt");
             AssetsDir=Path.GetFullPath(!string.IsNullOrWhiteSpace(assets.Value)?assets.Value:

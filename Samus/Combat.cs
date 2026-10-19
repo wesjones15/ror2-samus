@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using RoR2;
 using Ror2Common;
 using UnityEngine;
@@ -70,7 +70,7 @@ namespace Samus
                         var type=hit.element==1?DamageType.IgniteOnHit:DamageType.Generic;
                         if(NativeHit.Deal(owner,hurt.healthComponent,new NativeHitSpec {
                             coefficient=hit.damage/3f,position=hurt.collider.ClosestPoint(point),force=direction*(hit.base_knockback+hit.growth)*5f,
-                            procCoefficient=1f,damageType=type,color=DamageColorIndex.Default
+                            procCoefficient=1f,damageType=type,color=DamageColorIndex.Default,staggerDuration=Plugin.StaggerDuration.Value
                         })) {
                             seen.Add(hurt.healthComponent);
                             var driver=owner.GetComponent<SamusDriver>();
