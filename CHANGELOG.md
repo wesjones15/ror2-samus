@@ -1,3 +1,9 @@
+# 0.2.16 side-B fires forward
+
+- Side-B and Super Missile are always drawn over Samus's walking or idle legs, standing still and in the air as well as walking. The disc clips fire sideways and bake that turn into the pelvis and feet, which showed as turned feet and body and a cannon pointing at the camera.
+- Only the upper body is turned 90 degrees (plus the difference to the camera aim), so the cannon fires forward and tracks the crosshair without moving the legs. Muzzle effects use the same pose.
+- Real-disc pose checks cover standing, aimed and airborne side-B for every costume; in-game playtesting remains pending.
+
 # 0.2.15 animated effect textures and upright side-B
 
 - Side-B keeps Samus upright and turns the cannon toward the camera instead of tilting the whole body.
