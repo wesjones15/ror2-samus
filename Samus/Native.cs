@@ -138,6 +138,7 @@ namespace Samus
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_effect_flags(uint id);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_effect_new(byte[] dir,uint id);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_entry_platform_new(byte[] dir);
+        [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern IntPtr ssbm_game_new(byte[] dir);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_entry_platform_update(IntPtr view,IntPtr sim);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_begin_entry(IntPtr sim,byte[] dir);
         [DllImport(Dll,CallingConvention=CallingConvention.Cdecl)] public static extern uint ssbm_sim_begin_arrival(IntPtr sim,byte[] dir);

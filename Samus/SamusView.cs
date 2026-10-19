@@ -20,6 +20,7 @@ namespace Samus
         internal SamusView(uint article,uint state)
             :this(Native.ssbm_article_new(NativeLib.CString(Plugin.AssetsDir),article,state)) {}
         internal static SamusView Effect(uint model)=>new SamusView(Native.ssbm_effect_new(NativeLib.CString(Plugin.AssetsDir),model));
+        internal static SamusView Game()=>new SamusView(Native.ssbm_game_new(NativeLib.CString(Plugin.AssetsDir)));
         internal static SamusView EntryPlatform()=>new SamusView(Native.ssbm_entry_platform_new(NativeLib.CString(Plugin.AssetsDir)));
         internal static SamusView Grapple(uint part)=>new SamusView(Native.ssbm_grapple_new(NativeLib.CString(Plugin.AssetsDir),part));
         SamusView(IntPtr handle)

@@ -62,11 +62,15 @@ namespace Samus
         }
     }
 
-    internal sealed class SamusGameSound : IMeleeRoundSound
+    internal sealed class SamusGameEffect : IMeleeRoundEffect
     {
+        const float Distance=4f;     // metres in front of the camera
+        const float TargetWidth=3.6f; // desired on-screen width in metres
         IntPtr sim;
         PcmStream stream;
-        public SamusGameSound()
+        SamusView view;
+        float frame,scale;
+        public SamusGameEffect()
         {
             try {
                 sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),default);
@@ -75,10 +79,36 @@ namespace Samus
                 // The clip's sample 1513 lives in the user's nr_name.ssm.
                 if(Native.ssbm_sim_play_sound(sim,0x7c855)!=1)throw new InvalidOperationException("Melee GAME cue: "+Native.Error);
                 try{stream=new PcmStream(32000);}catch(Exception e){Plugin.Log.LogWarning("Melee GAME audio unavailable: "+e.Message);}
+                // if_2F6E.c::ifStatus_802F7134 loads ScInfCnt_scene_models[5] as
+                // the GAME! burst, replacing the old placeholder GUI text. The
+                // model is presentation-only; keep the voice if it is unavailable.
+                try {
+                    view=SamusView.Game();
+                    if(Native.ssbm_view_model(view.Handle,out var info)==1){
+                        float width=info.hi.x-info.lo.x;
+                        if(width>0.001f)scale=TargetWidth/width;
+                    }
+                    if(scale<=0.001f)scale=Plugin.MetresPerUnit.Value;
+                }catch(Exception e){Plugin.Log.LogWarning("Melee GAME model unavailable: "+e.Message);view?.Dispose();view=null;}
             }catch{Dispose();throw;}
         }
-        public void Step(){stream?.Pump(Render,GameSettings.SfxVolume(),false);}
+        public void Step(float dt)
+        {
+            frame+=dt*60f;
+            view?.ObjectPose(frame);
+            stream?.Pump(Render,GameSettings.SfxVolume(),false);
+        }
         bool Render(float[] pcm)=>Native.ssbm_sim_audio(sim,pcm,(uint)pcm.Length/2)==pcm.Length/2;
-        public void Dispose(){stream?.Dispose();stream=null;if(sim!=IntPtr.Zero){Native.ssbm_sim_free(sim);sim=IntPtr.Zero;}}
+        public void Draw()
+        {
+            if(view==null)return;
+            var camera=GameSettings.PlayerCamera();
+            if(!camera)return;
+            var position=camera.position+camera.forward*Distance;
+            var rotation=camera.rotation;
+            view.FaceCamera(position,rotation,scale);
+            view.Models.Update(scale,d=>(position,rotation));
+        }
+        public void Dispose(){stream?.Dispose();stream=null;view?.Dispose();view=null;if(sim!=IntPtr.Zero){Native.ssbm_sim_free(sim);sim=IntPtr.Zero;}}
     }
 }
