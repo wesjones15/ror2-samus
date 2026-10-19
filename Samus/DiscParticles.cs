@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Ror2Common;
 using UnityEngine;
 
@@ -18,15 +18,16 @@ namespace Samus
         sealed class Source : IParticleSource
         {
             IntPtr handle;
-            public Source(){handle=Native.ssbm_particles_new(NativeLib.CString(Plugin.AssetsDir));if(handle==IntPtr.Zero)throw new InvalidOperationException(Native.Error);}
-            public string Error=>Native.Error;
-            public bool Spawn(uint id,float[] transform,ulong key)=>Native.ssbm_particles_spawn(handle,id,transform,key)==1;
-            public bool Attach(ulong key,float[] transform)=>Native.ssbm_particles_attach(handle,key,transform)==1;
-            public void Stop(ulong key)=>Native.ssbm_particles_stop(handle,key);
-            public bool Step(double dt)=>Native.ssbm_particles_step(handle,dt)==1;
-            public uint Draws(ViewParticle[] output,uint max)=>Native.ssbm_particles_draws(handle,output,max);
-            public bool Texture(uint id,out ViewTexture info,byte[] rgba,uint len)=>Native.ssbm_particles_texture(handle,id,out info,rgba,len)==1;
-            public void Dispose(){if(handle!=IntPtr.Zero){Native.ssbm_particles_free(handle);handle=IntPtr.Zero;}}
+            public Source(){handle=MeleeNative.ssbm_particles_new(NativeLib.CString(Plugin.AssetsDir));if(handle==IntPtr.Zero)throw new InvalidOperationException(MeleeNative.Error);}
+            public string Error=>MeleeNative.Error;
+            public bool Spawn(uint id,float[] transform,ulong key)=>MeleeNative.ssbm_particles_spawn(handle,id,transform,key)==1;
+            public bool Attach(ulong key,float[] transform)=>MeleeNative.ssbm_particles_attach(handle,key,transform)==1;
+            public void Stop(ulong key)=>MeleeNative.ssbm_particles_stop(handle,key);
+            public bool Step(double dt)=>MeleeNative.ssbm_particles_step(handle,dt)==1;
+            public uint Draws(ViewParticle[] output,uint max)=>MeleeNative.ssbm_particles_draws(handle,output,max);
+            public bool Texture(uint id,out ViewTexture info,byte[] rgba,uint len)=>MeleeNative.ssbm_particles_texture(handle,id,out info,rgba,len)==1;
+            public void Dispose(){if(handle!=IntPtr.Zero){MeleeNative.ssbm_particles_free(handle);handle=IntPtr.Zero;}}
         }
     }
 }
+

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Threading;
 using BepInEx;
@@ -67,22 +67,22 @@ namespace Samus
             if(nativeStarted||destroyed)return;nativeStarted=true;
             Logger.LogInfo("Samus late native initialization: RoR2 startup completed.");
             try {
-                Native.Load(nativePath);
-                AssetsReady=Native.ssbm_assets_complete(NativeLib.CString(AssetsDir))==1;
+                MeleeNative.Load(nativePath);
+                AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir))==1;
                 if(!AssetsReady) {
                     new Thread(()=> {
                         try {
                             string image=FindDisc(configuredDisc,pluginDirectory);
                             if(image==null) throw new FileNotFoundException("Set Paths.Disc to your Melee GALE01 rev 2 disc image.");
-                            if(Native.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir))!=1) throw new IOException(Native.Error);
-                            AssetsReady=Native.ssbm_assets_complete(NativeLib.CString(AssetsDir))==1;
+                            if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir))!=1) throw new IOException(MeleeNative.Error);
+                            AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir))==1;
                             if(!AssetsReady) throw new IOException("Extraction finished without a complete Samus cache. Set Paths.Disc and restart to retry.");
                             Log.LogInfo("Samus assets extracted from your disc.");
                         } catch(Exception e) { Log.LogError("Samus assets unavailable: "+e.Message); }
                         finally { AssetsBusy=false; }
                     }) { IsBackground=true,Name="Samus first-run extraction" }.Start();
                 } else AssetsBusy=false;
-                Logger.LogInfo("Samus 0.2.17 / libssbm ABI "+Native.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Samus 0.2.17 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
                 } catch(Exception e) {AssetsReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
         }
         static string FindDisc(string configured,string here)
@@ -133,3 +133,4 @@ namespace Samus
     }
     public sealed class SamusMain:BaseCharacterMain { }
 }
+

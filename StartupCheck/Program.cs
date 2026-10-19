@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
@@ -28,7 +28,7 @@ static class Program
                 foreach(var instruction in method.Body.Instructions) {
                     if(instruction.OpCode.Code!=Code.Call&&instruction.OpCode.Code!=Code.Callvirt&&instruction.OpCode.Code!=Code.Newobj)continue;
                     if(!(instruction.Operand is MethodReference call))continue;
-                    if(call.DeclaringType.FullName=="Samus.Native"||call.DeclaringType.FullName=="Ror2Common.NativeLib")
+                    if(call.DeclaringType.FullName=="Ror2Common.MeleeNative"||call.DeclaringType.FullName=="Ror2Common.NativeLib")
                         violations.Add("Native bootstrap call from "+method.FullName+": "+call.FullName);
                     if(methods.TryGetValue(call.FullName,out var local))pending.Push(local);
                 }
@@ -38,7 +38,7 @@ static class Program
                 i.Operand is MethodReference m&&m.DeclaringType.FullName=="RoR2.RoR2Application"&&m.Name=="add_onLoad" ||
                 i.OpCode.Code==Code.Stsfld&&i.Operand is FieldReference f&&f.DeclaringType.FullName=="RoR2.RoR2Application"&&f.Name=="onLoad");
             bool deferred=awake.Body.Instructions.Any(i=>i.OpCode.Code==Code.Ldftn&&i.Operand is MethodReference m&&m.Name=="InitializeAssets");
-            bool loadsNative=initialize!=null&&initialize.HasBody&&initialize.Body.Instructions.Any(i=>i.Operand is MethodReference m&&m.DeclaringType.FullName=="Samus.Native"&&m.Name=="Load");
+            bool loadsNative=initialize!=null&&initialize.HasBody&&initialize.Body.Instructions.Any(i=>i.Operand is MethodReference m&&m.DeclaringType.FullName=="Ror2Common.MeleeNative"&&m.Name=="Load");
             if(!onLoad||!deferred||!loadsNative||((int)initialize.ImplAttributes&8)==0)violations.Add($"Missing deferred, non-inlined onLoad native initialization (onLoad={onLoad}, deferred={deferred}, loadsNative={loadsNative})");
             bool expectUnsafe=args.Skip(1).Contains("--expect-unsafe");
             if(expectUnsafe) {
@@ -51,3 +51,4 @@ static class Program
         } catch(Exception e){Console.Error.WriteLine(e);return 1;}
     }
 }
+

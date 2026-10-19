@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RoR2;
+using Ror2Common;
 using UnityEngine;
 
 namespace Samus
@@ -24,28 +25,28 @@ namespace Samus
         readonly List<Effect> active=new List<Effect>();
         Effect charge;
         readonly float[] boneMatrix=new float[16];
-        Native.Event[] cues=new Native.Event[32];
+        MeleeNative.Event[] cues=new MeleeNative.Event[32];
         ulong nextKey=1;
         public MeleeEffects(DiscParticles particles,float scale){this.particles=particles;this.scale=scale;}
         Matrix4x4 Bone(IntPtr sim,uint bone)
         {
-            if(Native.ssbm_sim_bone(sim,bone,boneMatrix)!=1)throw new InvalidOperationException("Effect attachment: "+Native.Error);
+            if(MeleeNative.ssbm_sim_bone(sim,bone,boneMatrix)!=1)throw new InvalidOperationException("Effect attachment: "+MeleeNative.Error);
             var matrix=new Matrix4x4();for(int i=0;i<16;i++)matrix[i]=boneMatrix[i];return matrix;
         }
         public void Spawn(uint id,Matrix4x4 transform,ulong serial=0,uint bone=0,bool stop=false,IntPtr sim=default)
         {
-            int target=Native.ssbm_effect_target(id);
+            int target=MeleeNative.ssbm_effect_target(id);
             if(target==int.MaxValue){Plugin.Log.LogError("Unresolved Melee effect "+id);return;}
             if(target==int.MinValue)return;
             if(target<int.MinValue+1000) {
                 // RoR2 adaptation of the source Camera_RequestQuake cue.
                 var point=transform.GetColumn(3);ShakeEmitter.CreateSimpleShakeEmitter(new Vector3(point.x,point.y,point.z)*scale,new Wave {amplitude=0.15f,frequency=12f,cycleOffset=0},0.15f,20f,true);return;
             }
-            var effect=new Effect {key=nextKey++,serial=serial,bone=bone,stop=stop,transform=transform,attached=(Native.ssbm_effect_flags(id)&1)!=0&&sim!=IntPtr.Zero,chargeAttachment=id==1151};
+            var effect=new Effect {key=nextKey++,serial=serial,bone=bone,stop=stop,transform=transform,attached=(MeleeNative.ssbm_effect_flags(id)&1)!=0&&sim!=IntPtr.Zero,chargeAttachment=id==1151};
             if(effect.attached)effect.transform=effect.chargeAttachment&&charge!=null?charge.transform:Bone(sim,bone);
             if(target>=0)particles.Spawn((uint)target,effect.transform,effect.key);
             else {
-                effect.view=SamusView.Effect((uint)(-target-1));effect.duration=Native.ssbm_object_duration(effect.view.Handle);
+                effect.view=SamusView.Effect((uint)(-target-1));effect.duration=MeleeNative.ssbm_object_duration(effect.view.Handle);
                 effect.cue=id;effect.model=(uint)(-target-1);
                 if(Plugin.LogEffects.Value)Plugin.Log.LogInfo("Melee effect "+id+" -> model "+effect.model+", duration "+effect.duration+" frames");
             }
@@ -54,12 +55,12 @@ namespace Samus
         }
         public void Step(IntPtr sim,float dt,bool readCues=true)
         {
-            if(Native.ssbm_sim_charge_visual(sim,boneMatrix)==1) {
+            if(MeleeNative.ssbm_sim_charge_visual(sim,boneMatrix)==1) {
                 if(charge==null)charge=new Effect {view=new SamusView(1,0)};
                 var matrix=new Matrix4x4();for(int n=0;n<16;n++)matrix[n]=boneMatrix[n];
                 charge.transform=matrix;charge.frame+=dt*60;
             } else if(charge!=null){charge.view.Dispose();charge=null;}
-            ulong serial=Native.ssbm_sim_motion_serial(sim);
+            ulong serial=MeleeNative.ssbm_sim_motion_serial(sim);
             for(int i=active.Count-1;i>=0;i--) {
                 var effect=active[i];effect.frame+=dt*60;
                 if(effect.stop&&effect.serial!=serial || effect.view!=null&&effect.duration>0&&effect.frame>=effect.duration) {
@@ -68,9 +69,9 @@ namespace Samus
                 if(effect.attached){effect.transform=effect.chargeAttachment&&charge!=null?charge.transform:Bone(sim,effect.bone);particles.Attach(effect.key,effect.transform);}
             }
             if(!readCues)return;
-            uint count=Native.ssbm_sim_gfx(sim,null,0);if(count>1024)throw new InvalidOperationException("Native GFX cue budget exceeded");
-            if(count>cues.Length)cues=new Native.Event[count];
-            if(count>0&&Native.ssbm_sim_gfx(sim,cues,(uint)cues.Length)!=count)throw new InvalidOperationException(Native.Error);
+            uint count=MeleeNative.ssbm_sim_gfx(sim,null,0);if(count>1024)throw new InvalidOperationException("Native GFX cue budget exceeded");
+            if(count>cues.Length)cues=new MeleeNative.Event[count];
+            if(count>0&&MeleeNative.ssbm_sim_gfx(sim,cues,(uint)cues.Length)!=count)throw new InvalidOperationException(MeleeNative.Error);
             for(int i=0;i<count;i++) {
                 var cue=cues[i];var facing=new Vector3(cue.direction.x,0,cue.direction.z);
                 var rotation=facing.sqrMagnitude>0?Quaternion.LookRotation(facing):Quaternion.identity;
@@ -105,3 +106,4 @@ namespace Samus
         public void Dispose(){foreach(var effect in active){effect.view?.Dispose();particles.Stop(effect.key);}active.Clear();charge?.view.Dispose();charge=null;}
     }
 }
+

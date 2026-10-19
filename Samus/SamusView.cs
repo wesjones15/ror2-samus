@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Ror2Common;
 using RoR2;
 using UnityEngine;
@@ -16,50 +16,50 @@ namespace Samus
         byte drawFlags;
         internal ViewDraw[] InstanceDraws;
         internal SamusView(uint costume)
-            :this(Native.ssbm_view_new(NativeLib.CString(Plugin.AssetsDir),Math.Min(costume,4))) {}
+            :this(MeleeNative.ssbm_view_new(NativeLib.CString(Plugin.AssetsDir),Math.Min(costume,4))) {}
         internal SamusView(uint article,uint state)
-            :this(Native.ssbm_article_new(NativeLib.CString(Plugin.AssetsDir),article,state)) {}
-        internal static SamusView Effect(uint model)=>new SamusView(Native.ssbm_effect_new(NativeLib.CString(Plugin.AssetsDir),model));
-        internal static SamusView Game()=>new SamusView(Native.ssbm_game_new(NativeLib.CString(Plugin.AssetsDir)));
-        internal static SamusView EntryPlatform()=>new SamusView(Native.ssbm_entry_platform_new(NativeLib.CString(Plugin.AssetsDir)));
-        internal static SamusView Grapple(uint part)=>new SamusView(Native.ssbm_grapple_new(NativeLib.CString(Plugin.AssetsDir),part));
+            :this(MeleeNative.ssbm_article_new(NativeLib.CString(Plugin.AssetsDir),article,state)) {}
+        internal static SamusView Effect(uint model)=>new SamusView(MeleeNative.ssbm_effect_new(NativeLib.CString(Plugin.AssetsDir),model));
+        internal static SamusView Game()=>new SamusView(MeleeNative.ssbm_game_new(NativeLib.CString(Plugin.AssetsDir)));
+        internal static SamusView EntryPlatform()=>new SamusView(MeleeNative.ssbm_entry_platform_new(NativeLib.CString(Plugin.AssetsDir)));
+        internal static SamusView Grapple(uint part)=>new SamusView(MeleeNative.ssbm_grapple_new(NativeLib.CString(Plugin.AssetsDir),part));
         SamusView(IntPtr handle)
         {
             Handle=handle;
-            if(Handle==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
+            if(Handle==IntPtr.Zero)throw new InvalidOperationException(MeleeNative.Error);
             Models=ModelView.Create(this,"Melee Samus",translucentOpacity:1f);
             if(Models==null){Dispose();throw new InvalidOperationException("Samus ModelView creation failed");}
         }
-        internal void Pose(IntPtr sim,float dt){if(Native.ssbm_view_update(Handle,sim,dt)!=1)throw new InvalidOperationException(Native.Error);
-            drawFlags=Native.HasOverlay&&Native.ssbm_sim_overlay(sim,overlay)==1?(byte)1:(byte)0;
+        internal void Pose(IntPtr sim,float dt){if(MeleeNative.ssbm_view_update(Handle,sim,dt)!=1)throw new InvalidOperationException(MeleeNative.Error);
+            drawFlags=MeleeNative.HasOverlay&&MeleeNative.ssbm_sim_overlay(sim,overlay)==1?(byte)1:(byte)0;
             if(drawFlags!=0)Models.FlashColor=new Color(overlay[0],overlay[1],overlay[2],overlay[3]);
         }
-        internal void IdlePose(){if(Native.ssbm_view_pose(Handle,NativeLib.CString("Wait"),0)!=1)throw new InvalidOperationException(Native.Error);}
-        internal void ClipPose(string clip,float frame){if(Native.ssbm_view_pose(Handle,NativeLib.CString(clip),frame)!=1)throw new InvalidOperationException(Native.Error);}
-        internal void ObjectPose(float frame){if(Native.ssbm_object_update(Handle,frame)!=1)throw new InvalidOperationException(Native.Error);}
-        internal void FaceCamera(Vector3 position,Quaternion rotation,float scale){var camera=GameSettings.PlayerCamera();if(!camera||scale<=0)return;var local=Quaternion.Inverse(rotation)*(camera.position-position)/scale;local.x=-local.x;if(Native.ssbm_object_camera(Handle,new Native.Vec3(local.x,local.y,local.z))!=1)throw new InvalidOperationException(Native.Error);}
+        internal void IdlePose(){if(MeleeNative.ssbm_view_pose(Handle,NativeLib.CString("Wait"),0)!=1)throw new InvalidOperationException(MeleeNative.Error);}
+        internal void ClipPose(string clip,float frame){if(MeleeNative.ssbm_view_pose(Handle,NativeLib.CString(clip),frame)!=1)throw new InvalidOperationException(MeleeNative.Error);}
+        internal void ObjectPose(float frame){if(MeleeNative.ssbm_object_update(Handle,frame)!=1)throw new InvalidOperationException(MeleeNative.Error);}
+        internal void FaceCamera(Vector3 position,Quaternion rotation,float scale){var camera=GameSettings.PlayerCamera();if(!camera||scale<=0)return;var local=Quaternion.Inverse(rotation)*(camera.position-position)/scale;local.x=-local.x;if(MeleeNative.ssbm_object_camera(Handle,new MeleeNative.Vec3(local.x,local.y,local.z))!=1)throw new InvalidOperationException(MeleeNative.Error);}
         public uint ModelCount()=>1;
-        public bool Model(uint id,out ViewModelInfo info)=>Native.ssbm_view_model(Handle,out info)==1;
-        public uint Batches(uint id,ViewBatch[] output,uint max)=>Native.ssbm_view_batches(Handle,output,max);
-        public uint Indices(uint id,int[] output,uint max)=>Native.ssbm_view_indices(Handle,output,max);
-        public uint Uvs(uint id,float[] output,uint max)=>Native.ssbm_view_uvs(Handle,output,max);
-        public bool Texture(uint id,out ViewTexture info,byte[] rgba,uint len)=>Native.ssbm_view_texture(Handle,id,out info,rgba,len)==1;
+        public bool Model(uint id,out ViewModelInfo info)=>MeleeNative.ssbm_view_model(Handle,out info)==1;
+        public uint Batches(uint id,ViewBatch[] output,uint max)=>MeleeNative.ssbm_view_batches(Handle,output,max);
+        public uint Indices(uint id,int[] output,uint max)=>MeleeNative.ssbm_view_indices(Handle,output,max);
+        public uint Uvs(uint id,float[] output,uint max)=>MeleeNative.ssbm_view_uvs(Handle,output,max);
+        public bool Texture(uint id,out ViewTexture info,byte[] rgba,uint len)=>MeleeNative.ssbm_view_texture(Handle,id,out info,rgba,len)==1;
         public uint Draws(ViewDraw[] output,uint max){if(InstanceDraws!=null){if(output!=null)Array.Copy(InstanceDraws,output,Math.Min(InstanceDraws.Length,(int)max));return(uint)InstanceDraws.Length;}if(output!=null&&max>0)output[0]=new ViewDraw { key=1,flags=drawFlags,pos=new ViewVec3(LocalPosition.x,LocalPosition.y,LocalPosition.z),rot_x=LocalRotation.x,rot_y=LocalRotation.y,rot_z=LocalRotation.z,rot_w=LocalRotation.w,alpha=1 };return 1;}
-        public IntPtr Positions(out uint count)=>Native.ssbm_view_positions(Handle,out count);
-        public IntPtr Normals(out uint count)=>Native.ssbm_view_normals(Handle,out count);
-        public IntPtr Colors(out uint count){var colors=Native.ssbm_view_colors(Handle,out count);if(!Native.HasMaterialAlpha)return colors;var sources=Native.ssbm_view_alpha_sources(Handle,out uint n);return alpha.Resolve(colors,count,sources,n);}
-        public IntPtr TextureIds(out uint count)=>Native.ssbm_view_texture_ids(Handle,out count);
-        public IntPtr FrameUvs(out uint count)=>Native.ssbm_view_frame_uvs(Handle,out count);
-        public uint TextureVersion(uint id)=>Native.ssbm_view_texture_version(Handle,id);
-        public void Dispose(){Models?.Dispose();Models=null;alpha.Dispose();if(Handle!=IntPtr.Zero){Native.ssbm_view_free(Handle);Handle=IntPtr.Zero;}}
+        public IntPtr Positions(out uint count)=>MeleeNative.ssbm_view_positions(Handle,out count);
+        public IntPtr Normals(out uint count)=>MeleeNative.ssbm_view_normals(Handle,out count);
+        public IntPtr Colors(out uint count){var colors=MeleeNative.ssbm_view_colors(Handle,out count);if(!MeleeNative.HasMaterialAlpha)return colors;var sources=MeleeNative.ssbm_view_alpha_sources(Handle,out uint n);return alpha.Resolve(colors,count,sources,n);}
+        public IntPtr TextureIds(out uint count)=>MeleeNative.ssbm_view_texture_ids(Handle,out count);
+        public IntPtr FrameUvs(out uint count)=>MeleeNative.ssbm_view_frame_uvs(Handle,out count);
+        public uint TextureVersion(uint id)=>MeleeNative.ssbm_view_texture_version(Handle,id);
+        public void Dispose(){Models?.Dispose();Models=null;alpha.Dispose();if(Handle!=IntPtr.Zero){MeleeNative.ssbm_view_free(Handle);Handle=IntPtr.Zero;}}
     }
     internal sealed class SamusDisplay:IMeleeSelectSource,IDisplayEffects
     {
-        static readonly Native.CollideFn collide=Floor;
+        static readonly MeleeNative.CollideFn collide=Floor;
         SamusView view;
         uint costume;
         readonly IntPtr sim;
-        readonly Native.Host host;
+        readonly MeleeNative.Host host;
         bool requestIntro,introStarted,sawUpB;
         readonly bool idleOnly;
         DiscParticles particles;
@@ -72,7 +72,7 @@ namespace Samus
         public Vector3 DrawOffset {set{drawOffset=value;}}
         public Vector3 PoseAnchor {
             get {
-                if(Native.ssbm_sim_state(sim,out var state)!=1 || Native.ssbm_sim_bone(sim,4,anchorMatrix)!=1)throw new InvalidOperationException(Native.Error);
+                if(MeleeNative.ssbm_sim_state(sim,out var state)!=1 || MeleeNative.ssbm_sim_bone(sim,4,anchorMatrix)!=1)throw new InvalidOperationException(MeleeNative.Error);
                 var facing=new Vector3(state.facing.x,0,state.facing.z);
                 var posed=new Vector3(anchorMatrix[12]-state.position.x,anchorMatrix[13]-state.position.y,anchorMatrix[14]-state.position.z);
                 if(facing.sqrMagnitude>0.001f)posed=Quaternion.Inverse(Quaternion.LookRotation(facing))*posed;
@@ -85,7 +85,7 @@ namespace Samus
         public float Scale=>Plugin.MetresPerUnit.Value;
         public float RiseMetres {
             get {
-                if(idleOnly || Native.ssbm_sim_state(sim,out var state)!=1)return 0f;
+                if(idleOnly || MeleeNative.ssbm_sim_state(sim,out var state)!=1)return 0f;
                 return state.position.y*Scale;
             }
         }
@@ -94,24 +94,24 @@ namespace Samus
         SamusDisplay(bool idleOnly=false)
         {
             this.idleOnly=idleOnly;
-            sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),default);
-            if(sim==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
+            sim=MeleeNative.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),default);
+            if(sim==IntPtr.Zero)throw new InvalidOperationException(MeleeNative.Error);
             try { costume=Skins.Selected();view=new SamusView(costume);if(!idleOnly){particles=new DiscParticles(Scale);effects=new MeleeEffects(particles,Scale);} }
-            catch { effects?.Dispose();particles?.Dispose();view?.Dispose();Native.ssbm_sim_free(sim);throw; }
-            host=new Native.Host { collide=System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(collide) };
+            catch { effects?.Dispose();particles?.Dispose();view?.Dispose();MeleeNative.ssbm_sim_free(sim);throw; }
+            host=new MeleeNative.Host { collide=System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(collide) };
         }
-        static void Floor(IntPtr user,in Native.Vec3 from,in Native.Vec3 to,out Native.Collision c)
-        { c=new Native.Collision { position=new Native.Vec3(to.x,Mathf.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
-        public void BeginIntro(){Native.ssbm_sim_place(sim,default,0);IntroFinished=false;requestIntro=true;sawUpB=false;
+        static void Floor(IntPtr user,in MeleeNative.Vec3 from,in MeleeNative.Vec3 to,out MeleeNative.Collision c)
+        { c=new MeleeNative.Collision { position=new MeleeNative.Vec3(to.x,Mathf.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
+        public void BeginIntro(){MeleeNative.ssbm_sim_place(sim,default,0);IntroFinished=false;requestIntro=true;sawUpB=false;
             // mncharsel.c calls gm_80168C5C on pick: the announcer says the
             // fighter's name before the intro move plays. The native bank owns it.
-            Native.ssbm_sim_play_sound(sim,Native.ssbm_announce_sound());}
-        public bool RenderAudio(float[] stereo)=>Native.ssbm_sim_audio(sim,stereo,(uint)stereo.Length/2)==stereo.Length/2;
+            MeleeNative.ssbm_sim_play_sound(sim,MeleeNative.ssbm_announce_sound());}
+        public bool RenderAudio(float[] stereo)=>MeleeNative.ssbm_sim_audio(sim,stereo,(uint)stereo.Length/2)==stereo.Length/2;
         public void Step(float dt)
         {
             uint selected=Skins.Selected();if(selected!=costume){var replacement=new SamusView(selected);view.Dispose();view=replacement;costume=selected;}
             if(idleOnly){view.IdlePose();view.LocalPosition=drawOffset;view.LocalRotation=previewRotation;return;}
-            var pad=new Native.Pad { aim=new Native.Vec3(0,0,1),allowed=0 };
+            var pad=new MeleeNative.Pad { aim=new MeleeNative.Vec3(0,0,1),allowed=0 };
             if(requestIntro) {
                 // Settle the preview's flat floor before Samus's grounded up-B.
                 Advance(in pad,1f/60);
@@ -124,33 +124,33 @@ namespace Samus
             // Return value is the number of fixed ticks, including zero at high refresh.
             Advance(in pad,dt);
             if(introStarted){
-                if(Native.ssbm_sim_state(sim,out var state)!=1)throw new InvalidOperationException(Native.Error);
+                if(MeleeNative.ssbm_sim_state(sim,out var state)!=1)throw new InvalidOperationException(MeleeNative.Error);
                 if(state.move_id==23)sawUpB=true;
                 // Finish only once the Screw Attack has run and the fighter has
                 // returned to the lobby floor, so the full rise-and-fall shows.
                 if(sawUpB&&state.move_id!=23&&state.grounded!=0){
                     IntroFinished=true;introStarted=false;
                     // Leave Samus standing on the lobby floor after the up-B.
-                    Native.ssbm_sim_place(sim,default,0);Advance(in pad,1f/60);
+                    MeleeNative.ssbm_sim_place(sim,default,0);Advance(in pad,1f/60);
                 }
             }
             view.Pose(sim,dt);
             // Source animation pose is local to the fighter. Add the native
             // authored displacement for any selection move remains visible.
-            if(Native.ssbm_sim_state(sim,out var rendered)!=1)throw new InvalidOperationException(Native.Error);
+            if(MeleeNative.ssbm_sim_state(sim,out var rendered)!=1)throw new InvalidOperationException(MeleeNative.Error);
             view.LocalPosition=drawOffset+new Vector3(rendered.position.x,rendered.position.y,rendered.position.z);
             // Viewer front-view validation: authored Wait faces +Z.
             view.LocalRotation=previewRotation;
         }
-        void Advance(in Native.Pad pad,float dt)
+        void Advance(in MeleeNative.Pad pad,float dt)
         {
-            Native.ssbm_sim_step(sim,in host,in pad,dt);
+            MeleeNative.ssbm_sim_step(sim,in host,in pad,dt);
             effects?.Step(sim,dt);particles?.Step(dt);
         }
         public void Draw(Transform display)
         {
             if(idleOnly)return;
-            Native.ssbm_sim_state(sim,out var state);
+            MeleeNative.ssbm_sim_state(sim,out var state);
             var facing=new Vector3(state.facing.x,0,state.facing.z);
             var heading=facing.sqrMagnitude>0.001f?Quaternion.LookRotation(facing):Quaternion.identity;
             var root=Matrix4x4.TRS(display.position,display.rotation,Vector3.one)
@@ -158,6 +158,7 @@ namespace Samus
                 *Matrix4x4.Rotate(Quaternion.Inverse(heading))*Matrix4x4.Translate(-new Vector3(state.position.x,state.position.y,state.position.z)*Scale);
             particles?.Draw(root);effects?.Draw(root);
         }
-        public void Dispose(){effects?.Dispose();particles?.Dispose();view.Dispose();Native.ssbm_sim_free(sim);}
+        public void Dispose(){effects?.Dispose();particles?.Dispose();view.Dispose();MeleeNative.ssbm_sim_free(sim);}
     }
 }
+

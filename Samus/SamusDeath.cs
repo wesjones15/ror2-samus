@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Ror2Common;
 using UnityEngine;
 
@@ -22,8 +22,8 @@ namespace Samus
             this.feet=feet;this.facing=facing;this.scale=scale;
             try {
                 view=new SamusView(costume);
-                sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),new Native.Vec3(feet.x/scale,feet.y/scale,feet.z/scale));
-                if(sim==IntPtr.Zero)throw new InvalidOperationException("Melee death sound: "+Native.Error);
+                sim=MeleeNative.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),new MeleeNative.Vec3(feet.x/scale,feet.y/scale,feet.z/scale));
+                if(sim==IntPtr.Zero)throw new InvalidOperationException("Melee death sound: "+MeleeNative.Error);
                 particles=new DiscParticles(scale);effects=new MeleeEffects(particles,scale);
                 try{audio=new PcmStream(32000);}catch(Exception e){Plugin.Log.LogWarning("Melee death audio unavailable: "+e.Message);}
             } catch{Dispose();throw;}
@@ -37,10 +37,10 @@ namespace Samus
         public void Vanish()
         {
             if(vanished)return;vanished=true;
-            if(Native.ssbm_sim_begin_rebirth(sim,NativeLib.CString(Plugin.AssetsDir),new Native.Vec3(feet.x/scale,feet.y/scale,feet.z/scale))!=1)
-                throw new InvalidOperationException("Melee death KO: "+Native.Error);
-            var host=new Native.Host();var pad=new Native.Pad();
-            Native.ssbm_sim_step(sim,in host,in pad,1.0/60.0);
+            if(MeleeNative.ssbm_sim_begin_rebirth(sim,NativeLib.CString(Plugin.AssetsDir),new MeleeNative.Vec3(feet.x/scale,feet.y/scale,feet.z/scale))!=1)
+                throw new InvalidOperationException("Melee death KO: "+MeleeNative.Error);
+            var host=new MeleeNative.Host();var pad=new MeleeNative.Pad();
+            MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60.0);
             effects.Step(sim,1f/60f);
         }
         public void Step(float dt)
@@ -48,7 +48,7 @@ namespace Samus
             if(vanished){effects.Step(sim,dt,false);particles.Step(dt);}
             audio?.Pump(Render,GameSettings.SfxVolume(),false);
         }
-        bool Render(float[] pcm)=>Native.ssbm_sim_audio(sim,pcm,(uint)pcm.Length/2)==pcm.Length/2;
+        bool Render(float[] pcm)=>MeleeNative.ssbm_sim_audio(sim,pcm,(uint)pcm.Length/2)==pcm.Length/2;
         public void Draw()
         {
             if(!vanished)view.Models.Update(scale,d=>(feet,facing));
@@ -58,7 +58,7 @@ namespace Samus
         public void Dispose()
         {
             audio?.Dispose();audio=null;effects?.Dispose();effects=null;particles?.Dispose();particles=null;
-            view?.Dispose();view=null;if(sim!=IntPtr.Zero){Native.ssbm_sim_free(sim);sim=IntPtr.Zero;}
+            view?.Dispose();view=null;if(sim!=IntPtr.Zero){MeleeNative.ssbm_sim_free(sim);sim=IntPtr.Zero;}
         }
     }
 
@@ -73,18 +73,18 @@ namespace Samus
         public SamusGameEffect()
         {
             try {
-                sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),default);
-                if(sim==IntPtr.Zero)throw new InvalidOperationException("Melee GAME sound: "+Native.Error);
+                sim=MeleeNative.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),default);
+                if(sim==IntPtr.Zero)throw new InvalidOperationException("Melee GAME sound: "+MeleeNative.Error);
                 // if_2F6E.c::ifStatus_803F9628[5] / if_2F72.c::fn_802F7288.
                 // The clip's sample 1513 lives in the user's nr_name.ssm.
-                if(Native.ssbm_sim_play_sound(sim,0x7c855)!=1)throw new InvalidOperationException("Melee GAME cue: "+Native.Error);
+                if(MeleeNative.ssbm_sim_play_sound(sim,0x7c855)!=1)throw new InvalidOperationException("Melee GAME cue: "+MeleeNative.Error);
                 try{stream=new PcmStream(32000);}catch(Exception e){Plugin.Log.LogWarning("Melee GAME audio unavailable: "+e.Message);}
                 // if_2F6E.c::ifStatus_802F7134 loads ScInfCnt_scene_models[5] as
                 // the GAME! burst, replacing the old placeholder GUI text. The
                 // model is presentation-only; keep the voice if it is unavailable.
                 try {
                     view=SamusView.Game();
-                    if(Native.ssbm_view_model(view.Handle,out var info)==1){
+                    if(MeleeNative.ssbm_view_model(view.Handle,out var info)==1){
                         float width=info.hi.x-info.lo.x;
                         if(width>0.001f)scale=TargetWidth/width;
                     }
@@ -98,7 +98,7 @@ namespace Samus
             view?.ObjectPose(frame);
             stream?.Pump(Render,GameSettings.SfxVolume(),false);
         }
-        bool Render(float[] pcm)=>Native.ssbm_sim_audio(sim,pcm,(uint)pcm.Length/2)==pcm.Length/2;
+        bool Render(float[] pcm)=>MeleeNative.ssbm_sim_audio(sim,pcm,(uint)pcm.Length/2)==pcm.Length/2;
         public void Draw()
         {
             if(view==null)return;
@@ -109,6 +109,7 @@ namespace Samus
             view.FaceCamera(position,rotation,scale);
             view.Models.Update(scale,d=>(position,rotation));
         }
-        public void Dispose(){stream?.Dispose();stream=null;view?.Dispose();view=null;if(sim!=IntPtr.Zero){Native.ssbm_sim_free(sim);sim=IntPtr.Zero;}}
+        public void Dispose(){stream?.Dispose();stream=null;view?.Dispose();view=null;if(sim!=IntPtr.Zero){MeleeNative.ssbm_sim_free(sim);sim=IntPtr.Zero;}}
     }
 }
+

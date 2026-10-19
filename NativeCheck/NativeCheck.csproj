@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net6.0</TargetFramework><PlatformTarget>x64</PlatformTarget><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
   <ItemGroup>
-    <Compile Include="../Samus/Native.cs" Link="Native.cs" />
+    <Compile Include="../../ror2-common/src/MeleeNative.cs" Link="MeleeNative.cs" />
     <Compile Include="../../ror2-common/src/NativeLib.cs" Link="NativeLib.cs" />
     <Compile Include="../../ror2-common/src/MaterialAlpha.cs" Link="MaterialAlpha.cs" />
     <Compile Include="../../ror2-common/src/ViewSource.cs" Link="ViewSource.cs" />

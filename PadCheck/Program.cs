@@ -27,7 +27,7 @@ namespace RoR2 {
     public static class LocalUserManager{public static List<LocalUser> readOnlyLocalUsersList=new List<LocalUser>();}
     public class InputBankTest:UnityEngine.Object{public UnityEngine.Vector3 moveVector,aimDirection=UnityEngine.Vector3.forward;public class Button{public bool down;}public Button jump=new Button(),skill1=new Button(),skill2=new Button(),skill3=new Button(),skill4=new Button(),sprint=new Button(),interact=new Button();}
 }
-namespace Samus {static class Native{public struct Vec3{public float x,y,z;public Vec3(float x,float y,float z){this.x=x;this.y=y;this.z=z;}}public struct Pad{public Vec3 movement,aim;public uint buttons,allowed;}}}
+namespace Samus { }
 class Program{
     static void Check(bool ok,string message){if(!ok)throw new Exception(message);}
     static void Main(){

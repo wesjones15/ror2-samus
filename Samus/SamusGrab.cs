@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using RoR2;
 using Ror2Common;
@@ -12,26 +12,26 @@ namespace Samus
         Vector3 beamStart,beamEnd;bool beamVisible,contactSpent;
         public bool Attached=>boss.Attached;
         public void Detach(){boss.Release();beamVisible=false;}
-        public void ReleaseCapture(){capture.Dispose();Native.ssbm_sim_set_grabbed(driver.Simulation,0);}
+        public void ReleaseCapture(){capture.Dispose();MeleeNative.ssbm_sim_set_grabbed(driver.Simulation,0);}
         readonly SamusView[] views=new SamusView[4];
         readonly SamusView[] throwViews=new SamusView[4];readonly float[] attachment=new float[16];
-        readonly Native.Vec3[] points=new Native.Vec3[64];
+        readonly MeleeNative.Vec3[] points=new MeleeNative.Vec3[64];
         readonly HashSet<(ulong,uint)> pummels=new HashSet<(ulong,uint)>();
-        Native.Event? release;
+        MeleeNative.Event? release;
         public bool Holding=>capture.Target;
         public SamusGrab(SamusDriver driver,CharacterBody owner){this.driver=driver;this.owner=owner;capture=new EnemyCapture(owner);boss=new MeleeGrapple(owner);}
         public bool TryCapture(HealthComponent target)
         {
-            Native.ssbm_sim_state(driver.Simulation,out var state);
+            MeleeNative.ssbm_sim_state(driver.Simulation,out var state);
             if(state.move_id!=25&&state.move_id!=26&&state.move_id!=27)return false;
             if(MeleeGrapple.IsBoss(target.body))return false;
             if(!capture.TryCapture(target))return false;
-            Native.ssbm_sim_set_grabbed(driver.Simulation,1);pummels.Clear();return true;
+            MeleeNative.ssbm_sim_set_grabbed(driver.Simulation,1);pummels.Clear();return true;
         }
-        public void Throw(Native.Event cue){if(!boss.Attached)release=cue;}
+        public void Throw(MeleeNative.Event cue){if(!boss.Attached)release=cue;}
         public void AfterStep(float dt)
         {
-            Native.ssbm_sim_state(driver.Simulation,out var current);
+            MeleeNative.ssbm_sim_state(driver.Simulation,out var current);
             bool catching=current.move_id>=25&&current.move_id<=27;
             if(!catching&&!boss.Attached)contactSpent=false;
             beamVisible=false;
@@ -40,9 +40,9 @@ namespace Samus
                     driver.AnchorGrapple(desired);beamStart=Cannon();beamEnd=boss.Anchor;beamVisible=true;return;
                 }
             }
-            uint nativeCount=Native.ssbm_sim_grapple_points(driver.Simulation,points,(uint)points.Length);
+            uint nativeCount=MeleeNative.ssbm_sim_grapple_points(driver.Simulation,points,(uint)points.Length);
             if(catching&&nativeCount>0&&!capture.Target&&!contactSpent){
-                float frame=Native.ssbm_sim_motion_frame(driver.Simulation),start=current.move_id==27?8f:17f,end=current.move_id==27?28f:41f;
+                float frame=MeleeNative.ssbm_sim_motion_frame(driver.Simulation),start=current.move_id==27?8f:17f,end=current.move_id==27?28f:41f;
                 float length=MeleeGrapple.Range*Mathf.Clamp01((frame-start)/6f)*Mathf.Clamp01((end-frame)/6f);
                 beamStart=Cannon();var aim=MeleeAim.CameraRay(owner,owner.inputBank).direction.normalized;beamEnd=beamStart+aim*length;beamVisible=length>0.01f;
                 if(length>0&&MeleeGrapple.Trace(owner,beamStart,aim,length,out var contact,out var hurt)){
@@ -56,34 +56,34 @@ namespace Samus
                     NativeHit.Deal(owner,target,new NativeHitSpec {coefficient=cue.strength/3f,position=target.body.corePosition,force=direction*900f,procCoefficient=1f,damageType=DamageType.Generic,color=DamageColorIndex.Default});Feedback(target.body.corePosition,0);}
             }
             if(capture.Target){
-                Native.ssbm_sim_state(driver.Simulation,out var state);
-                if(Native.ssbm_sim_grabbed(driver.Simulation)==0){capture.Dispose();return;}
+                MeleeNative.ssbm_sim_state(driver.Simulation,out var state);
+                if(MeleeNative.ssbm_sim_grabbed(driver.Simulation)==0){capture.Dispose();return;}
                 Vector3? at=null;
-                if(state.move_id>=29&&state.move_id<=32&&Native.ssbm_sim_bone(driver.Simulation,51,attachment)==1)at=new Vector3(attachment[12],attachment[13],attachment[14])*driver.Units;
-                if(!capture.Step(new Vector3(state.facing.x,0,state.facing.z),dt,at))Native.ssbm_sim_set_grabbed(driver.Simulation,0);
+                if(state.move_id>=29&&state.move_id<=32&&MeleeNative.ssbm_sim_bone(driver.Simulation,51,attachment)==1)at=new Vector3(attachment[12],attachment[13],attachment[14])*driver.Units;
+                if(!capture.Step(new Vector3(state.facing.x,0,state.facing.z),dt,at))MeleeNative.ssbm_sim_set_grabbed(driver.Simulation,0);
             }
         }
-        Vector3 Cannon(){if(Native.ssbm_sim_bone(driver.Simulation,50,attachment)==1)return new Vector3(attachment[12],attachment[13],attachment[14])*driver.Units;return owner.corePosition;}
-        public bool Pummel(in Native.HitboxSample hit)
+        Vector3 Cannon(){if(MeleeNative.ssbm_sim_bone(driver.Simulation,50,attachment)==1)return new Vector3(attachment[12],attachment[13],attachment[14])*driver.Units;return owner.corePosition;}
+        public bool Pummel(in MeleeNative.HitboxSample hit)
         {
             if(!capture.Target)return false;
-            Native.ssbm_sim_state(driver.Simulation,out var state);if(state.move_id!=28)return false;
+            MeleeNative.ssbm_sim_state(driver.Simulation,out var state);if(state.move_id!=28)return false;
             if(pummels.Add((hit.serial,hit.generation))){var at=capture.Target.body.corePosition;
                 NativeHit.Deal(owner,capture.Target,new NativeHitSpec {coefficient=hit.damage/3f,position=at,procCoefficient=1f,damageType=DamageType.Generic,color=DamageColorIndex.Default});Feedback(at,hit.element);}
             return true;
         }
-        void Feedback(Vector3 at,uint element){uint effect=Native.ssbm_hit_feedback(driver.Simulation,element,2,1);if(effect!=0)driver.Effects.Spawn(effect,DiscParticles.At(at,Quaternion.identity,driver.Units));}
+        void Feedback(Vector3 at,uint element){uint effect=MeleeNative.ssbm_hit_feedback(driver.Simulation,element,2,1);if(effect!=0)driver.Effects.Spawn(effect,DiscParticles.At(at,Quaternion.identity,driver.Units));}
         public void Draw()
         {
-            Native.ssbm_sim_state(driver.Simulation,out var state);
+            MeleeNative.ssbm_sim_state(driver.Simulation,out var state);
             for(int i=0;i<4;i++){
                 if(state.move_id==29+i){
                     if(throwViews[i]==null)throwViews[i]=SamusView.Grapple((uint)i+4);
-                    if(Native.ssbm_sim_bone(driver.Simulation,51,attachment)==1){
+                    if(MeleeNative.ssbm_sim_bone(driver.Simulation,51,attachment)==1){
                         var matrix=new Matrix4x4();for(int n=0;n<16;n++)matrix[n]=attachment[n];matrix*=Matrix4x4.Scale(new Vector3(-1,1,1));
                         var f=matrix.GetColumn(2);var u=matrix.GetColumn(1);var rotation=Quaternion.LookRotation(new Vector3(f.x,f.y,f.z),new Vector3(u.x,u.y,u.z));
                         var position=new Vector3(attachment[12],attachment[13],attachment[14])*driver.Units;
-                        throwViews[i].ObjectPose(Native.ssbm_sim_motion_frame(driver.Simulation));throwViews[i].FaceCamera(position,rotation,driver.Units);throwViews[i].Models.Update(driver.Units,d=>(position,rotation));
+                        throwViews[i].ObjectPose(MeleeNative.ssbm_sim_motion_frame(driver.Simulation));throwViews[i].FaceCamera(position,rotation,driver.Units);throwViews[i].Models.Update(driver.Units,d=>(position,rotation));
                     }
                 }else throwViews[i]?.Models.HideAll();
             }
@@ -102,3 +102,4 @@ namespace Samus
         public void Dispose(){boss.Release();capture.Dispose();foreach(var view in views)view?.Dispose();foreach(var view in throwViews)view?.Dispose();}
     }
 }
+

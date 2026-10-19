@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using EntityStates;
@@ -12,14 +12,14 @@ namespace Samus
     [DefaultExecutionOrder(-200)]
     public sealed class SamusDriver:MonoBehaviour,IMeleeArrival,IMeleeRecovery,IMeleeDefense
     {
-        static readonly Native.CollideFn collideFn=Collide;
-        static readonly Native.EventFn eventFn=Event;
+        static readonly MeleeNative.CollideFn collideFn=Collide;
+        static readonly MeleeNative.EventFn eventFn=Event;
         CharacterBody body;CharacterMotor motor;InputBankTest input;NativeBody native;CharacterDirection direction;
-        IntPtr sim;SamusView view;Native.Host host;GCHandle self;Native.State state;
+        IntPtr sim;SamusView view;MeleeNative.Host host;GCHandle self;MeleeNative.State state;
         SamusView entryPlatform;
         SamusView shieldView;uint shieldModel;
-        public bool MeleeInvulnerable=>active&&!Recovering&&(Native.ssbm_sim_defense_flags(sim)&(2|64|128))!=0;
-        public bool BlockMeleeDamage(float amount){if(!active||Recovering)return false;uint flags=Native.ssbm_sim_defense_flags(sim);return (flags&1)!=0&&Native.ssbm_sim_shield_hit(sim,amount)!=0;}
+        public bool MeleeInvulnerable=>active&&!Recovering&&(MeleeNative.ssbm_sim_defense_flags(sim)&(2|64|128))!=0;
+        public bool BlockMeleeDamage(float amount){if(!active||Recovering)return false;uint flags=MeleeNative.ssbm_sim_defense_flags(sim);return (flags&1)!=0&&MeleeNative.ssbm_sim_shield_hit(sim,amount)!=0;}
         MeleeRecovery recovery;uint recoveryFlags;
         public bool Recovering=>(recoveryFlags&1)!=0;
         public bool RecoveryInvulnerable=>(recoveryFlags&2)!=0;
@@ -30,7 +30,7 @@ namespace Samus
         readonly List<Vector3> walls=new List<Vector3>();
         bool active,failed,permitDamage,deathStarted;float scale,lastHealth;
         internal static Run LocalRun {get;private set;}
-        Native.HitboxSample[] hitboxes=new Native.HitboxSample[64];
+        MeleeNative.HitboxSample[] hitboxes=new MeleeNative.HitboxSample[64];
         readonly Combat.HitTracker hits=new Combat.HitTracker();
         readonly HashSet<string> presentationErrors=new HashSet<string>();
         SamusAudio audio;
@@ -42,10 +42,10 @@ namespace Samus
         internal bool GrabHeld=>pad.GrabHeld;
         internal bool JumpHeld=>pad.JumpHeld;
         internal bool ControlsInterrupted=>Recovering||Arriving||native.Control()!=NativeBody.Hold.None;
-        internal void AnchorGrapple(Vector3 desiredFeet){if(!active)return;Native.ssbm_sim_state(sim,out var current);var contact=Collision(current.position,ToSim(desiredFeet));Native.ssbm_sim_anchor(sim,contact.position,contact.grounded);}
+        internal void AnchorGrapple(Vector3 desiredFeet){if(!active)return;MeleeNative.ssbm_sim_state(sim,out var current);var contact=Collision(current.position,ToSim(desiredFeet));MeleeNative.ssbm_sim_anchor(sim,contact.position,contact.grounded);}
         public bool Arriving {get;set;}
         float chargeFraction;
-        bool FacingLocked=>Arriving||Recovering||Native.ssbm_sim_facing_locked(sim)!=0;
+        bool FacingLocked=>Arriving||Recovering||MeleeNative.ssbm_sim_facing_locked(sim)!=0;
         void FaceTarget()
         {
             if(state.move_id>=20&&state.move_id<=22)MeleeAim.BeginAttack(body,direction,MeleeAim.CameraRay(body,input).direction);
@@ -74,22 +74,22 @@ namespace Samus
                 try{StartSim();}catch(Exception e){Fallback(e.ToString());return;}
             }
             try {
-                if(smoother.MovedElsewhere){var moved=transform.position-feetOffset;Native.ssbm_sim_place(sim,ToSim(moved),0);smoother.Reset();native.ForgetVelocity();unstuck.Reset();wallGuard.Placed(moved);}
+                if(smoother.MovedElsewhere){var moved=transform.position-feetOffset;MeleeNative.ssbm_sim_place(sim,ToSim(moved),0);smoother.Reset();native.ForgetVelocity();unstuck.Reset();wallGuard.Placed(moved);}
                 bool hitImpulse=false;
                 if(native.TakeExternalVelocity(out var external)&&!Recovering) {
                     hitImpulse=!native.JumpPadLaunch&&external.sqrMagnitude>0.01f;
-                    var velocity=new Native.Vec3(external.x/(scale*60),external.y/(scale*60),external.z/(scale*60));
-                    if(native.JumpPadLaunch){var g=Physics.gravity/(scale*3600);Native.ssbm_sim_launch_pad(sim,velocity,new Native.Vec3(g.x,g.y,g.z));}
-                    else Native.ssbm_sim_place(sim,velocity,1);
+                    var velocity=new MeleeNative.Vec3(external.x/(scale*60),external.y/(scale*60),external.z/(scale*60));
+                    if(native.JumpPadLaunch){var g=Physics.gravity/(scale*3600);MeleeNative.ssbm_sim_launch_pad(sim,velocity,new MeleeNative.Vec3(g.x,g.y,g.z));}
+                    else MeleeNative.ssbm_sim_place(sim,velocity,1);
                 }
                 float health=body.healthComponent.combinedHealth;
-                if(health<lastHealth-0.001f&&(hitImpulse||native.Control()==NativeBody.Hold.All))Native.ssbm_sim_hurt(sim);
+                if(health<lastHealth-0.001f&&(hitImpulse||native.Control()==NativeBody.Hold.All))MeleeNative.ssbm_sim_hurt(sim);
                 lastHealth=health;
                 var control=native.Control();var p=pad.Take(Skills.Allowed(body),control==NativeBody.Hold.All);
-                if(control==NativeBody.Hold.All)Native.ssbm_sim_hold_knockdown(sim);
-                if(Grab!=null&&Grab.Attached&&((p.buttons&1)!=0||control!=NativeBody.Hold.None)){Grab.Detach();Native.ssbm_sim_interrupt(sim);}
+                if(control==NativeBody.Hold.All)MeleeNative.ssbm_sim_hold_knockdown(sim);
+                if(Grab!=null&&Grab.Attached&&((p.buttons&1)!=0||control!=NativeBody.Hold.None)){Grab.Detach();MeleeNative.ssbm_sim_interrupt(sim);}
                 if(Grab!=null&&Grab.Holding&&((p.buttons&1)!=0||control!=NativeBody.Hold.None))Grab.ReleaseCapture();
-                if(control==NativeBody.Hold.All){p.buttons=0;p.movement=default;p.allowed=0;Native.ssbm_sim_interrupt(sim);}
+                if(control==NativeBody.Hold.All){p.buttons=0;p.movement=default;p.allowed=0;MeleeNative.ssbm_sim_interrupt(sim);}
                 else if(control==NativeBody.Hold.Move)p.movement=default;
                 bool sprint=native.UpdateSprint((p.buttons&32)!=0,new Vector3(p.movement.x,0,p.movement.z).sqrMagnitude>0.01f,control==NativeBody.Hold.None);
                 if(sprint)p.buttons|=32;
@@ -101,26 +101,26 @@ namespace Samus
                 // Native Run already supplies Melee's run/walk ratio. Keep item
                 // scaling without applying RoR2's base sprint bonus a second time.
                 if(body.isSprinting)speedScale/=Mathf.Max(0.1f,body.sprintingSpeedMultiplier);
-                Native.ssbm_sim_tuning(sim,new Native.Tuning { speed_scale=speedScale,jump_scale=Plugin.JumpScale.Value*NativeBody.JumpScale(body),extra_jumps=extra,hold_charge=Plugin.HoldCharge.Value?1u:0u,smash_max_frames=60 });
-                Native.ssbm_sim_jump_height(sim,MeleeControls.JumpHeight(body.jumpPower,Physics.gravity.y,motor.jumpPowerPenaltyCoefficient)/scale);
+                MeleeNative.ssbm_sim_tuning(sim,new MeleeNative.Tuning { speed_scale=speedScale,jump_scale=Plugin.JumpScale.Value*NativeBody.JumpScale(body),extra_jumps=extra,hold_charge=Plugin.HoldCharge.Value?1u:0u,smash_max_frames=60 });
+                MeleeNative.ssbm_sim_jump_height(sim,MeleeControls.JumpHeight(body.jumpPower,Physics.gravity.y,motor.jumpPowerPenaltyCoefficient)/scale);
                 FaceTarget();
-                if(direction){var facing=direction.forward;Native.ssbm_sim_facing(sim,new Native.Vec3(facing.x,0,facing.z));}
-                Native.ssbm_sim_step(sim,in host,in p,Time.fixedDeltaTime);
-                uint previousRecovery=recoveryFlags;recoveryFlags=Native.ssbm_sim_rebirth_flags(sim);
+                if(direction){var facing=direction.forward;MeleeNative.ssbm_sim_facing(sim,new MeleeNative.Vec3(facing.x,0,facing.z));}
+                MeleeNative.ssbm_sim_step(sim,in host,in p,Time.fixedDeltaTime);
+                uint previousRecovery=recoveryFlags;recoveryFlags=MeleeNative.ssbm_sim_rebirth_flags(sim);
                 recovery?.Refresh();
                 if(Arriving&&!Recovering)Arriving=false;
                 Grab?.AfterStep(Time.fixedDeltaTime);
                 Present(()=>Effects?.Step(sim,Time.fixedDeltaTime));
                 Present(()=>Particles?.Step(Time.fixedDeltaTime));
-                uint count=Native.ssbm_sim_hitboxes(sim,null,0);
+                uint count=MeleeNative.ssbm_sim_hitboxes(sim,null,0);
                 if(count>1024)throw new InvalidOperationException("Native hitbox sample budget exceeded");
-                if(count>hitboxes.Length)hitboxes=new Native.HitboxSample[count];
+                if(count>hitboxes.Length)hitboxes=new MeleeNative.HitboxSample[count];
                 if(count>0) {
-                    if(Native.ssbm_sim_hitboxes(sim,hitboxes,(uint)hitboxes.Length)!=count)throw new InvalidOperationException(Native.Error);
+                    if(MeleeNative.ssbm_sim_hitboxes(sim,hitboxes,(uint)hitboxes.Length)!=count)throw new InvalidOperationException(MeleeNative.Error);
                     if(permitDamage)hits.Apply(body,hitboxes,(int)count,scale);
                 }
-                if(Native.ssbm_sim_state(sim,out state)!=1){Fallback(Native.Error);return;}
-                chargeFraction=Native.ssbm_sim_charge_fraction(sim);
+                if(MeleeNative.ssbm_sim_state(sim,out state)!=1){Fallback(MeleeNative.Error);return;}
+                chargeFraction=MeleeNative.ssbm_sim_charge_fraction(sim);
                 var feet=ToWorld(state.position);
                 if((previousRecovery&4)!=0&&(recoveryFlags&4)==0){
                     // The native KO phase placed the fighter back on safe ground.
@@ -153,20 +153,20 @@ namespace Samus
             // A pod exit can leave the feet slightly below a one-sided floor.
             // The common standing probe starts above it and checks full clearance.
             if(RecoveryGround(safe,0.6f,0.8f,out var standing)){safe=standing;transform.position=standing+feetOffset;}
-            sim=Native.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),ToSim(safe));if(sim==IntPtr.Zero)throw new InvalidOperationException(Native.Error);
+            sim=MeleeNative.ssbm_sim_new(NativeLib.CString(Plugin.AssetsDir),ToSim(safe));if(sim==IntPtr.Zero)throw new InvalidOperationException(MeleeNative.Error);
             // The shared Melee presenter layers all grounded special abilities
             // over walking legs. A attacks and authored grabs remain full-body.
             const ulong mobileSpecials=(1UL<<20)|(1UL<<21)|(1UL<<22)|(1UL<<23)|(1UL<<24);
-            if(Native.ssbm_sim_mobile_moves(sim,mobileSpecials)!=1)throw new InvalidOperationException("Native mobile specials unavailable: "+Native.Error);
+            if(MeleeNative.ssbm_sim_mobile_moves(sim,mobileSpecials)!=1)throw new InvalidOperationException("Native mobile specials unavailable: "+MeleeNative.Error);
             view=new SamusView(Math.Min(body.skinIndex,4));self=GCHandle.Alloc(this);
             audio=new SamusAudio(sim);
             Particles=new DiscParticles(scale);
             Effects=new MeleeEffects(Particles,scale);
             Grab=new SamusGrab(this,body);
             entryPlatform=SamusView.EntryPlatform();
-            if(Native.ssbm_sim_begin_arrival(sim,NativeLib.CString(Plugin.AssetsDir))!=1)throw new InvalidOperationException(Native.Error);
-            recoveryFlags=Native.ssbm_sim_rebirth_flags(sim);recovery?.Refresh();
-            host=new Native.Host { user=GCHandle.ToIntPtr(self),collide=Marshal.GetFunctionPointerForDelegate(collideFn),evt=Marshal.GetFunctionPointerForDelegate(eventFn) };
+            if(MeleeNative.ssbm_sim_begin_arrival(sim,NativeLib.CString(Plugin.AssetsDir))!=1)throw new InvalidOperationException(MeleeNative.Error);
+            recoveryFlags=MeleeNative.ssbm_sim_rebirth_flags(sim);recovery?.Refresh();
+            host=new MeleeNative.Host { user=GCHandle.ToIntPtr(self),collide=Marshal.GetFunctionPointerForDelegate(collideFn),evt=Marshal.GetFunctionPointerForDelegate(eventFn) };
             WorldProbe.UseBodyCollision(motor,gameObject);motor.Motor.enabled=false;
             smoother=new StepSmoother(transform);cameraPivot=new CameraPivot(body);cameraPivot.Use(true);active=true;
             unstuck.Reset();unstuck.Step(safe,false,true,false,0.25f,1.8f,RecoveryGround,out _);wallGuard.Placed(safe);
@@ -187,16 +187,16 @@ namespace Samus
                 var rotation=facing.sqrMagnitude>0.0001f?Quaternion.LookRotation(facing):Quaternion.identity;
                 view.Models.Update(scale,d=>(at,rotation));
                 Present(()=>{
-                uint defense=Native.ssbm_sim_defense_flags(sim);
+                uint defense=MeleeNative.ssbm_sim_defense_flags(sim);
                 if((defense&16)!=0){
                     uint model=(defense&32)!=0?11u:(defense&1)!=0?13u:14u;
                     if(shieldView==null||shieldModel!=model){shieldView?.Dispose();shieldView=SamusView.Effect(model);shieldModel=model;}
-                    shieldView.ObjectPose(Native.ssbm_sim_motion_frame(sim));
-                    shieldView.Models.Update(scale*Native.ssbm_sim_shield_scale(sim),d=>(body.corePosition,rotation));
+                    shieldView.ObjectPose(MeleeNative.ssbm_sim_motion_frame(sim));
+                    shieldView.Models.Update(scale*MeleeNative.ssbm_sim_shield_scale(sim),d=>(body.corePosition,rotation));
                 }else shieldView?.Models.HideAll();
                 });
                 if(entryPlatform!=null) {
-                    if(Native.ssbm_entry_platform_update(entryPlatform.Handle,sim)==1)entryPlatform.Models.Update(scale,d=>(at,rotation));
+                    if(MeleeNative.ssbm_entry_platform_update(entryPlatform.Handle,sim)==1)entryPlatform.Models.Update(scale,d=>(at,rotation));
                     else {entryPlatform.Dispose();entryPlatform=null;}
                 }
                 Present(()=>Particles?.Draw());
@@ -214,7 +214,7 @@ namespace Samus
             }
             if(Grab?.Holding??false)GUI.Box(new Rect(Screen.width/2f-180,Screen.height-165,360,30),"LS + LT/RT: throw    Neutral LT/RT: pummel");
         }
-        Native.Vec3 ToSim(Vector3 v)=>new Native.Vec3(v.x/scale,v.y/scale,v.z/scale);
+        MeleeNative.Vec3 ToSim(Vector3 v)=>new MeleeNative.Vec3(v.x/scale,v.y/scale,v.z/scale);
         void Present(Action draw)
         {
             try{draw();}catch(Exception e){if(presentationErrors.Add(e.Message))Plugin.Log.LogError("Samus presentation failed; character simulation remains active: "+e);}
@@ -226,22 +226,22 @@ namespace Samus
             Grab?.Dispose();Grab=new SamusGrab(this,body);
             Effects?.Dispose();Particles?.Dispose();Particles=new DiscParticles(scale);Effects=new MeleeEffects(Particles,scale);
             permitDamage=false;
-            if(Native.ssbm_sim_begin_rebirth(sim,NativeLib.CString(Plugin.AssetsDir),ToSim(safeFeet))!=1)throw new InvalidOperationException("Melee fall recovery: "+Native.Error);
-            recoveryFlags=Native.ssbm_sim_rebirth_flags(sim);
+            if(MeleeNative.ssbm_sim_begin_rebirth(sim,NativeLib.CString(Plugin.AssetsDir),ToSim(safeFeet))!=1)throw new InvalidOperationException("Melee fall recovery: "+MeleeNative.Error);
+            recoveryFlags=MeleeNative.ssbm_sim_rebirth_flags(sim);
         }
         void Recover(Vector3 feet)
         {
-            Native.ssbm_sim_place(sim,ToSim(feet),2);Native.ssbm_sim_state(sim,out state);
+            MeleeNative.ssbm_sim_place(sim,ToSim(feet),2);MeleeNative.ssbm_sim_state(sim,out state);
             smoother.Reset();native.ForgetVelocity();unstuck.Reset();wallGuard.Placed(feet);
         }
-        Vector3 ToWorld(Native.Vec3 v)=>new Vector3(v.x,v.y,v.z)*scale;
-        static void Collide(IntPtr user,in Native.Vec3 from,in Native.Vec3 desired,out Native.Collision result)
+        Vector3 ToWorld(MeleeNative.Vec3 v)=>new Vector3(v.x,v.y,v.z)*scale;
+        static void Collide(IntPtr user,in MeleeNative.Vec3 from,in MeleeNative.Vec3 desired,out MeleeNative.Collision result)
         {
-            result=new Native.Collision { position=from };
+            result=new MeleeNative.Collision { position=from };
             try { var driver=(SamusDriver)GCHandle.FromIntPtr(user).Target;result=driver.Collision(from,desired); }
             catch(Exception e){Plugin.Log.LogError("Samus collision callback: "+e.Message);}
         }
-        Native.Collision Collision(Native.Vec3 from,Native.Vec3 desired)
+        MeleeNative.Collision Collision(MeleeNative.Vec3 from,MeleeNative.Vec3 desired)
         {
             Vector3 start=ToWorld(from),end=ToWorld(desired);var delta=end-start;bool roof=false,land=false;
             float radius=0.3f,height=1.8f;
@@ -258,13 +258,13 @@ namespace Samus
                 end.y=floor.point.y;land=true;
             }
             if(delta.y>0&&WorldProbe.Roof(start+Vector3.up*height,delta.y+0.05f,out var ceiling)){end.y=Mathf.Min(end.y,ceiling.point.y-height-0.01f);roof=true;}
-            return new Native.Collision { position=ToSim(end),grounded=land?1u:0u,ceiling=roof?1u:0u };
+            return new MeleeNative.Collision { position=ToSim(end),grounded=land?1u:0u,ceiling=roof?1u:0u };
         }
-        static void Event(IntPtr user,in Native.Event e)
+        static void Event(IntPtr user,in MeleeNative.Event e)
         {
             try{((SamusDriver)GCHandle.FromIntPtr(user).Target).Receive(e);}catch(Exception error){Plugin.Log.LogError("Samus event callback: "+error.Message);}
         }
-        void Receive(Native.Event e)
+        void Receive(MeleeNative.Event e)
         {
             if(e.kind==1) {
                 int slot=Skills.Slot(e.move_id);var skill=Skills.Get(body,slot);
@@ -310,10 +310,12 @@ namespace Samus
             audio?.Dispose();audio=null;
             Effects?.Dispose();Effects=null;Particles?.Dispose();Particles=null;
             Grab?.Dispose();Grab=null;
-            if(sim!=IntPtr.Zero){Native.ssbm_sim_free(sim);sim=IntPtr.Zero;}if(self.IsAllocated)self.Free();
+            if(sim!=IntPtr.Zero){MeleeNative.ssbm_sim_free(sim);sim=IntPtr.Zero;}if(self.IsAllocated)self.Free();
             if(motor&&motor.Motor)motor.Motor.enabled=true;
             if(body&&body.modelLocator&&body.modelLocator.modelTransform){if(!deathStarted)GameSettings.HideRenderers(body.modelLocator.modelTransform,false);var a=body.modelLocator.modelTransform.GetComponent<Animator>();if(a)a.enabled=!deathStarted;}
         }
         void OnDestroy(){if(active&&body&&body.healthComponent&&!body.healthComponent.alive)BeginDeath();Cleanup();}
     }
 }
+
+

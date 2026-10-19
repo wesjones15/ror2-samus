@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Ror2Common;
 using UnityEngine;
@@ -20,10 +20,11 @@ namespace Samus
         {
             if(stream==null)return;
             try { stream.Pump(Render,GameSettings.SfxVolume(),Time.timeScale<=0); }
-            catch(Exception e) { Plugin.Log.LogError("Samus audio stopped: "+e.Message+"; "+Native.Error);Dispose(); }
+            catch(Exception e) { Plugin.Log.LogError("Samus audio stopped: "+e.Message+"; "+MeleeNative.Error);Dispose(); }
         }
-        bool Render(float[] pcm)=>Native.ssbm_sim_audio(sim,pcm,(uint)pcm.Length/2)==pcm.Length/2;
+        bool Render(float[] pcm)=>MeleeNative.ssbm_sim_audio(sim,pcm,(uint)pcm.Length/2)==pcm.Length/2;
         public void Dispose(){stream?.Dispose();stream=null;active.Remove(this);}
         public static void StopAll(){foreach(var audio in new List<SamusAudio>(active))audio.Dispose();}
     }
 }
+
