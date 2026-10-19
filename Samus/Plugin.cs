@@ -59,7 +59,7 @@ namespace Samus
             RunAudio.Initialize(MeleeAudio.StopAll);
             Run.onClientGameOverGlobal+=(run,report)=>{
                 if(run!=SamusDriver.LocalRun||!AssetsReady)return;
-                try{MeleeGameBanner.Show(new SamusGameEffect());}
+                try{MeleeGameBanner.Show(new MeleeGameEffect(AssetsDir, MeleeNative.FighterSamus, MetresPerUnit.Value));}
                 catch(Exception e){Logger.LogError("Melee GAME presentation: "+e);MeleeGameBanner.Show(null);}
             };
             Logger.LogInfo("Samus 0.2.17 registered; native initialization waits for RoR2 startup completion.");

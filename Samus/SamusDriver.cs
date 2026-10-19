@@ -39,6 +39,7 @@ namespace Samus
         // --- MeleeDriver seam -------------------------------------------------
         protected override string FighterName => "Samus";
         protected override string AssetsDir => Plugin.AssetsDir;
+        protected override uint FighterKind => MeleeNative.FighterSamus;
         protected override float MetresPerUnit => Plugin.MetresPerUnit.Value;
         protected override float JumpScale => Plugin.JumpScale.Value;
         protected override bool HoldCharge => Plugin.HoldCharge.Value;
@@ -121,7 +122,7 @@ namespace Samus
             if (Grab?.Holding ?? false) GUI.Box(new Rect(Screen.width / 2f - 180, Screen.height - 165, 360, 30), "LS + LT/RT: throw    Neutral LT/RT: pummel");
         }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
-            => MeleeDeathSequence.Begin(new SamusDeath(Math.Min(body.skinIndex, 4), feet, rotation, scale));
+            => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
         protected override void GrabDetach() => Grab.Detach();
         protected override void GrabReleaseCapture() => Grab.ReleaseCapture();
         protected override void GrabThrow(MeleeNative.Event e) => Grab?.Throw(e);
