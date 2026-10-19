@@ -59,7 +59,7 @@ namespace Samus
         uint costume;
         readonly IntPtr sim;
         readonly Native.Host host;
-        bool requestIntro,introStarted;
+        bool requestIntro,introStarted,sawUpB;
         readonly bool idleOnly;
         DiscParticles particles;
         MeleeEffects effects;
@@ -82,6 +82,12 @@ namespace Samus
         }
         public ModelView Models=>view.Models;
         public float Scale=>Plugin.MetresPerUnit.Value;
+        public float RiseMetres {
+            get {
+                if(idleOnly || Native.ssbm_sim_state(sim,out var state)!=1)return 0f;
+                return state.position.y*Scale;
+            }
+        }
         public static IDisplayActor Make()=>Plugin.AssetsReady?new MeleeSelectDisplay(new SamusDisplay()):null;
         public static IDisplayActor Portrait()=>Plugin.AssetsReady?new MeleeSelectDisplay(new SamusDisplay(idleOnly:true),intro:false):null;
         SamusDisplay(bool idleOnly=false)
@@ -95,7 +101,7 @@ namespace Samus
         }
         static void Floor(IntPtr user,in Native.Vec3 from,in Native.Vec3 to,out Native.Collision c)
         { c=new Native.Collision { position=new Native.Vec3(to.x,Mathf.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
-        public void BeginIntro(){Native.ssbm_sim_place(sim,default,0);IntroFinished=false;requestIntro=true;
+        public void BeginIntro(){Native.ssbm_sim_place(sim,default,0);IntroFinished=false;requestIntro=true;sawUpB=false;
             // mncharsel.c calls gm_80168C5C on pick: the announcer says the
             // fighter's name before the intro move plays. The native bank owns it.
             Native.ssbm_sim_play_sound(sim,Native.ssbm_announce_sound());}
@@ -106,10 +112,10 @@ namespace Samus
             if(idleOnly){view.IdlePose();view.LocalPosition=drawOffset;view.LocalRotation=previewRotation;return;}
             var pad=new Native.Pad { aim=new Native.Vec3(0,0,1),allowed=0 };
             if(requestIntro) {
-                // Settle the preview's flat floor before Samus's ground down-B.
+                // Settle the preview's flat floor before Samus's grounded up-B.
                 Advance(in pad,1f/60);
                 requestIntro=false;introStarted=true;
-                pad.buttons=4|16;pad.allowed=16; // libssbm SPECIAL|DOWN, down-B slot.
+                pad.buttons=1024;pad.allowed=8; // libssbm UP_B, up-special (Screw Attack) slot.
                 // One complete native tick latches the press even at high refresh.
                 Advance(in pad,1f/60);
                 pad.buttons=0;pad.allowed=0;
@@ -118,9 +124,12 @@ namespace Samus
             Advance(in pad,dt);
             if(introStarted){
                 if(Native.ssbm_sim_state(sim,out var state)!=1)throw new InvalidOperationException(Native.Error);
-                if(state.move_id!=24){
+                if(state.move_id==23)sawUpB=true;
+                // Finish only once the Screw Attack has run and the fighter has
+                // returned to the lobby floor, so the full rise-and-fall shows.
+                if(sawUpB&&state.move_id!=23&&state.grounded!=0){
                     IntroFinished=true;introStarted=false;
-                    // Leave Samus standing on the lobby floor after the bomb pose.
+                    // Leave Samus standing on the lobby floor after the up-B.
                     Native.ssbm_sim_place(sim,default,0);Advance(in pad,1f/60);
                 }
             }
