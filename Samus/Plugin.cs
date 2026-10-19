@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading;
 using BepInEx;
@@ -22,6 +22,7 @@ namespace Samus
         internal static string AssetsDir;
         internal static volatile bool AssetsReady,AssetsBusy;
         internal static ConfigEntry<float> MetresPerUnit,JumpScale;
+        internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
         internal static ConfigEntry<float> MissileRange,MissileDamageScale,ChargeShotHitboxScale;
         internal static ConfigEntry<bool> LogEffects;
@@ -35,6 +36,7 @@ namespace Samus
             var disc=Config.Bind("Paths","Disc","","Your Melee GALE01 revision 2 ISO/GCM/CISO, used to extract missing assets at first launch.");
             MetresPerUnit=Config.Bind("Sim","MetresPerUnit",0.1f,new ConfigDescription("World metres per Melee unit. Movement, reach and model share this scale.",new AcceptableValueRange<float>(0.03f,0.3f)));
             JumpScale=Config.Bind("Sim","JumpScale",1f,new ConfigDescription("Takeoff speed multiplier. 1 uses Melee tuning; increase for RoR2 traversal.",new AcceptableValueRange<float>(0.5f,3f)));
+            Armor=Config.Bind("Combat","Armor",20f,new ConfigDescription("Base armor. RoR2 multiplies incoming damage by 100/(100+armor), so 20 cuts a hit to ~83%. Melee survivors (Mercenary, Loader) use 20.",new AcceptableValueRange<float>(0f,100f)));
             HoldCharge=Config.Bind("Controls","HoldCharge",false,"False: tap neutral special to charge, tap again to fire; sprint/jump/X grab stores. True: hold and release to fire.");
             MissileRange=Config.Bind("Combat","MissileRangeMetres",120f,new ConfigDescription("How far a side-B missile flies before it is removed, in metres. 0 is unlimited. Melee's own cutoff is off-screen distance.",new AcceptableValueRange<float>(0f,2000f)));
             MissileDamageScale=Config.Bind("Combat","MissileDamageScale",5f,new ConfigDescription("Multiplier on side-B missile and Super Missile damage, because the move has a cooldown.",new AcceptableValueRange<float>(0.1f,50f)));
@@ -107,7 +109,7 @@ namespace Samus
             if(!commando||!display)throw new InvalidOperationException("Commando prefabs unavailable");
             var body=Prefabs.Clone(commando,"MeleeSamusBody",Guid);var cb=body.GetComponent<CharacterBody>();
             cb.baseNameToken="SSBM_SAMUS_NAME";cb.subtitleNameToken="SSBM_SAMUS_SUBTITLE";cb.bodyColor=new Color(1f,0.48f,0.06f);
-            cb.baseMaxHealth=140f;cb.levelMaxHealth=42f;cb.baseArmor=10f;cb.baseJumpCount=2;
+            cb.baseMaxHealth=140f;cb.levelMaxHealth=42f;cb.baseArmor=Armor.Value;cb.baseJumpCount=2;
             cb.preferredPodPrefab=null;cb.preferredInitialStateType=new SerializableEntityStateType(typeof(MeleeArrival));
             foreach(var state in body.GetComponents<EntityStateMachine>()) if(state.customName=="Body"){state.mainStateType=new SerializableEntityStateType(typeof(SamusMain));state.initialStateType=new SerializableEntityStateType(typeof(MeleeArrival));}
             body.AddComponent<NativeBody>();body.AddComponent<SamusDriver>();body.AddComponent<MeleeRecovery>();body.AddComponent<MeleeDefense>();Skills.Add(body,pack);
