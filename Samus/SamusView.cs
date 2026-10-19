@@ -95,7 +95,10 @@ namespace Samus
         }
         static void Floor(IntPtr user,in Native.Vec3 from,in Native.Vec3 to,out Native.Collision c)
         { c=new Native.Collision { position=new Native.Vec3(to.x,Mathf.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
-        public void BeginIntro(){Native.ssbm_sim_place(sim,default,0);IntroFinished=false;requestIntro=true;}
+        public void BeginIntro(){Native.ssbm_sim_place(sim,default,0);IntroFinished=false;requestIntro=true;
+            // mncharsel.c calls gm_80168C5C on pick: the announcer says the
+            // fighter's name before the intro move plays. The native bank owns it.
+            Native.ssbm_sim_play_sound(sim,Native.ssbm_announce_sound());}
         public bool RenderAudio(float[] stereo)=>Native.ssbm_sim_audio(sim,stereo,(uint)stereo.Length/2)==stereo.Length/2;
         public void Step(float dt)
         {
