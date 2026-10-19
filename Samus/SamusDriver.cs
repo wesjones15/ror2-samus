@@ -18,7 +18,7 @@ namespace Samus
         IntPtr sim;SamusView view;Native.Host host;GCHandle self;Native.State state;
         SamusView entryPlatform;
         SamusView shieldView;uint shieldModel;
-        public bool MeleeInvulnerable=>active&&!Recovering&&(Native.ssbm_sim_defense_flags(sim)&(2|64))!=0;
+        public bool MeleeInvulnerable=>active&&!Recovering&&(Native.ssbm_sim_defense_flags(sim)&(2|64|128))!=0;
         public bool BlockMeleeDamage(float amount){if(!active||Recovering)return false;uint flags=Native.ssbm_sim_defense_flags(sim);return (flags&1)!=0&&Native.ssbm_sim_shield_hit(sim,amount)!=0;}
         MeleeRecovery recovery;uint recoveryFlags;
         public bool Recovering=>(recoveryFlags&1)!=0;
