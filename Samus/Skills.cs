@@ -5,40 +5,47 @@ using UnityEngine;
 
 namespace Samus
 {
+    // Samus's skill identity only. The shared MeleeSkills builds the SkillDefs,
+    // families, the fifth (B) slot, icons and slot helpers from this layout.
     internal static class Skills
     {
-        internal static readonly NativeSkillDef[] Definitions=new NativeSkillDef[4];
-        internal static NativeSkillDef DownB,Defense;
-        internal const string ExtraName="MeleeExtra";
-        internal static readonly SkillSlot[] Slots={SkillSlot.Primary,SkillSlot.Secondary,SkillSlot.Utility,SkillSlot.Special};
-        static readonly string[] Names={"Charge Shot","Power Suit","Missile","Screw Attack"};
-        static readonly string[] Descriptions={
-            "Walk while charging. Tap again to fire; sprint, jump or X grab to store. Airborne neutral special fires stored charge immediately.",
-            "LT: neutral A while stationary. LS + LT selects camera-directed A attacks; a timed flick charges a smash.",
-            "RB: side-B fires a homing missile; a quick direction fires a super missile.",
-            "LB: up-B launches Screw Attack, followed by helpless fall."};
-        internal static void Add(GameObject body,ContentPack pack)
+        static MeleeSkillSet set;
+        static readonly MeleeSkillLayout Layout = new MeleeSkillLayout
         {
-            float[] cooldowns={0.75f,0f,1f,3f};int[] stock={1,1,2,1};
-            string[] icons={"MageBodyFireFirebolt","CommandoBodyFirePistol","EngiBodyPlaceSpiderMine","LoaderBodyChargeFist"};
-            for(int i=0;i<4;i++) {
-                var d=NativeSkills.Make("MeleeSamus"+i,"SSBM_SKILL_"+i,"SSBM_SKILL_DESC_"+i,null,cooldowns[i],stock[i],true);
-                Definitions[i]=d;NativeSkills.SetFamily(body,Slots[i],d,pack);VanillaIcons.Use(d,icons[i]);
-            }
-            DownB=NativeSkills.Make("MeleeSamusBomb","SSBM_BOMB","SSBM_BOMB_DESC",null,1f,2,true);
-            Defense=NativeSkills.Make("MeleeShield","SSBM_SHIELD","SSBM_SHIELD_DESC",null,0f,1,false);
-            NativeSkills.AddExtra(body,ExtraName,"SSBM_EXTRA_SLOT",pack,DownB,Defense);
-            var hud=body.AddComponent<ExtraSkillIcon>();hud.skillName=ExtraName;hud.actionName="Cancel";
-            VanillaIcons.Use(DownB,"EngiBodyPlaceSpiderMine");VanillaIcons.Use(Defense,"EngiBodyPlaceBubbleShield");
-        }
-        internal static void Tokens(Language l){for(int i=0;i<4;i++){l.SetStringByToken("SSBM_SKILL_"+i,Names[i]);l.SetStringByToken("SSBM_SKILL_DESC_"+i,Descriptions[i]);}l.SetStringByToken("SSBM_EXTRA_SLOT","B Skill");l.SetStringByToken("SSBM_BOMB","Bomb");l.SetStringByToken("SSBM_BOMB_DESC","B: down-B drops Samus's original timed bomb.");l.SetStringByToken("SSBM_SHIELD","Shield / Air Feint");l.SetStringByToken("SSBM_SHIELD_DESC","B: hold a shield on the ground or evade once in the air. Shield drains when held or hit; it regenerates while released and breaks when depleted.");}
-        internal static GenericSkill Get(CharacterBody body,int slot)=>slot==4?body.skillLocator.FindSkill(ExtraName):body.skillLocator.GetSkill(Slots[slot]);
-        internal static bool ShieldSelected(CharacterBody body)=>Get(body,4)?.skillDef==Defense;
-        internal static NativeSkillDef Expected(CharacterBody body,int slot)=>slot==4?(ShieldSelected(body)?Defense:DownB):Definitions[slot];
-        internal static int Slot(uint move)=>move==20?0:move==21||move==22?2:move==23?3:move==24?4:1;
-        internal static uint Allowed(CharacterBody body)
-        {
-            uint bits=0;for(int i=0;i<5;i++)if(NativeSkills.Ready(Get(body,i),Expected(body,i)))bits|=1u<<i;return bits;
-        }
+            primary = new MeleeSkillInfo {
+                defName="MeleeSamus0",nameToken="SSBM_SKILL_0",descriptionToken="SSBM_SKILL_DESC_0",
+                displayName="Charge Shot",description="Walk while charging. Tap again to fire; sprint, jump or X grab to store. Airborne neutral special fires stored charge immediately.",
+                icon="MageBodyFireFirebolt",recharge=0.75f,stock=1,combat=true },
+            secondary = new MeleeSkillInfo {
+                defName="MeleeSamus1",nameToken="SSBM_SKILL_1",descriptionToken="SSBM_SKILL_DESC_1",
+                displayName="Power Suit",description="LT: neutral A while stationary. LS + LT selects camera-directed A attacks; a timed flick charges a smash.",
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
+            utility = new MeleeSkillInfo {
+                defName="MeleeSamus2",nameToken="SSBM_SKILL_2",descriptionToken="SSBM_SKILL_DESC_2",
+                displayName="Missile",description="RB: side-B fires a homing missile; a quick direction fires a super missile.",
+                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
+            special = new MeleeSkillInfo {
+                defName="MeleeSamus3",nameToken="SSBM_SKILL_3",descriptionToken="SSBM_SKILL_DESC_3",
+                displayName="Screw Attack",description="LB: up-B launches Screw Attack, followed by helpless fall.",
+                icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
+            extra = new MeleeSkillInfo {
+                defName="MeleeSamusBomb",nameToken="SSBM_BOMB",descriptionToken="SSBM_BOMB_DESC",
+                displayName="Bomb",description="B: down-B drops Samus's original timed bomb.",
+                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
+            extraAlt = new MeleeSkillInfo {
+                defName="MeleeShield",nameToken="SSBM_SHIELD",descriptionToken="SSBM_SHIELD_DESC",
+                displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air. Shield drains when held or hit; it regenerates while released and breaks when depleted.",
+                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
+            extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
+        };
+
+        internal static readonly SkillSlot[] Slots = MeleeSkillSet.Slots;
+        internal static void Add(GameObject body,ContentPack pack)=>set=MeleeSkills.Build(body,pack,Layout);
+        internal static void Tokens(Language l)=>MeleeSkills.Tokens(l,Layout);
+        internal static GenericSkill Get(CharacterBody body,int slot)=>set.Get(body,slot);
+        internal static bool ShieldSelected(CharacterBody body)=>set.ShieldSelected(body);
+        internal static NativeSkillDef Expected(CharacterBody body,int slot)=>set.Expected(body,slot);
+        internal static int Slot(uint move)=>MeleeSkillSet.Slot(move);
+        internal static uint Allowed(CharacterBody body)=>set.Allowed(body);
     }
 }
