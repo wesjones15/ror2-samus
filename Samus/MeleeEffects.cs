@@ -17,6 +17,7 @@ namespace Samus
             public Matrix4x4 transform;
             public SamusView view;
             public float frame,duration;
+            public uint cue,model,version;public int versions;
         }
         readonly DiscParticles particles;
         readonly float scale;
@@ -43,7 +44,11 @@ namespace Samus
             var effect=new Effect {key=nextKey++,serial=serial,bone=bone,stop=stop,transform=transform,attached=(Native.ssbm_effect_flags(id)&1)!=0&&sim!=IntPtr.Zero,chargeAttachment=id==1151};
             if(effect.attached)effect.transform=effect.chargeAttachment&&charge!=null?charge.transform:Bone(sim,bone);
             if(target>=0)particles.Spawn((uint)target,effect.transform,effect.key);
-            else {effect.view=SamusView.Effect((uint)(-target-1));effect.duration=Native.ssbm_object_duration(effect.view.Handle);}
+            else {
+                effect.view=SamusView.Effect((uint)(-target-1));effect.duration=Native.ssbm_object_duration(effect.view.Handle);
+                effect.cue=id;effect.model=(uint)(-target-1);
+                if(Plugin.LogEffects.Value)Plugin.Log.LogInfo("Melee effect "+id+" -> model "+effect.model+", duration "+effect.duration+" frames");
+            }
             if(effect.view!=null||effect.attached||effect.stop)active.Add(effect);
             if(active.Count>128){var old=active[0];old.view?.Dispose();particles.Stop(old.key);active.RemoveAt(0);}
         }
@@ -58,7 +63,7 @@ namespace Samus
             for(int i=active.Count-1;i>=0;i--) {
                 var effect=active[i];effect.frame+=dt*60;
                 if(effect.stop&&effect.serial!=serial || effect.view!=null&&effect.duration>0&&effect.frame>=effect.duration) {
-                    effect.view?.Dispose();particles.Stop(effect.key);active.RemoveAt(i);continue;
+                    LogEnd(effect);effect.view?.Dispose();particles.Stop(effect.key);active.RemoveAt(i);continue;
                 }
                 if(effect.attached){effect.transform=effect.chargeAttachment&&charge!=null?charge.transform:Bone(sim,effect.bone);particles.Attach(effect.key,effect.transform);}
             }
@@ -80,6 +85,7 @@ namespace Samus
             foreach(var effect in Drawing()) {
                 if(effect.view==null)continue;
                 effect.view.ObjectPose(effect.frame);
+                if(Plugin.LogEffects.Value){uint version=effect.view.TextureVersion(0);if(version!=effect.version){effect.version=version;effect.versions++;}}
                 var transform=effect.transform*Matrix4x4.Scale(new Vector3(-1,1,1));
                 var p=transform.GetColumn(3);var f=transform.GetColumn(2);var u=transform.GetColumn(1);
                 var position=new Vector3(p.x,p.y,p.z)*scale;
@@ -89,6 +95,11 @@ namespace Samus
                 effect.view.FaceCamera(position,rotation,size);
                 effect.view.Models.Update(size,d=>(position,rotation));
             }
+        }
+        static void LogEnd(Effect effect)
+        {
+            if(effect.view!=null&&Plugin.LogEffects.Value)
+                Plugin.Log.LogInfo("Melee effect "+effect.cue+" (model "+effect.model+") ended at frame "+effect.frame.ToString("F1")+" of "+effect.duration+"; first texture changed "+Math.Max(0,effect.versions-1)+" times while drawn");
         }
         IEnumerable<Effect> Drawing(){foreach(var effect in active)yield return effect;if(charge!=null)yield return charge;}
         public void Dispose(){foreach(var effect in active){effect.view?.Dispose();particles.Stop(effect.key);}active.Clear();charge?.view.Dispose();charge=null;}

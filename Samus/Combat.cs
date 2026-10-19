@@ -99,7 +99,7 @@ namespace Samus
     }
     internal sealed class Shot:MonoBehaviour
     {
-        CharacterBody owner;Vector3 origin,velocity;float modelScale;bool impacted;
+        CharacterBody owner;Vector3 origin,velocity;float modelScale,maxRange;bool impacted;readonly Collider[] assistHits=new Collider[16];
         System.IntPtr projectile;Native.ProjectileState state;
         readonly HashSet<HealthComponent> explosionVictims=new HashSet<HealthComponent>();
         HealthComponent target;SamusDriver driver;SamusView view;DiscParticles particles;ulong particleKey;uint particleKind,particleState,particleFrame;bool fullCharge;readonly uint[] effectCues=new uint[32];
@@ -112,11 +112,12 @@ namespace Samus
                 shot.projectile=Native.ssbm_projectile_new(NativeLib.CString(Plugin.AssetsDir),article,state,charge,new Native.Vec3(direction.x,direction.y,direction.z));
                 if(shot.projectile==System.IntPtr.Zero)throw new System.InvalidOperationException(Native.Error);
                 if(article==1)Native.ssbm_projectile_lifetime(shot.projectile,0); // RoR2 gun travel: no offscreen lifetime cutoff.
+                if(article==2){Native.ssbm_projectile_lifetime(shot.projectile,0);shot.maxRange=Plugin.MissileRange.Value;} // Range is the host's cap, not Melee's off-screen cutoff.
                 shot.view=new SamusView(article,state);
                 shot.ReadState();
             }
             catch(System.Exception e) { Plugin.Log.LogError("Samus article presentation failed: "+e.Message);Object.Destroy(go);return; }
-            if(article==2&&state==0){var lockOn=new EnemyLock { Range=45f };shot.target=lockOn.Update(owner,true,false,Vector2.zero)?.healthComponent;}
+            if(article==2&&state==0){var lockOn=new EnemyLock { Range=Mathf.Max(45f,Plugin.MissileRange.Value) };shot.target=lockOn.Update(owner,true,false,Vector2.zero)?.healthComponent;}
             var transform=DiscParticles.At(point,direction.sqrMagnitude>0?Quaternion.LookRotation(direction):Quaternion.identity,scale);
             // efAlt_Spawn: normal/smash missile source generator graphs.
             shot.SourceEffects(uint.MaxValue,0,transform);
@@ -130,10 +131,12 @@ namespace Samus
             Native.ssbm_projectile_step(projectile,Time.fixedDeltaTime,new Native.Vec3(at.x,at.y,at.z),target&&target.alive?1u:0u);
             ReadState();
             if(!impacted&&(state.flags&1)!=0)Impact(from);
+            if(!impacted&&maxRange>0&&(transform.position-origin).sqrMagnitude>maxRange*maxRange){Destroy(gameObject);return;}
             if(!impacted) {
                 var next=origin+new Vector3(state.position.x,state.position.y,state.position.z)*modelScale;
                 var step=next-from;
-                if(step.sqrMagnitude>0&&Physics.SphereCast(from,state.radius*modelScale,step.normalized,out var hit,step.magnitude,WorldProbe.Mask|LayerIndex.entityPrecise.mask,QueryTriggerInteraction.Ignore)) {
+                if(AssistTarget(from,next,out var assistPoint))Impact(assistPoint);
+                else if(step.sqrMagnitude>0&&Physics.SphereCast(from,state.radius*modelScale,step.normalized,out var hit,step.magnitude,WorldProbe.Mask|LayerIndex.entityPrecise.mask,QueryTriggerInteraction.Ignore)) {
                     var hurt=hit.collider.GetComponent<HurtBox>();
                     bool friendly=hurt&&hurt.healthComponent&&hurt.healthComponent.body&&hurt.healthComponent.body.teamComponent.teamIndex==owner.teamComponent.teamIndex;
                     if(friendly)transform.position=next;
@@ -150,6 +153,28 @@ namespace Samus
             particles?.Attach(particleKey,particleTransform);
             uint frame=(uint)state.frame;if(!impacted)SourceEffects(particleFrame,frame,particleTransform);particleFrame=frame;
         }
+        float HitboxScale=>particleKind==1?Plugin.ChargeShotHitboxScale.Value:1f;
+        float DamageScale=>particleKind==2?Plugin.MissileDamageScale.Value:1f;
+        // A larger, enemy-only sweep for the Charge Shot: it detonates on a hurtbox the shot
+        // merely passes near, while walls and the floor still use the shot's own radius.
+        bool AssistTarget(Vector3 from,Vector3 next,out Vector3 point)
+        {
+            point=next;
+            float scale=HitboxScale;
+            if(particleKind!=1||scale<=1.01f)return false;
+            float radius=state.radius*modelScale*scale;
+            var step=next-from;
+            if(step.sqrMagnitude>0&&Physics.SphereCast(from,radius,step.normalized,out var hit,step.magnitude,LayerIndex.entityPrecise.mask,QueryTriggerInteraction.Ignore)&&Enemy(hit.collider)){point=hit.point;return true;}
+            int n=Physics.OverlapSphereNonAlloc(next,radius,assistHits,LayerIndex.entityPrecise.mask,QueryTriggerInteraction.Ignore);
+            for(int i=0;i<n;i++)if(Enemy(assistHits[i])){point=assistHits[i].ClosestPoint(next);return true;}
+            return false;
+        }
+        bool Enemy(Collider collider)
+        {
+            var hurt=collider?collider.GetComponent<HurtBox>():null;
+            var body=hurt&&hurt.healthComponent?hurt.healthComponent.body:null;
+            return body&&body.teamComponent&&hurt.healthComponent.alive&&body.teamComponent.teamIndex!=owner.teamComponent.teamIndex;
+        }
         void ReadState()
         {
             if(Native.ssbm_projectile_state(projectile,out state)!=1)throw new System.InvalidOperationException(Native.Error);
@@ -161,7 +186,7 @@ namespace Samus
             var force=velocity.sqrMagnitude>0?velocity.normalized:Vector3.up;
             uint cue=Native.ssbm_projectile_impact(projectile,driver?driver.Simulation:System.IntPtr.Zero);ReadState();
             if(cue!=0)driver?.Effects?.Spawn(cue,DiscParticles.At(at,Quaternion.identity,modelScale));
-            Combat.Area(owner,at,state.radius*modelScale,state.damage/3f,1f,force,explosionVictims,state.element);
+            Combat.Area(owner,at,state.radius*modelScale*HitboxScale,state.damage/3f*DamageScale,1f,force,explosionVictims,state.element);
             if((state.flags&2)==0){view.Dispose();view=new SamusView(particleKind,state.state);}
         }
         void LateUpdate(){if(view==null)return;view.ObjectPose(state.animation_frame);var rotation=velocity.sqrMagnitude>0.0001f?Quaternion.LookRotation(velocity):Quaternion.identity;view.FaceCamera(transform.position,rotation,modelScale);view.Models.Update(modelScale,d=>(transform.position,rotation));}
