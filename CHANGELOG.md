@@ -3,6 +3,7 @@
 - Down-B and Screw Attack are drawn from their own clips again. Since 0.2.13 they were layered over the walking legs, which replaced the joints that carry the spin and left only the upper body bobbing and restarting. They still steer as before.
 - Side-B missiles fly up to 120 m (`Combat.MissileRangeMetres`, 0 for unlimited) at their cruise speed, with homing lock-on out to the same range, and hit 5x as hard (`Combat.MissileDamageScale`) because the move has a cooldown.
 - Charge Shot detonates on enemies within 3x its radius (`Combat.ChargeShotHitboxScale`) and its blast is as wide, so shots at range connect; walls and the floor still use its own size.
+- The Screw Attack's ground dust ring expanded and then sat at full opacity for 0.3 s, which looked static. It now dims by its authored blend value and fades out over its last 10 frames (an adaptation; the disc data holds it opaque).
 - `Debug.LogEffects` logs each Melee model effect (such as the Screw Attack ground burst) when it spawns and ends, with how often its texture changed while drawn, to diagnose effects that still look static.
 - Native, shared presenter and build checks pass; in-game playtesting remains pending.
 
