@@ -31,16 +31,16 @@ static class Program
             string disc=Path.GetFullPath(args[2]),failure=null;
             var worker=new Thread(()=> {
                 try {
-                    if(MeleeNative.ssbm_extract(NativeLib.CString(disc),NativeLib.CString(assets))!=1) failure=MeleeNative.Error;
-                    else if(MeleeNative.ssbm_assets_complete(NativeLib.CString(assets))!=1) failure="DLL extraction left an incomplete cache";
+                    if(MeleeNative.ssbm_extract(NativeLib.CString(disc),NativeLib.CString(assets),MeleeNative.FighterSamus)!=1) failure=MeleeNative.Error;
+                    else if(MeleeNative.ssbm_assets_complete(NativeLib.CString(assets),MeleeNative.FighterSamus)!=1) failure="DLL extraction left an incomplete cache";
                 }catch(Exception e){failure=e.ToString();}
             }) { IsBackground=true,Name="Samus first-run check" };
             worker.Start();Check(worker.Join(30000),"first-run extraction timed out");Check(failure==null,failure);
             Console.WriteLine("PASS: first-run extraction on a C# worker through ssbm.dll, with no external tools");
         }
-        if(MeleeNative.ssbm_assets_complete(NativeLib.CString(assets))!=1) {
+        if(MeleeNative.ssbm_assets_complete(NativeLib.CString(assets),MeleeNative.FighterSamus)!=1) {
             // Clean release builds, like Mario/Olimar, need neither a disc nor a cache.
-            Console.WriteLine("PASS: ABI 4 + 14 layouts; SKIP: asset-dependent checks (no complete local cache)");
+            Console.WriteLine("PASS: ABI 5 + 14 layouts; SKIP: asset-dependent checks (no complete local cache)");
             return;
         }
         var host=new MeleeNative.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
@@ -69,11 +69,11 @@ static class Program
         }
         Console.WriteLine("PASS: sprint + LT retains Dash Attack travel through the native boundary at 30/60/144 FPS");
         for(uint c=0;c<5;c++) {
-            Check(MeleeNative.ssbm_portrait(NativeLib.CString(assets),c,out var portrait,null,0)==1,MeleeNative.Error);
+            Check(MeleeNative.ssbm_portrait(NativeLib.CString(assets),MeleeNative.FighterSamus,c,out var portrait,null,0)==1,MeleeNative.Error);
             var rgba=new byte[portrait.width*portrait.height*4];
-            Check(MeleeNative.ssbm_portrait(NativeLib.CString(assets),c,out portrait,rgba,(uint)rgba.Length)==1,MeleeNative.Error);
+            Check(MeleeNative.ssbm_portrait(NativeLib.CString(assets),MeleeNative.FighterSamus,c,out portrait,rgba,(uint)rgba.Length)==1,MeleeNative.Error);
             Check(portrait.width==64&&portrait.height==56,"expected CSS grid photo, not selected-character photo");
-            Check(MeleeNative.ssbm_portrait(NativeLib.CString(assets),c,out portrait,new byte[1],1)==0,"portrait accepted short output buffer");
+            Check(MeleeNative.ssbm_portrait(NativeLib.CString(assets),MeleeNative.FighterSamus,c,out portrait,new byte[1],1)==0,"portrait accepted short output buffer");
         }
         var sim=MeleeNative.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,MeleeNative.Error);
         IntPtr view=IntPtr.Zero;
@@ -139,7 +139,7 @@ static class Program
                 }
             } finally { MeleeNative.ssbm_particles_free(particles); }
             for(uint kind=0;kind<4;kind++)for(uint articleState=0;articleState<(kind==0?2:kind==1?9:kind==2?4:1);articleState++) {
-                var article=MeleeNative.ssbm_article_new(NativeLib.CString(assets),kind,articleState);Check(article!=IntPtr.Zero,"article: "+MeleeNative.Error);
+                var article=MeleeNative.ssbm_article_new(NativeLib.CString(assets),MeleeNative.FighterSamus,kind,articleState);Check(article!=IntPtr.Zero,"article: "+MeleeNative.Error);
                 try { Check(MeleeNative.ssbm_object_update(article,10)==1,MeleeNative.Error);MeleeNative.ssbm_view_model(article,out var model);Check(model.vertex_count>0&&model.index_count>0,"empty article model"); }
                 finally { MeleeNative.ssbm_view_free(article); }
             }
@@ -167,7 +167,7 @@ static class Program
             }
             Console.WriteLine("PASS: disc projectile speeds, hitboxes, fixed clocks and explosion states at 30/60/144 Hz");
             for(uint costume=0;costume<5;costume++) {
-                view=MeleeNative.ssbm_view_new(NativeLib.CString(assets),costume);Check(view!=IntPtr.Zero,MeleeNative.Error);
+                view=MeleeNative.ssbm_view_new(NativeLib.CString(assets),MeleeNative.FighterSamus,costume);Check(view!=IntPtr.Zero,MeleeNative.Error);
                 Check(MeleeNative.ssbm_view_update(view,sim,1f/60)==1,MeleeNative.Error);
                 Check(MeleeNative.ssbm_view_pose(view,NativeLib.CString("Wait"),0)==1,"direct idle portrait pose failed");
                 var idlePtr=MeleeNative.ssbm_view_positions(view,out uint idleCount);var idleVertices=new float[idleCount*3];Marshal.Copy(idlePtr,idleVertices,0,idleVertices.Length);
@@ -191,7 +191,7 @@ static class Program
                 }
                 MeleeNative.ssbm_view_free(view);view=IntPtr.Zero;
             }
-            Check(MeleeNative.ssbm_view_new(NativeLib.CString(assets),99)==IntPtr.Zero,"bad costume not rejected");
+            Check(MeleeNative.ssbm_view_new(NativeLib.CString(assets),MeleeNative.FighterSamus,99)==IntPtr.Zero,"bad costume not rejected");
             // Samus character select uses one native down-B and its sound cues.
             // Different host rates must accept zero/multiple ticks per call.
             foreach(int fps in new[]{30,60,144}) {
@@ -240,7 +240,7 @@ static class Program
                         if(target>=0)Check(MeleeNative.ssbm_particles_spawn(longParticles,(uint)target,matrix,(ulong)gfxCount)==1,MeleeNative.Error);
                         else if(target>int.MinValue+1000) {
                             if(!effectViews.TryGetValue(target,out var effect)) {
-                                effect=MeleeNative.ssbm_effect_new(NativeLib.CString(assets),(uint)(-target-1));
+                                effect=MeleeNative.ssbm_effect_new(NativeLib.CString(assets),MeleeNative.FighterSamus,(uint)(-target-1));
                                 Check(effect!=IntPtr.Zero,"runtime effect model: "+MeleeNative.Error);effectViews.Add(target,effect);
                             }
                             Check(MeleeNative.ssbm_object_update(effect,10)==1,MeleeNative.Error);
@@ -256,7 +256,7 @@ static class Program
                 foreach(var effect in effectViews.Values)MeleeNative.ssbm_view_free(effect);
                 MeleeNative.ssbm_particles_free(longParticles);MeleeNative.ssbm_sim_free(longRun);
             }
-            Console.WriteLine("PASS: ABI 4 + 14 layouts, trophy entry, grid tile, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
+            Console.WriteLine("PASS: ABI 5 + 14 layouts, trophy entry, grid tile, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
         } finally { if(view!=IntPtr.Zero)MeleeNative.ssbm_view_free(view);MeleeNative.ssbm_sim_free(sim); }
     }
     static void GameCueRegressions(string assets)
@@ -266,7 +266,7 @@ static class Program
             Check(MeleeNative.ssbm_sim_play_sound(sim,0x7c855)==1,"source GAME cue missing: "+MeleeNative.Error);
             var pcm=new float[32000*2];Check(MeleeNative.ssbm_sim_audio(sim,pcm,32000)==32000,MeleeNative.Error);
             Check(Array.Exists(pcm,x=>Math.Abs(x)>0.0001f),"GAME cue decoded silence");
-            var view=MeleeNative.ssbm_view_new(NativeLib.CString(assets),0);Check(view!=IntPtr.Zero,MeleeNative.Error);
+            var view=MeleeNative.ssbm_view_new(NativeLib.CString(assets),MeleeNative.FighterSamus,0);Check(view!=IntPtr.Zero,MeleeNative.Error);
             try{Check(MeleeNative.ssbm_view_pose(view,NativeLib.CString("DownBoundU"),12)==1,"death fall pose unavailable: "+MeleeNative.Error);}
             finally{MeleeNative.ssbm_view_free(view);}
         }finally{MeleeNative.ssbm_sim_free(sim);}
@@ -276,7 +276,7 @@ static class Program
     {
         foreach(int fps in new[]{30,60,144}) {
             var sim=MeleeNative.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,MeleeNative.Error);
-            var view=MeleeNative.ssbm_view_new(NativeLib.CString(assets),0);Check(view!=IntPtr.Zero,MeleeNative.Error);
+            var view=MeleeNative.ssbm_view_new(NativeLib.CString(assets),MeleeNative.FighterSamus,0);Check(view!=IntPtr.Zero,MeleeNative.Error);
             try {
                 Check(MeleeNative.ssbm_sim_mobile_moves(sim,1UL<<20)==1,"mobile Charge Shot capability missing");
                 var pad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(1,0,0),allowed=31};
@@ -339,14 +339,14 @@ static class Program
     static void DefenseRegressions(string assets,in MeleeNative.Host host)
     {
         foreach(uint model in new uint[]{11,13,14}) {
-            var effect=MeleeNative.ssbm_effect_new(NativeLib.CString(assets),model);Check(effect!=IntPtr.Zero,"shield model: "+MeleeNative.Error);
+            var effect=MeleeNative.ssbm_effect_new(NativeLib.CString(assets),MeleeNative.FighterSamus,model);Check(effect!=IntPtr.Zero,"shield model: "+MeleeNative.Error);
             try {Check(MeleeNative.ssbm_object_update(effect,4)==1,MeleeNative.Error);MeleeNative.ssbm_view_model(effect,out var info);Check(info.vertex_count>0,"empty shield geometry");
                 var p=MeleeNative.ssbm_view_positions(effect,out uint count);var xyz=new float[count*3];Marshal.Copy(p,xyz,0,xyz.Length);foreach(float v in xyz)Check(float.IsFinite(v),"invalid shield position");
             }finally{MeleeNative.ssbm_view_free(effect);}
         }
         foreach(int fps in new[]{30,60,144}) {
             var actor=MeleeNative.ssbm_sim_new(NativeLib.CString(assets),default);Check(actor!=IntPtr.Zero,"defense tuning: "+MeleeNative.Error);
-            var view=MeleeNative.ssbm_view_new(NativeLib.CString(assets),0);Check(view!=IntPtr.Zero,MeleeNative.Error);
+            var view=MeleeNative.ssbm_view_new(NativeLib.CString(assets),MeleeNative.FighterSamus,0);Check(view!=IntPtr.Zero,MeleeNative.Error);
             try {
                 var pad=new MeleeNative.Pad{aim=new MeleeNative.Vec3(0,0,1),allowed=31};MeleeNative.ssbm_sim_step(actor,in host,in pad,1.0/60);
                 pad.buttons=4096;bool pcm=false;var samples=new float[1066];
@@ -370,7 +370,7 @@ static class Program
     }
     static void PresentationRegressions(string assets,in MeleeNative.Host host)
     {
-        var effect=MeleeNative.ssbm_effect_new(NativeLib.CString(assets),2000);Check(effect!=IntPtr.Zero,MeleeNative.Error);
+        var effect=MeleeNative.ssbm_effect_new(NativeLib.CString(assets),MeleeNative.FighterSamus,2000);Check(effect!=IntPtr.Zero,MeleeNative.Error);
         try {
             Check(MeleeNative.HasMaterialAlpha,"shared material alpha metadata export missing");
             using(var alpha=new MaterialAlphaBuffer())foreach(float frame in new[]{0f,12f,32f}) {
@@ -384,7 +384,7 @@ static class Program
             }
         }
         finally {MeleeNative.ssbm_view_free(effect);}
-        var chargeView=MeleeNative.ssbm_article_new(NativeLib.CString(assets),1,8);Check(chargeView!=IntPtr.Zero,MeleeNative.Error);
+        var chargeView=MeleeNative.ssbm_article_new(NativeLib.CString(assets),MeleeNative.FighterSamus,1,8);Check(chargeView!=IntPtr.Zero,MeleeNative.Error);
         try {
             Check(MeleeNative.ssbm_object_update(chargeView,12)==1,MeleeNative.Error);var before=MeleeNative.ssbm_view_positions(chargeView,out uint vertices);var first=new float[vertices*3];Marshal.Copy(before,first,0,first.Length);
             Check(MeleeNative.ssbm_object_camera(chargeView,new MeleeNative.Vec3(100,25,-50))==1,MeleeNative.Error);var after=MeleeNative.ssbm_view_positions(chargeView,out vertices);var second=new float[vertices*3];Marshal.Copy(after,second,0,second.Length);bool changed=false;for(int i=0;i<first.Length;i++){Check(float.IsFinite(second[i]),"camera-facing article produced invalid vertices");changed|=Math.Abs(second[i]-first[i])>0.001f;}Check(changed,"source charge core never faced the camera");
@@ -426,7 +426,7 @@ static class Program
             ulong automatic=0,movement=0;
             foreach(bool move in new[]{false,true}) {
                 var sim=MeleeNative.ssbm_sim_new(NativeLib.CString(assets),new MeleeNative.Vec3(0,initial?0:-200,0));Check(sim!=IntPtr.Zero,MeleeNative.Error);
-                var view=MeleeNative.ssbm_view_new(NativeLib.CString(assets),0);Check(view!=IntPtr.Zero,MeleeNative.Error);
+                var view=MeleeNative.ssbm_view_new(NativeLib.CString(assets),MeleeNative.FighterSamus,0);Check(view!=IntPtr.Zero,MeleeNative.Error);
                 try {
                     Check((initial?MeleeNative.ssbm_sim_begin_arrival(sim,NativeLib.CString(assets)):MeleeNative.ssbm_sim_begin_rebirth(sim,NativeLib.CString(assets),default))==1,MeleeNative.Error);
                     if(initial)Check((MeleeNative.ssbm_sim_rebirth_flags(sim)&12)==8,"initial arrival did not start as a visible figurine");

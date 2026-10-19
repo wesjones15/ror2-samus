@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Ror2Common;
 using RoR2;
 using UnityEngine;
@@ -16,10 +16,10 @@ namespace Samus
         byte drawFlags;
         internal ViewDraw[] InstanceDraws;
         internal SamusView(uint costume)
-            :this(MeleeNative.ssbm_view_new(NativeLib.CString(Plugin.AssetsDir),Math.Min(costume,4))) {}
+            :this(MeleeNative.ssbm_view_new(NativeLib.CString(Plugin.AssetsDir),MeleeNative.FighterSamus,Math.Min(costume,4))) {}
         internal SamusView(uint article,uint state)
-            :this(MeleeNative.ssbm_article_new(NativeLib.CString(Plugin.AssetsDir),article,state)) {}
-        internal static SamusView Effect(uint model)=>new SamusView(MeleeNative.ssbm_effect_new(NativeLib.CString(Plugin.AssetsDir),model));
+            :this(MeleeNative.ssbm_article_new(NativeLib.CString(Plugin.AssetsDir),MeleeNative.FighterSamus,article,state)) {}
+        internal static SamusView Effect(uint model)=>new SamusView(MeleeNative.ssbm_effect_new(NativeLib.CString(Plugin.AssetsDir),MeleeNative.FighterSamus,model));
         internal static SamusView Game()=>new SamusView(MeleeNative.ssbm_game_new(NativeLib.CString(Plugin.AssetsDir)));
         internal static SamusView EntryPlatform()=>new SamusView(MeleeNative.ssbm_entry_platform_new(NativeLib.CString(Plugin.AssetsDir)));
         internal static SamusView Grapple(uint part)=>new SamusView(MeleeNative.ssbm_grapple_new(NativeLib.CString(Plugin.AssetsDir),part));
@@ -105,7 +105,7 @@ namespace Samus
         public void BeginIntro(){MeleeNative.ssbm_sim_place(sim,default,0);IntroFinished=false;requestIntro=true;sawUpB=false;
             // mncharsel.c calls gm_80168C5C on pick: the announcer says the
             // fighter's name before the intro move plays. The native bank owns it.
-            MeleeNative.ssbm_sim_play_sound(sim,MeleeNative.ssbm_announce_sound());}
+            MeleeNative.ssbm_sim_play_sound(sim,MeleeNative.ssbm_announce_sound(MeleeNative.FighterSamus));}
         public bool RenderAudio(float[] stereo)=>MeleeNative.ssbm_sim_audio(sim,stereo,(uint)stereo.Length/2)==stereo.Length/2;
         public void Step(float dt)
         {

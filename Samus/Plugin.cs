@@ -72,14 +72,14 @@ namespace Samus
             Logger.LogInfo("Samus late native initialization: RoR2 startup completed.");
             try {
                 MeleeNative.Load(nativePath);
-                AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir))==1;
+                AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
                 if(!AssetsReady) {
                     new Thread(()=> {
                         try {
                             string image=FindDisc(configuredDisc,pluginDirectory);
                             if(image==null) throw new FileNotFoundException("Set Paths.Disc to your Melee GALE01 rev 2 disc image.");
-                            if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir))!=1) throw new IOException(MeleeNative.Error);
-                            AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir))==1;
+                            if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)!=1) throw new IOException(MeleeNative.Error);
+                            AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
                             if(!AssetsReady) throw new IOException("Extraction finished without a complete Samus cache. Set Paths.Disc and restart to retry.");
                             Log.LogInfo("Samus assets extracted from your disc.");
                         } catch(Exception e) { Log.LogError("Samus assets unavailable: "+e.Message); }
