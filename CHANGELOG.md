@@ -1,3 +1,9 @@
+# 0.2.15 animated effect textures and upright side-B
+
+- Side-B keeps Samus upright and turns the cannon toward the camera instead of tilting the whole body.
+- Ground-burst and other common effects play their disc texture frames and UV transforms; the shared renderer now receives animated image frames and UVs.
+- Native, shared presenter and build checks pass; in-game visual playtesting remains pending.
+
 # 0.2.14 knockdown protection, down-B selection and aimed side-B pose
 
 - Melee knockdown and get-up now reject repeated damage, with one second of protection after control returns. RoR2 stun extends that window; buffered LT can fire when control is available.
