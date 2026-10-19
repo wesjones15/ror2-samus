@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Ror2Common;
 using UnityEngine;
 
@@ -84,6 +84,10 @@ namespace Samus
                 // model is presentation-only; keep the voice if it is unavailable.
                 try {
                     view=SamusView.Game();
+                    // The results-screen burst is a screen-space element authored in
+                    // the viewer's handedness; render it without the usual model X
+                    // mirror so its "GAME!" text reads left-to-right.
+                    view.Models.MirrorX=false;
                     if(MeleeNative.ssbm_view_model(view.Handle,out var info)==1){
                         float width=info.hi.x-info.lo.x;
                         if(width>0.001f)scale=TargetWidth/width;
