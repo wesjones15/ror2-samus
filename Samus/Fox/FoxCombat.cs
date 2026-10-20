@@ -19,6 +19,34 @@ namespace Fox
             if (e.move_id == 20 && body.inputBank)
                 aim = MeleeAim.ProjectileDirection(body, origin, MeleeAim.CameraRay(body, body.inputBank));
             if (e.move_id == 20) FoxShot.Spawn(body, origin, aim, scale);
+            else if (e.move_id == 24) Reflector.Burst(body, origin, scale);
+        }
+
+        // The Reflector (down-B): a frame-1 AoE that clears space around Fox with
+        // damage and outward knockback. Melee's reflect bubble (ftfoxspeciallw.c::
+        // ftColl_CreateReflectHit) is a projectile-reflection hitbox, which the
+        // shared sampler does not pose; this adapts it to an open-space burst.
+        internal static class Reflector
+        {
+            internal static void Burst(CharacterBody body, Vector3 center, float scale)
+            {
+                if (!NetworkServer.active) return;
+                float radius = 4f * scale;
+                var search = new SphereSearch { origin = center, radius = radius, mask = LayerIndex.entityPrecise.mask };
+                search.RefreshCandidates().FilterCandidatesByHurtBoxTeam(TeamMask.GetEnemyTeams(body.teamComponent.teamIndex)).FilterCandidatesByDistinctHurtBoxEntities();
+                foreach (var hurt in search.GetHurtBoxes())
+                {
+                    if (!hurt || !hurt.healthComponent || !hurt.healthComponent.alive) continue;
+                    var to = hurt.transform.position - center; to.y = 0f;
+                    var dir = to.sqrMagnitude > 0.01f ? to.normalized : Vector3.forward;
+                    NativeHit.Deal(body, hurt.healthComponent, new NativeHitSpec {
+                        coefficient = 2f, position = hurt.transform.position,
+                        force = dir * 18f + Vector3.up * 6f, procCoefficient = 1f,
+                        damageType = DamageType.Generic, color = DamageColorIndex.Default,
+                        staggerDuration = 0.2f,
+                    });
+                }
+            }
         }
 
         internal sealed class HitTracker

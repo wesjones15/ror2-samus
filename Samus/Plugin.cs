@@ -20,7 +20,7 @@ namespace Samus
         public const string Guid="com.libssbm.melee";
         internal static ManualLogSource Log;
         internal static string AssetsDir;
-        internal static volatile bool AssetsReady,AssetsBusy,FoxReady,LuigiReady;
+        internal static volatile bool AssetsReady,AssetsBusy,FoxReady,LuigiReady,CaptainReady,LinkReady;
         internal static ConfigEntry<float> MetresPerUnit,JumpScale;
         internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
@@ -60,6 +60,8 @@ namespace Samus
             PauseControls.Register("MeleeSamusBody", _ => MeleeSheets.SamusSheet());
             PauseControls.Register("MeleeFoxBody", _ => MeleeSheets.FoxSheet());
             PauseControls.Register("MeleeLuigiBody", _ => MeleeSheets.LuigiSheet());
+            PauseControls.Register("MeleeCaptainBody", _ => MeleeSheets.CaptainSheet());
+            PauseControls.Register("MeleeLinkBody", _ => MeleeSheets.LinkSheet());
             RunAudio.Initialize(MeleeAudio.StopAll);
             Run.onClientGameOverGlobal+=(run,report)=>{
                 if(run!=SamusDriver.LocalRun||!AssetsReady)return;
@@ -79,7 +81,9 @@ namespace Samus
                 AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
                 FoxReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterFox)==1;
                 LuigiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)==1;
-                if(!AssetsReady||!FoxReady||!LuigiReady) {
+                CaptainReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)==1;
+                LinkReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLink)==1;
+                if(!AssetsReady||!FoxReady||!LuigiReady||!CaptainReady||!LinkReady) {
                     new Thread(()=> {
                         try {
                             string image=FindDisc(configuredDisc,pluginDirectory);
@@ -88,6 +92,8 @@ namespace Samus
                             if(!AssetsReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)!=1)throw new IOException(MeleeNative.Error);}
                             if(!FoxReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterFox)!=1)throw new IOException(MeleeNative.Error);}
                             if(!LuigiReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)!=1)throw new IOException(MeleeNative.Error);}
+                            if(!CaptainReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)!=1)throw new IOException(MeleeNative.Error);}
+                            if(!LinkReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterLink)!=1)throw new IOException(MeleeNative.Error);}
                             Log.LogInfo("Melee assets extracted from your disc.");
                         } catch(Exception e) { Log.LogError("Melee assets unavailable: "+e.Message); }
                         finally {
@@ -97,6 +103,8 @@ namespace Samus
                             AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
                             FoxReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterFox)==1;
                             LuigiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)==1;
+                            CaptainReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)==1;
+                            LinkReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLink)==1;
                             AssetsBusy=false;
                         }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
@@ -127,6 +135,10 @@ namespace Samus
             catch(Exception e) { Log.LogError("Fox registration failed: "+e); }
             try { Luigi.LuigiSkills.Set(MeleeSurvivor.Register(pack,Guid,Luigi.LuigiDef.Def())); }
             catch(Exception e) { Log.LogError("Luigi registration failed: "+e); }
+            try { Captain.CaptainSkills.Set(MeleeSurvivor.Register(pack,Guid,Captain.CaptainDef.Def())); }
+            catch(Exception e) { Log.LogError("Captain Falcon registration failed: "+e); }
+            try { Link.LinkSkills.Set(MeleeSurvivor.Register(pack,Guid,Link.LinkDef.Def())); }
+            catch(Exception e) { Log.LogError("Link registration failed: "+e); }
             Tokens();Log.LogInfo("Melee survivors registered");
         }
         static void Tokens()
@@ -135,6 +147,8 @@ namespace Samus
             MeleeSurvivor.Tokens(l,SamusDef.Def());
             MeleeSurvivor.Tokens(l,Fox.FoxDef.Def());
             MeleeSurvivor.Tokens(l,Luigi.LuigiDef.Def());
+            MeleeSurvivor.Tokens(l,Captain.CaptainDef.Def());
+            MeleeSurvivor.Tokens(l,Link.LinkDef.Def());
         }
         void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;MeleeSkins.Uninstall();}
     }

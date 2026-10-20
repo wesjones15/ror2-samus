@@ -109,5 +109,67 @@ namespace Samus
                 .Add("C", "Luigi Cyclone, or the Shield / Air Feint alternate");
             return sheet;
         }
+
+        public static ControlSheet CaptainSheet()
+        {
+            var sheet = new ControlSheet
+            {
+                Subtitle = "F-Zero Racer",
+                Footer = "RT is a slow flaming Falcon Punch; B kicks forward.",
+            };
+
+            sheet.Pad("Moving")
+                .Add("Left stick", "Walk, run")
+                .Add("A", "Jump")
+                .Add("Left stick click", "Sprint");
+            sheet.Pad("Attacks")
+                .Add("RT", "Falcon Punch: a slow devastating punch")
+                .Add("LT", "Contextual A; LS + LT picks the attack, a flick smashes")
+                .Add("RB", "Raptor Boost: a quick horizontal lunge")
+                .Add("LB", "Falcon Dive: launch upward")
+                .Add("B", "Falcon Kick, or the Shield / Air Feint alternate");
+
+            sheet.Keys("Moving")
+                .Add("Move", "Walk (Sprint: run)")
+                .Add("Jump", "Jump");
+            sheet.Keys("Attacks")
+                .Add("Primary", "Falcon Punch: a slow devastating punch")
+                .Add("Secondary", "Contextual A")
+                .Add("Utility", "Raptor Boost: a quick horizontal lunge")
+                .Add("Special", "Falcon Dive: launch upward")
+                .Add("C", "Falcon Kick, or the Shield / Air Feint alternate");
+            return sheet;
+        }
+
+        public static ControlSheet LinkSheet()
+        {
+            var sheet = new ControlSheet
+            {
+                Subtitle = "Hero of Hyrule",
+                Footer = "RT holds to draw the bow and release to fire; B lobs a bomb.",
+            };
+
+            sheet.Pad("Moving")
+                .Add("Left stick", "Walk, run")
+                .Add("A", "Jump")
+                .Add("Left stick click", "Sprint");
+            sheet.Pad("Attacks")
+                .Add("RT", "Hero's Bow: hold to draw, release to fire")
+                .Add("LT", "Contextual A; LS + LT picks the attack, a flick smashes")
+                .Add("RB", "Boomerang: throw it forward")
+                .Add("LB", "Spin Attack: launch upward")
+                .Add("B", "Bomb, or the Shield / Air Feint alternate");
+
+            sheet.Keys("Moving")
+                .Add("Move", "Walk (Sprint: run)")
+                .Add("Jump", "Jump");
+            sheet.Keys("Attacks")
+                .Add("Primary", "Hero's Bow: hold to draw, release to fire")
+                .Add("Secondary", "Contextual A")
+                .Add("Utility", "Boomerang: throw it forward")
+                .Add("Special", "Spin Attack: launch upward")
+                .Add("C", "Bomb, or the Shield / Air Feint alternate");
+            return sheet;
+        }
     }
 }
