@@ -15,14 +15,14 @@ namespace Luigi
             primary = new MeleeSkillInfo {
                 defName="MeleeLuigi0",nameToken="SSBM_LUIGI_SKILL_0",descriptionToken="SSBM_LUIGI_SKILL_DESC_0",
                 displayName="Fireball",description="RT: fire a bouncing green fireball.",
-                icon="CommandoBodyFirePistol",recharge=0.5f,stock=1,combat=true },
+                icon="CommandoBodyFirePistol",recharge=0.15f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeLuigi1",nameToken="SSBM_LUIGI_SKILL_1",descriptionToken="SSBM_LUIGI_SKILL_DESC_1",
                 displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeLuigi2",nameToken="SSBM_LUIGI_SKILL_2",descriptionToken="SSBM_LUIGI_SKILL_DESC_2",
-                displayName="Green Missile",description="RB: a charged horizontal launch.",
+                displayName="Green Missile",description="RB: hold to charge, release to launch forward. Damage scales from 250% to 1600% with charge.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeLuigi3",nameToken="SSBM_LUIGI_SKILL_3",descriptionToken="SSBM_LUIGI_SKILL_DESC_3",
