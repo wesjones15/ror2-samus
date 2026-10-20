@@ -109,7 +109,7 @@ namespace Samus
             var shot=go.AddComponent<Shot>();shot.owner=owner;shot.origin=point;shot.modelScale=scale;shot.fullCharge=charge>=1;
             shot.driver=owner.GetComponent<SamusDriver>();shot.particles=shot.driver?.Particles;shot.particleKey=0x100000000ul|(uint)go.GetInstanceID();shot.particleKind=article;shot.particleState=state;
             try {
-                shot.projectile=MeleeNative.ssbm_projectile_new(NativeLib.CString(Plugin.AssetsDir),article,state,charge,new MeleeNative.Vec3(direction.x,direction.y,direction.z));
+                shot.projectile=MeleeNative.ssbm_projectile_new(NativeLib.CString(Plugin.AssetsDir),MeleeNative.FighterSamus,article,state,charge,new MeleeNative.Vec3(direction.x,direction.y,direction.z));
                 if(shot.projectile==System.IntPtr.Zero)throw new System.InvalidOperationException(MeleeNative.Error);
                 if(article==1)MeleeNative.ssbm_projectile_lifetime(shot.projectile,0); // RoR2 gun travel: no offscreen lifetime cutoff.
                 if(article==2){MeleeNative.ssbm_projectile_lifetime(shot.projectile,0);shot.maxRange=Plugin.MissileRange.Value;} // Range is the host's cap, not Melee's off-screen cutoff.
