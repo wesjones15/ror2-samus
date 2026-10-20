@@ -78,5 +78,36 @@ namespace Samus
                 .Add("C", "Reflector, or the Shield / Air Feint alternate");
             return sheet;
         }
+
+        public static ControlSheet LuigiSheet()
+        {
+            var sheet = new ControlSheet
+            {
+                Subtitle = "The Eternal Understudy",
+                Footer = "RT is a bouncing fireball; B spins into the Luigi Cyclone.",
+            };
+
+            sheet.Pad("Moving")
+                .Add("Left stick", "Walk, run")
+                .Add("A", "Jump")
+                .Add("Left stick click", "Sprint");
+            sheet.Pad("Attacks")
+                .Add("RT", "Fireball: fire a bouncing green fireball")
+                .Add("LT", "Contextual A; LS + LT picks the attack, a flick smashes")
+                .Add("RB", "Green Missile: a charged horizontal launch")
+                .Add("LB", "Super Jump Punch: launch upward")
+                .Add("B", "Luigi Cyclone, or the Shield / Air Feint alternate");
+
+            sheet.Keys("Moving")
+                .Add("Move", "Walk (Sprint: run)")
+                .Add("Jump", "Jump");
+            sheet.Keys("Attacks")
+                .Add("Primary", "Fireball: fire a bouncing green fireball")
+                .Add("Secondary", "Contextual A")
+                .Add("Utility", "Green Missile: a charged horizontal launch")
+                .Add("Special", "Super Jump Punch: launch upward")
+                .Add("C", "Luigi Cyclone, or the Shield / Air Feint alternate");
+            return sheet;
+        }
     }
 }

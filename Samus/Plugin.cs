@@ -20,7 +20,7 @@ namespace Samus
         public const string Guid="com.libssbm.melee";
         internal static ManualLogSource Log;
         internal static string AssetsDir;
-        internal static volatile bool AssetsReady,AssetsBusy,FoxReady;
+        internal static volatile bool AssetsReady,AssetsBusy,FoxReady,LuigiReady;
         internal static ConfigEntry<float> MetresPerUnit,JumpScale;
         internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
@@ -59,6 +59,7 @@ namespace Samus
             PauseControls.Install(gameObject);
             PauseControls.Register("MeleeSamusBody", _ => MeleeSheets.SamusSheet());
             PauseControls.Register("MeleeFoxBody", _ => MeleeSheets.FoxSheet());
+            PauseControls.Register("MeleeLuigiBody", _ => MeleeSheets.LuigiSheet());
             RunAudio.Initialize(MeleeAudio.StopAll);
             Run.onClientGameOverGlobal+=(run,report)=>{
                 if(run!=SamusDriver.LocalRun||!AssetsReady)return;
@@ -77,7 +78,8 @@ namespace Samus
                 MeleeNative.Load(nativePath);
                 AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
                 FoxReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterFox)==1;
-                if(!AssetsReady||!FoxReady) {
+                LuigiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)==1;
+                if(!AssetsReady||!FoxReady||!LuigiReady) {
                     new Thread(()=> {
                         try {
                             string image=FindDisc(configuredDisc,pluginDirectory);
@@ -85,6 +87,7 @@ namespace Samus
                             // Each fighter extracts independently; a failure only affects that fighter.
                             if(!AssetsReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)!=1)throw new IOException(MeleeNative.Error);}
                             if(!FoxReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterFox)!=1)throw new IOException(MeleeNative.Error);}
+                            if(!LuigiReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)!=1)throw new IOException(MeleeNative.Error);}
                             Log.LogInfo("Melee assets extracted from your disc.");
                         } catch(Exception e) { Log.LogError("Melee assets unavailable: "+e.Message); }
                         finally {
@@ -93,6 +96,7 @@ namespace Samus
                             // were already complete.
                             AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
                             FoxReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterFox)==1;
+                            LuigiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)==1;
                             AssetsBusy=false;
                         }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
@@ -121,6 +125,8 @@ namespace Samus
             catch(Exception e) { Log.LogError("Samus registration failed: "+e); }
             try { Fox.FoxSkills.Set(MeleeSurvivor.Register(pack,Guid,Fox.FoxDef.Def())); }
             catch(Exception e) { Log.LogError("Fox registration failed: "+e); }
+            try { Luigi.LuigiSkills.Set(MeleeSurvivor.Register(pack,Guid,Luigi.LuigiDef.Def())); }
+            catch(Exception e) { Log.LogError("Luigi registration failed: "+e); }
             Tokens();Log.LogInfo("Melee survivors registered");
         }
         static void Tokens()
@@ -128,6 +134,7 @@ namespace Samus
             var l=Language.currentLanguage;if(l==null)return;
             MeleeSurvivor.Tokens(l,SamusDef.Def());
             MeleeSurvivor.Tokens(l,Fox.FoxDef.Def());
+            MeleeSurvivor.Tokens(l,Luigi.LuigiDef.Def());
         }
         void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;MeleeSkins.Uninstall();}
     }
