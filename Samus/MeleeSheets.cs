@@ -171,5 +171,36 @@ namespace Samus
                 .Add("C", "Bomb, or the Shield / Air Feint alternate");
             return sheet;
         }
+
+        public static ControlSheet PikachuSheet()
+        {
+            var sheet = new ControlSheet
+            {
+                Subtitle = "The Electric Mouse Pokemon",
+                Footer = "Quick Attack homes on your lock-on (the enemy nearest your crosshair) and arrives in two zips; Thunder strikes Pikachu himself.",
+            };
+
+            sheet.Pad("Moving")
+                .Add("Left stick", "Walk, run")
+                .Add("A", "Jump")
+                .Add("Left stick click", "Sprint");
+            sheet.Pad("Attacks")
+                .Add("RT", "Thunder Shock: a bouncing electric orb along your crosshair")
+                .Add("LT", "Contextual A; LS + LT picks the attack, a flick smashes")
+                .Add("RB", "Thunder: a lightning bolt on yourself")
+                .Add("LB", "Quick Attack: two zips to your lock-on")
+                .Add("B", "Skull Bash (hold to charge), or the Shield / Air Feint alternate");
+
+            sheet.Keys("Moving")
+                .Add("Move", "Walk (Sprint: run)")
+                .Add("Jump", "Jump");
+            sheet.Keys("Attacks")
+                .Add("Primary", "Thunder Shock: a bouncing electric orb along your crosshair")
+                .Add("Secondary", "Contextual A")
+                .Add("Utility", "Thunder: a lightning bolt on yourself")
+                .Add("Special", "Quick Attack: two zips to your lock-on")
+                .Add("C", "Skull Bash (hold to charge), or the Shield / Air Feint alternate");
+            return sheet;
+        }
     }
 }

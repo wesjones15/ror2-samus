@@ -10,9 +10,10 @@ static class Program
     static readonly MeleeNative.EventFn evt=Event;
     static int jumps, hits,throws;
     static MeleeNative.Event lastShot;static int shotCount;
+    static MeleeNative.Event lastThunder;static int thunderSpawn,thunderStrike;
     static void Collide(IntPtr user,in MeleeNative.Vec3 from,in MeleeNative.Vec3 to,out MeleeNative.Collision result)
     { result=new MeleeNative.Collision { position=new MeleeNative.Vec3(to.x,Math.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
-    static void Event(IntPtr user,in MeleeNative.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++;if(e.kind==6)throws++;if(e.kind==2&&e.move_id==20){lastShot=e;shotCount++;} }
+    static void Event(IntPtr user,in MeleeNative.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++;if(e.kind==6)throws++;if(e.kind==2&&e.move_id==20){lastShot=e;shotCount++;} if(e.kind==2&&e.move_id==24){if(e.strength<1.5f){thunderSpawn++;lastThunder=e;}else thunderStrike++;} }
     static void Check(bool ok,string what) { if(!ok) throw new Exception(what); }
     static int Main(string[] args)
     {
@@ -50,6 +51,7 @@ static class Program
         RebirthRegressions(assets,in host);
         AimingRegressions(assets,in host);
         DefenseRegressions(assets,in host);
+        PikachuRegressions(assets,in host);
         jumps=hits=throws=0;
         foreach(int fps in new[]{30,60,144}) {
             var dash=MeleeNative.ssbm_sim_new(NativeLib.CString(assets),default);Check(dash!=IntPtr.Zero,MeleeNative.Error);
@@ -335,6 +337,74 @@ static class Program
         }
         MeleeNative.ssbm_sim_facing(IntPtr.Zero,default);Check(MeleeNative.ssbm_sim_facing_locked(IntPtr.Zero)==0,"null facing boundary");
         Console.WriteLine("PASS: camera directional moves, independent host yaw/backpedal and stored-shot live aim through native DLL at 30/60/144 Hz");
+    }
+    // Pikachu staged specials and Thunder Shock through the native boundary: Quick Attack
+    // reaches a locked enemy in its two zips, no move snaps the fighter back, Skull Bash
+    // travels, Thunder reports its spawn and strike, and the shot bounces ten times.
+    static void PikachuRegressions(string assets,in MeleeNative.Host host)
+    {
+        if(MeleeNative.ssbm_assets_complete(NativeLib.CString(assets),MeleeNative.FighterPikachu)!=1){Console.WriteLine("SKIP: Pikachu checks (no complete Pikachu cache)");return;}
+        Check(MeleeNative.HasStagedSpecials,"staged-special exports missing from ssbm.dll");
+        foreach(int fps in new[]{30,60,144}) {
+            var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterPikachu);Check(sim!=IntPtr.Zero,"Pikachu sim: "+MeleeNative.Error);
+            try {
+                var pad=new MeleeNative.Pad{aim=new MeleeNative.Vec3(0,0,1),allowed=31};
+                for(int f=0;f<10;f++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                MeleeNative.ssbm_sim_lock_target(sim,new MeleeNative.Vec3(0,0,60),1);
+                pad.buttons=1024;MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);pad.buttons=0;
+                MeleeNative.ssbm_sim_state(sim,out var state);Check(state.move_id==23,"LB did not start Quick Attack");
+                float furthest=state.position.z;
+                for(int f=0;f<fps*4&&state.move_id==23;f++) {
+                    MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/fps);MeleeNative.ssbm_sim_state(sim,out state);
+                    Check(state.position.z>=furthest-0.001f,"Quick Attack rubberbanded at "+fps+" FPS");furthest=Math.Max(furthest,state.position.z);
+                }
+                Check(state.move_id==0,"Quick Attack never ended");
+                Check(state.position.z>=60-14&&state.position.z<=60,"Quick Attack stopped "+(60-state.position.z)+" short of the locked enemy at "+fps+" FPS");
+                MeleeNative.ssbm_sim_lock_target(sim,default,0);
+            }finally{MeleeNative.ssbm_sim_free(sim);}
+            sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterPikachu);Check(sim!=IntPtr.Zero,MeleeNative.Error);
+            try {
+                var pad=new MeleeNative.Pad{aim=new MeleeNative.Vec3(0,0,1),allowed=31};
+                for(int f=0;f<10;f++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                pad.buttons=512;
+                for(int f=0;f<fps/2;f++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/fps);
+                pad.buttons=0;MeleeNative.ssbm_sim_state(sim,out var state);Check(state.move_id==21,"B did not start Skull Bash");
+                float furthest=0;
+                for(int f=0;f<fps*4;f++) {
+                    MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/fps);MeleeNative.ssbm_sim_state(sim,out state);
+                    float distance=(float)Math.Sqrt(state.position.x*state.position.x+state.position.z*state.position.z);
+                    Check(distance>=furthest-0.001f,"Skull Bash rubberbanded at "+fps+" FPS");furthest=Math.Max(furthest,distance);
+                }
+                Check(state.move_id==0&&furthest>15,"Skull Bash did not travel and end ("+furthest+")");
+            }finally{MeleeNative.ssbm_sim_free(sim);}
+            thunderSpawn=thunderStrike=0;
+            sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterPikachu);Check(sim!=IntPtr.Zero,MeleeNative.Error);
+            try {
+                var pad=new MeleeNative.Pad{aim=new MeleeNative.Vec3(0,0,1),allowed=31};
+                for(int f=0;f<10;f++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                pad.buttons=2048;MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);pad.buttons=0;
+                MeleeNative.ssbm_sim_state(sim,out var state);Check(state.move_id==24,"RB did not start Thunder");
+                for(int f=0;f<fps*6&&state.move_id==24;f++){MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/fps);MeleeNative.ssbm_sim_state(sim,out state);}
+                Check(thunderSpawn==1&&thunderStrike==1,"Thunder reported "+thunderSpawn+" spawn / "+thunderStrike+" strike events");
+                Check(lastThunder.direction.x>100&&lastThunder.direction.y>=1&&lastThunder.direction.z>0,"Thunder spawn event lost the cloud height/strike delay/speed");
+            }finally{MeleeNative.ssbm_sim_free(sim);}
+        }
+        var shot=MeleeNative.ssbm_projectile_new(NativeLib.CString(assets),MeleeNative.FighterPikachu,1,0,0,new MeleeNative.Vec3(0,0.2f,1));Check(shot!=IntPtr.Zero,"Thunder Shock: "+MeleeNative.Error);
+        try {
+            MeleeNative.ssbm_projectile_lifetime(shot,0);
+            MeleeNative.ssbm_projectile_state(shot,out var s);float flying=s.damage;int bounces=0;bool wall=false;
+            for(int f=0;f<6000&&bounces<=10;f++) {
+                MeleeNative.ssbm_projectile_step(shot,1.0/60,default,0);MeleeNative.ssbm_projectile_state(shot,out s);
+                if(!wall&&s.position.z>60){MeleeNative.ssbm_projectile_reflect(shot,new MeleeNative.Vec3(0,0,-1));MeleeNative.ssbm_projectile_state(shot,out s);Check(s.velocity.z<0,"wall did not reflect Thunder Shock");wall=true;}
+                if(s.position.y<-20&&s.velocity.y<0) {
+                    if(MeleeNative.ssbm_projectile_bounce(shot)==0)break;
+                    bounces++;MeleeNative.ssbm_projectile_place(shot,new MeleeNative.Vec3(s.position.x,-20,s.position.z),0);
+                    if(bounces==1){MeleeNative.ssbm_projectile_state(shot,out s);Check(s.damage<flying,"Thunder Shock damage did not drop after landing ("+flying+" -> "+s.damage+")");}
+                }
+            }
+            Check(wall&&bounces==10,"Thunder Shock bounced "+bounces+" times, expected 10");
+        }finally{MeleeNative.ssbm_projectile_free(shot);}
+        Console.WriteLine("PASS: Pikachu Quick Attack reaches a locked enemy, Skull Bash and Thunder complete without rubberbanding at 30/60/144 FPS, and Thunder Shock reflects and bounces ten times");
     }
     static void DefenseRegressions(string assets,in MeleeNative.Host host)
     {

@@ -20,12 +20,13 @@ namespace Samus
         public const string Guid="com.libssbm.melee";
         internal static ManualLogSource Log;
         internal static string AssetsDir;
-        internal static volatile bool AssetsReady,AssetsBusy,FoxReady,LuigiReady,CaptainReady,LinkReady;
+        internal static volatile bool AssetsReady,AssetsBusy,FoxReady,LuigiReady,CaptainReady,LinkReady,PikachuReady;
         internal static ConfigEntry<float> MetresPerUnit,JumpScale;
         internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
         internal static ConfigEntry<float> MissileRange,MissileDamageScale,ChargeShotHitboxScale;
         internal static ConfigEntry<float> StaggerDuration;
+        internal static ConfigEntry<float> LockRange;
         internal static ConfigEntry<bool> LogEffects;
         string nativePath,configuredDisc,pluginDirectory;
         bool nativeStarted,destroyed;
@@ -42,6 +43,7 @@ namespace Samus
             MissileRange=Config.Bind("Combat","MissileRangeMetres",120f,new ConfigDescription("How far a side-B missile flies before it is removed, in metres. 0 is unlimited. Melee's own cutoff is off-screen distance.",new AcceptableValueRange<float>(0f,2000f)));
             MissileDamageScale=Config.Bind("Combat","MissileDamageScale",5f,new ConfigDescription("Multiplier on side-B missile and Super Missile damage, because the move has a cooldown.",new AcceptableValueRange<float>(0.1f,50f)));
             ChargeShotHitboxScale=Config.Bind("Combat","ChargeShotHitboxScale",3f,new ConfigDescription("Charge Shot enemy hit radius multiplier, so shots at range hit more easily. Walls and floor use the shot's own size.",new AcceptableValueRange<float>(1f,10f)));
+            LockRange=Config.Bind("Combat","LockRangeMetres",25f,new ConfigDescription("How far away Pikachu's Quick Attack can lock onto an enemy (the nearest to your crosshair, preferring ones in front), in metres.",new AcceptableValueRange<float>(5f,100f)));
             StaggerDuration=Config.Bind("Combat","StaggerDuration",0.25f,new ConfigDescription("Seconds a melee A attack stuns a non-boss enemy. Refreshed per hit so continued attacks lock trash; bosses/elites are exempt. 0 disables.",new AcceptableValueRange<float>(0f,2f)));
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
             string hint=Path.Combine(here,"assets_dir.txt");
@@ -62,6 +64,7 @@ namespace Samus
             PauseControls.Register("MeleeLuigiBody", _ => MeleeSheets.LuigiSheet());
             PauseControls.Register("MeleeCaptainBody", _ => MeleeSheets.CaptainSheet());
             PauseControls.Register("MeleeLinkBody", _ => MeleeSheets.LinkSheet());
+            PauseControls.Register("MeleePikachuBody", _ => MeleeSheets.PikachuSheet());
             RunAudio.Initialize(MeleeAudio.StopAll);
             Run.onClientGameOverGlobal+=(run,report)=>{
                 if(run!=SamusDriver.LocalRun||!AssetsReady)return;
@@ -83,7 +86,8 @@ namespace Samus
                 LuigiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)==1;
                 CaptainReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)==1;
                 LinkReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLink)==1;
-                if(!AssetsReady||!FoxReady||!LuigiReady||!CaptainReady||!LinkReady) {
+                PikachuReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterPikachu)==1;
+                if(!AssetsReady||!FoxReady||!LuigiReady||!CaptainReady||!LinkReady||!PikachuReady) {
                     new Thread(()=> {
                         try {
                             string image=FindDisc(configuredDisc,pluginDirectory);
@@ -94,6 +98,7 @@ namespace Samus
                             if(!LuigiReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)!=1)throw new IOException(MeleeNative.Error);}
                             if(!CaptainReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)!=1)throw new IOException(MeleeNative.Error);}
                             if(!LinkReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterLink)!=1)throw new IOException(MeleeNative.Error);}
+                            if(!PikachuReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterPikachu)!=1)throw new IOException(MeleeNative.Error);}
                             Log.LogInfo("Melee assets extracted from your disc.");
                         } catch(Exception e) { Log.LogError("Melee assets unavailable: "+e.Message); }
                         finally {
@@ -105,6 +110,7 @@ namespace Samus
                             LuigiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)==1;
                             CaptainReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)==1;
                             LinkReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLink)==1;
+                            PikachuReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterPikachu)==1;
                             AssetsBusy=false;
                         }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
@@ -139,6 +145,8 @@ namespace Samus
             catch(Exception e) { Log.LogError("Captain Falcon registration failed: "+e); }
             try { Link.LinkSkills.Set(MeleeSurvivor.Register(pack,Guid,Link.LinkDef.Def())); }
             catch(Exception e) { Log.LogError("Link registration failed: "+e); }
+            try { Pikachu.PikachuSkills.Set(MeleeSurvivor.Register(pack,Guid,Pikachu.PikachuDef.Def())); }
+            catch(Exception e) { Log.LogError("Pikachu registration failed: "+e); }
             Tokens();Log.LogInfo("Melee survivors registered");
         }
         static void Tokens()
@@ -149,6 +157,7 @@ namespace Samus
             MeleeSurvivor.Tokens(l,Luigi.LuigiDef.Def());
             MeleeSurvivor.Tokens(l,Captain.CaptainDef.Def());
             MeleeSurvivor.Tokens(l,Link.LinkDef.Def());
+            MeleeSurvivor.Tokens(l,Pikachu.PikachuDef.Def());
         }
         void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;MeleeSkins.Uninstall();}
     }
