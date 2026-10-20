@@ -72,19 +72,20 @@ namespace Samus
             Logger.LogInfo("Samus late native initialization: RoR2 startup completed.");
             try {
                 MeleeNative.Load(nativePath);
-                AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
+                uint[] kinds={MeleeNative.FighterSamus,MeleeNative.FighterFox};
+                AssetsReady=true;foreach(uint kind in kinds)AssetsReady&=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),kind)==1;
                 if(!AssetsReady) {
                     new Thread(()=> {
                         try {
                             string image=FindDisc(configuredDisc,pluginDirectory);
                             if(image==null) throw new FileNotFoundException("Set Paths.Disc to your Melee GALE01 rev 2 disc image.");
-                            if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)!=1) throw new IOException(MeleeNative.Error);
-                            AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
-                            if(!AssetsReady) throw new IOException("Extraction finished without a complete Samus cache. Set Paths.Disc and restart to retry.");
-                            Log.LogInfo("Samus assets extracted from your disc.");
-                        } catch(Exception e) { Log.LogError("Samus assets unavailable: "+e.Message); }
+                            foreach(uint kind in kinds)if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),kind)!=1)throw new IOException(MeleeNative.Error);
+                            AssetsReady=true;foreach(uint kind in kinds)AssetsReady&=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),kind)==1;
+                            if(!AssetsReady) throw new IOException("Extraction finished without a complete Melee cache. Set Paths.Disc and restart to retry.");
+                            Log.LogInfo("Melee assets extracted from your disc.");
+                        } catch(Exception e) { Log.LogError("Melee assets unavailable: "+e.Message); }
                         finally { AssetsBusy=false; }
-                    }) { IsBackground=true,Name="Samus first-run extraction" }.Start();
+                    }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
                 } else AssetsBusy=false;
                 Logger.LogInfo("Melee 0.3.0 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
                 } catch(Exception e) {AssetsReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
@@ -107,12 +108,14 @@ namespace Samus
         static void AddContent(ContentPack pack)
         {
             Skills.Set(MeleeSurvivor.Register(pack,Guid,SamusDef.Def()));
-            Tokens();Log.LogInfo("Melee Samus survivor registered");
+            Fox.FoxSkills.Set(MeleeSurvivor.Register(pack,Guid,Fox.FoxDef.Def()));
+            Tokens();Log.LogInfo("Melee survivors registered");
         }
         static void Tokens()
         {
             var l=Language.currentLanguage;if(l==null)return;
             MeleeSurvivor.Tokens(l,SamusDef.Def());
+            MeleeSurvivor.Tokens(l,Fox.FoxDef.Def());
         }
         void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;MeleeSkins.Uninstall();}
     }
