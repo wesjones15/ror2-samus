@@ -146,7 +146,7 @@ static class Program
             foreach(var articleCase in new[]{(kind:0u,state:0u),(kind:1u,state:1u),(kind:1u,state:8u),(kind:2u,state:0u),(kind:2u,state:1u)}) {
                 MeleeNative.ProjectileState? reference=null;
                 foreach(int fps in new[]{30,60,144}) {
-                    var projectile=MeleeNative.ssbm_projectile_new(NativeLib.CString(assets),articleCase.kind,articleCase.state,articleCase.state==8?1:0,new MeleeNative.Vec3(0,0,1));
+                    var projectile=MeleeNative.ssbm_projectile_new(NativeLib.CString(assets),MeleeNative.FighterSamus,articleCase.kind,articleCase.state,articleCase.state==8?1:0,new MeleeNative.Vec3(0,0,1));
                     Check(projectile!=IntPtr.Zero,"projectile create: "+MeleeNative.Error);
                     try {
                         for(int f=0;f<fps;f++)MeleeNative.ssbm_projectile_step(projectile,1.0/fps,default,0);
@@ -415,7 +415,7 @@ static class Program
                 Check(MeleeNative.ssbm_sim_entry_control(sim,2)==0,"figurine failed to activate after Interact");
             } finally {MeleeNative.ssbm_sim_free(sim);}
         }
-        var shot=MeleeNative.ssbm_projectile_new(NativeLib.CString(assets),1,8,1,new MeleeNative.Vec3(0,0.6f,0.8f));Check(shot!=IntPtr.Zero,MeleeNative.Error);
+        var shot=MeleeNative.ssbm_projectile_new(NativeLib.CString(assets),MeleeNative.FighterSamus,1,8,1,new MeleeNative.Vec3(0,0.6f,0.8f));Check(shot!=IntPtr.Zero,MeleeNative.Error);
         try {MeleeNative.ssbm_projectile_lifetime(shot,0);for(int i=0;i<600;i++)MeleeNative.ssbm_projectile_step(shot,1.0/60,default,0);MeleeNative.ssbm_projectile_state(shot,out var state);Check((state.flags&2)==0&&state.position.z>1000,"RoR2 charge shot still expires at short source range");Check(Math.Abs(state.position.y/state.position.z-0.75f)<0.001f,"charge shot changed aimed pitch");}
         finally {MeleeNative.ssbm_projectile_free(shot);}
         Console.WriteLine("PASS: visible Screw Attack, source grapple geometry/contact, directional throw release, manual entry controls and long aimed charge-shot travel");

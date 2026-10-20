@@ -54,12 +54,12 @@ namespace Fox
         {
             fighterName="Fox",bodyNameToken="SSBM_FOX_NAME",bodyName="MeleeFoxBody",
             defPrefix="MeleeFoxSkin",nameTokenPrefix="SSBM_FOX_SKIN_",unlockPrefix="Skins.MeleeFox.",
+            // ftfox.c::ftFx_Init_CostumeStrings order: Nr, Or, La, Gr.
             skins=new MeleeSkinInfo[] {
-                new MeleeSkinInfo { nameToken="SSBM_FOX_SKIN_0", displayName="Default", color=new Color32(230,230,235,255) },
-                new MeleeSkinInfo { nameToken="SSBM_FOX_SKIN_1", displayName="Red", color=new Color32(200,80,80,255) },
-                new MeleeSkinInfo { nameToken="SSBM_FOX_SKIN_2", displayName="Green", color=new Color32(80,160,80,255) },
-                new MeleeSkinInfo { nameToken="SSBM_FOX_SKIN_3", displayName="Blue", color=new Color32(90,120,220,255) },
-                new MeleeSkinInfo { nameToken="SSBM_FOX_SKIN_4", displayName="White", color=new Color32(240,240,245,255) },
+                new MeleeSkinInfo { nameToken="SSBM_FOX_SKIN_0", displayName="Default", color=new Color32(225,228,238,255) },
+                new MeleeSkinInfo { nameToken="SSBM_FOX_SKIN_1", displayName="Orange", color=new Color32(232,136,56,255) },
+                new MeleeSkinInfo { nameToken="SSBM_FOX_SKIN_2", displayName="Lavender", color=new Color32(178,140,214,255) },
+                new MeleeSkinInfo { nameToken="SSBM_FOX_SKIN_3", displayName="Green", color=new Color32(92,172,92,255) },
             },
         };
         internal static uint Selected() => MeleeSkins.Selected("MeleeFoxBody");

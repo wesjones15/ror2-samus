@@ -56,6 +56,9 @@ namespace Samus
             ContentProvider.Register(Guid,AddContent);
             Language.onCurrentLanguageChanged+=Tokens;
             ItemHooks.Install();GlyphOverride.Install();MeleeSkins.Install();
+            PauseControls.Install(gameObject);
+            PauseControls.Register("MeleeSamusBody", _ => MeleeSheets.SamusSheet());
+            PauseControls.Register("MeleeFoxBody", _ => MeleeSheets.FoxSheet());
             RunAudio.Initialize(MeleeAudio.StopAll);
             Run.onClientGameOverGlobal+=(run,report)=>{
                 if(run!=SamusDriver.LocalRun||!AssetsReady)return;
