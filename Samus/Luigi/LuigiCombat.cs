@@ -111,7 +111,30 @@ namespace Luigi
                 var next = origin + new Vector3(state.position.x, state.position.y, state.position.z) * modelScale;
                 var step = next - from;
                 if (step.sqrMagnitude > 0 && Physics.SphereCast(from, state.radius * modelScale, step.normalized, out var hit, step.magnitude, WorldProbe.Mask | LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Ignore))
-                    Impact(hit.point);
+                {
+                    if (hit.normal.y > 0.5f)
+                    {
+                        // Ground: bounce (Melee-style), dying after the source
+                        // bounce budget is spent. Walls and ceilings never bounce.
+                        if (MeleeNative.ssbm_projectile_bounce(projectile) == 0)
+                        {
+                            Impact(hit.point);
+                        }
+                        else
+                        {
+                            var nativePoint = new MeleeNative.Vec3(
+                                (hit.point.x - origin.x) / modelScale,
+                                (hit.point.y - origin.y) / modelScale,
+                                (hit.point.z - origin.z) / modelScale);
+                            MeleeNative.ssbm_projectile_place(projectile, nativePoint, 0);
+                            transform.position = hit.point + Vector3.up * 0.02f;
+                        }
+                    }
+                    else
+                    {
+                        Impact(hit.point);
+                    }
+                }
                 else transform.position = next;
             }
             if ((state.flags & 2) != 0) { Destroy(gameObject); return; }
