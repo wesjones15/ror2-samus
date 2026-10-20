@@ -137,7 +137,17 @@ namespace Luigi
                 }
                 else transform.position = next;
             }
-            if ((state.flags & 2) != 0) { Destroy(gameObject); return; }
+            if ((state.flags & 2) != 0)
+            {
+                if (!impacted)
+                {
+                    // Despawn puff: the fireball's life expired without a wall hit.
+                    var driver = owner ? owner.GetComponent<LuigiDriver>() : null;
+                    driver?.Effects?.Spawn(1001, MeleeParticles.At(transform.position, Quaternion.identity, modelScale));
+                }
+                Destroy(gameObject);
+                return;
+            }
         }
 
         void Impact(Vector3 at)
