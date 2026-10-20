@@ -33,7 +33,7 @@ namespace Fox
             }
         }
 
-        public static IDisplayActor Make() => Samus.Plugin.AssetsReady ? new MeleeSelectDisplay(new FoxDisplay(), intro: false) : null;
+        public static IDisplayActor Make() => Samus.Plugin.FoxReady ? new MeleeSelectDisplay(new FoxDisplay(), intro: false) : null;
 
         FoxDisplay()
         {

@@ -89,7 +89,7 @@ namespace Fox
                 [SkillSlot.Special]=new[]{PadButton.LB} },
         };
 
-        static Texture2D Portrait() => Samus.Plugin.AssetsReady ? MeleePortrait.Load(Samus.Plugin.AssetsDir, MeleeNative.FighterFox, "Melee Fox original CSS grid portrait") : null;
+        static Texture2D Portrait() => Samus.Plugin.FoxReady ? MeleePortrait.Load(Samus.Plugin.AssetsDir, MeleeNative.FighterFox, "Melee Fox original CSS grid portrait") : null;
     }
 
     public sealed class FoxMain : BaseCharacterMain { }

@@ -20,7 +20,7 @@ namespace Samus
         public const string Guid="com.libssbm.melee";
         internal static ManualLogSource Log;
         internal static string AssetsDir;
-        internal static volatile bool AssetsReady,AssetsBusy;
+        internal static volatile bool AssetsReady,AssetsBusy,FoxReady;
         internal static ConfigEntry<float> MetresPerUnit,JumpScale;
         internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
@@ -72,23 +72,30 @@ namespace Samus
             Logger.LogInfo("Samus late native initialization: RoR2 startup completed.");
             try {
                 MeleeNative.Load(nativePath);
-                uint[] kinds={MeleeNative.FighterSamus,MeleeNative.FighterFox};
-                AssetsReady=true;foreach(uint kind in kinds)AssetsReady&=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),kind)==1;
-                if(!AssetsReady) {
+                AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
+                FoxReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterFox)==1;
+                if(!AssetsReady||!FoxReady) {
                     new Thread(()=> {
                         try {
                             string image=FindDisc(configuredDisc,pluginDirectory);
                             if(image==null) throw new FileNotFoundException("Set Paths.Disc to your Melee GALE01 rev 2 disc image.");
-                            foreach(uint kind in kinds)if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),kind)!=1)throw new IOException(MeleeNative.Error);
-                            AssetsReady=true;foreach(uint kind in kinds)AssetsReady&=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),kind)==1;
-                            if(!AssetsReady) throw new IOException("Extraction finished without a complete Melee cache. Set Paths.Disc and restart to retry.");
+                            // Each fighter extracts independently; a failure only affects that fighter.
+                            if(!AssetsReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)!=1)throw new IOException(MeleeNative.Error);}
+                            if(!FoxReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterFox)!=1)throw new IOException(MeleeNative.Error);}
                             Log.LogInfo("Melee assets extracted from your disc.");
                         } catch(Exception e) { Log.LogError("Melee assets unavailable: "+e.Message); }
-                        finally { AssetsBusy=false; }
+                        finally {
+                            // Re-check each from the actual cache: a missing disc or a
+                            // partial extract must not disable a fighter whose assets
+                            // were already complete.
+                            AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
+                            FoxReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterFox)==1;
+                            AssetsBusy=false;
+                        }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
                 } else AssetsBusy=false;
                 Logger.LogInfo("Melee 0.3.0 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
-                } catch(Exception e) {AssetsReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
+                } catch(Exception e) {AssetsReady=false;FoxReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
         }
         static string FindDisc(string configured,string here)
         {
@@ -107,8 +114,10 @@ namespace Samus
         }
         static void AddContent(ContentPack pack)
         {
-            Skills.Set(MeleeSurvivor.Register(pack,Guid,SamusDef.Def()));
-            Fox.FoxSkills.Set(MeleeSurvivor.Register(pack,Guid,Fox.FoxDef.Def()));
+            try { Skills.Set(MeleeSurvivor.Register(pack,Guid,SamusDef.Def())); }
+            catch(Exception e) { Log.LogError("Samus registration failed: "+e); }
+            try { Fox.FoxSkills.Set(MeleeSurvivor.Register(pack,Guid,Fox.FoxDef.Def())); }
+            catch(Exception e) { Log.LogError("Fox registration failed: "+e); }
             Tokens();Log.LogInfo("Melee survivors registered");
         }
         static void Tokens()

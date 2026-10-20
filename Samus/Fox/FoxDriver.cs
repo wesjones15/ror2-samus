@@ -26,7 +26,7 @@ namespace Fox
         protected override float MetresPerUnit => Samus.Plugin.MetresPerUnit.Value;
         protected override float JumpScale => Samus.Plugin.JumpScale.Value;
         protected override bool HoldCharge => false;
-        protected override bool AssetsReady => Samus.Plugin.AssetsReady;
+        protected override bool AssetsReady => Samus.Plugin.FoxReady;
         protected override bool AssetsBusy => Samus.Plugin.AssetsBusy;
         protected override uint AllowedButtons => FoxSkills.Allowed(body);
         protected override bool ShieldSelected => FoxSkills.ShieldSelected(body);
