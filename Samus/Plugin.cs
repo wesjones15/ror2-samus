@@ -20,7 +20,7 @@ namespace Samus
         public const string Guid="com.libssbm.melee";
         internal static ManualLogSource Log;
         internal static string AssetsDir;
-        internal static volatile bool AssetsReady,AssetsBusy,FoxReady,LuigiReady,CaptainReady,LinkReady,PikachuReady;
+        internal static volatile bool AssetsReady,AssetsBusy,FoxReady,LuigiReady,CaptainReady,LinkReady,PikachuReady,YoshiReady,DonkeyReady;
         internal static ConfigEntry<float> MetresPerUnit,JumpScale;
         internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
@@ -65,6 +65,8 @@ namespace Samus
             PauseControls.Register("MeleeCaptainBody", _ => MeleeSheets.CaptainSheet());
             PauseControls.Register("MeleeLinkBody", _ => MeleeSheets.LinkSheet());
             PauseControls.Register("MeleePikachuBody", _ => MeleeSheets.PikachuSheet());
+            PauseControls.Register("MeleeYoshiBody", _ => MeleeSheets.YoshiSheet());
+            PauseControls.Register("MeleeDonkeyBody", _ => MeleeSheets.DonkeySheet());
             RunAudio.Initialize(MeleeAudio.StopAll);
             Run.onClientGameOverGlobal+=(run,report)=>{
                 if(run!=SamusDriver.LocalRun||!AssetsReady)return;
@@ -87,7 +89,9 @@ namespace Samus
                 CaptainReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)==1;
                 LinkReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLink)==1;
                 PikachuReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterPikachu)==1;
-                if(!AssetsReady||!FoxReady||!LuigiReady||!CaptainReady||!LinkReady||!PikachuReady) {
+                YoshiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterYoshi)==1;
+                DonkeyReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterDonkey)==1;
+                if(!AssetsReady||!FoxReady||!LuigiReady||!CaptainReady||!LinkReady||!PikachuReady||!YoshiReady||!DonkeyReady) {
                     new Thread(()=> {
                         try {
                             string image=FindDisc(configuredDisc,pluginDirectory);
@@ -99,6 +103,8 @@ namespace Samus
                             if(!CaptainReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)!=1)throw new IOException(MeleeNative.Error);}
                             if(!LinkReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterLink)!=1)throw new IOException(MeleeNative.Error);}
                             if(!PikachuReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterPikachu)!=1)throw new IOException(MeleeNative.Error);}
+                            if(!YoshiReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterYoshi)!=1)throw new IOException(MeleeNative.Error);}
+                            if(!DonkeyReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterDonkey)!=1)throw new IOException(MeleeNative.Error);}
                             Log.LogInfo("Melee assets extracted from your disc.");
                         } catch(Exception e) { Log.LogError("Melee assets unavailable: "+e.Message); }
                         finally {
@@ -111,6 +117,8 @@ namespace Samus
                             CaptainReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)==1;
                             LinkReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLink)==1;
                             PikachuReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterPikachu)==1;
+                            YoshiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterYoshi)==1;
+                            DonkeyReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterDonkey)==1;
                             AssetsBusy=false;
                         }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
@@ -147,6 +155,10 @@ namespace Samus
             catch(Exception e) { Log.LogError("Link registration failed: "+e); }
             try { Pikachu.PikachuSkills.Set(MeleeSurvivor.Register(pack,Guid,Pikachu.PikachuDef.Def())); }
             catch(Exception e) { Log.LogError("Pikachu registration failed: "+e); }
+            try { Yoshi.YoshiSkills.Set(MeleeSurvivor.Register(pack,Guid,Yoshi.YoshiDef.Def())); }
+            catch(Exception e) { Log.LogError("Yoshi registration failed: "+e); }
+            try { Donkey.DonkeySkills.Set(MeleeSurvivor.Register(pack,Guid,Donkey.DonkeyDef.Def())); }
+            catch(Exception e) { Log.LogError("Donkey Kong registration failed: "+e); }
             Tokens();Log.LogInfo("Melee survivors registered");
         }
         static void Tokens()
@@ -158,6 +170,8 @@ namespace Samus
             MeleeSurvivor.Tokens(l,Captain.CaptainDef.Def());
             MeleeSurvivor.Tokens(l,Link.LinkDef.Def());
             MeleeSurvivor.Tokens(l,Pikachu.PikachuDef.Def());
+            MeleeSurvivor.Tokens(l,Yoshi.YoshiDef.Def());
+            MeleeSurvivor.Tokens(l,Donkey.DonkeyDef.Def());
         }
         void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;MeleeSkins.Uninstall();}
     }

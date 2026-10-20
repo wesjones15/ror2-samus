@@ -202,5 +202,67 @@ namespace Samus
                 .Add("C", "Skull Bash (hold to charge), or the Shield / Air Feint alternate");
             return sheet;
         }
+
+        public static ControlSheet YoshiSheet()
+        {
+            var sheet = new ControlSheet
+            {
+                Subtitle = "Yoshi's Island Dinosaur",
+                Footer = "LB lobs an egg while hopping upward; B slams down as the Yoshi Bomb.",
+            };
+
+            sheet.Pad("Moving")
+                .Add("Left stick", "Walk, run")
+                .Add("A", "Jump")
+                .Add("Left stick click", "Sprint");
+            sheet.Pad("Attacks")
+                .Add("RT", "Egg Lay: lash out with Yoshi's tongue")
+                .Add("LT", "Contextual A; LS + LT picks the attack, a flick smashes")
+                .Add("RB", "Egg Roll: roll forward as an egg")
+                .Add("LB", "Egg Throw: lob an egg and hop upward")
+                .Add("B", "Yoshi Bomb, or the Shield / Air Feint alternate");
+
+            sheet.Keys("Moving")
+                .Add("Move", "Walk (Sprint: run)")
+                .Add("Jump", "Jump");
+            sheet.Keys("Attacks")
+                .Add("Primary", "Egg Lay: lash out with Yoshi's tongue")
+                .Add("Secondary", "Contextual A")
+                .Add("Utility", "Egg Roll: roll forward as an egg")
+                .Add("Special", "Egg Throw: lob an egg and hop upward")
+                .Add("C", "Yoshi Bomb, or the Shield / Air Feint alternate");
+            return sheet;
+        }
+
+        public static ControlSheet DonkeySheet()
+        {
+            var sheet = new ControlSheet
+            {
+                Subtitle = "King of the Jungle",
+                Footer = "RT is a slow devastating Giant Punch; B slaps the ground.",
+            };
+
+            sheet.Pad("Moving")
+                .Add("Left stick", "Walk, run")
+                .Add("A", "Jump")
+                .Add("Left stick click", "Sprint");
+            sheet.Pad("Attacks")
+                .Add("RT", "Giant Punch: a slow devastating punch")
+                .Add("LT", "Contextual A; LS + LT picks the attack, a flick smashes")
+                .Add("RB", "Headbutt: a quick horizontal lunge")
+                .Add("LB", "Spinning Kong: spin upward and recover")
+                .Add("B", "Hand Slap, or the Shield / Air Feint alternate");
+
+            sheet.Keys("Moving")
+                .Add("Move", "Walk (Sprint: run)")
+                .Add("Jump", "Jump");
+            sheet.Keys("Attacks")
+                .Add("Primary", "Giant Punch: a slow devastating punch")
+                .Add("Secondary", "Contextual A")
+                .Add("Utility", "Headbutt: a quick horizontal lunge")
+                .Add("Special", "Spinning Kong: spin upward and recover")
+                .Add("C", "Hand Slap, or the Shield / Air Feint alternate");
+            return sheet;
+        }
     }
 }
