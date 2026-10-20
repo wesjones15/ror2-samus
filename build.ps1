@@ -34,7 +34,7 @@ if(!$SkipTests) {
     & dotnet run --project (Join-Path $repoRoot 'NativeCheck') -c Release -- (Join-Path $libraryRoot 'target\release\ssbm.dll') (Join-Path $libraryRoot 'assets')
     if($LASTEXITCODE) { throw 'Native C# boundary check failed.' }
 }
-$name='Samus-modern-0.2.17-win-x64'
+$name='Melee-modern-0.3.0-win-x64'
 $packageRoot=Join-Path $repoRoot ('dist\'+$name)
 $pluginRoot=Join-Path $packageRoot 'BepInEx\plugins\Melee'
 $distRoot=[IO.Path]::GetFullPath((Join-Path $repoRoot 'dist'))
@@ -57,7 +57,7 @@ foreach($source in @('libssbm','ror2-samus','ror2-common')) {
     if($LASTEXITCODE) { throw "Cannot identify source revision: $source" }
 }
 $manifest=[ordered]@{
-    schema=1; character='Samus'; version='0.2.17'; nativeAbi=4; channel='modern'
+    schema=1; character='Melee'; version='0.3.0'; nativeAbi=5; channel='modern'
     game='Risk of Rain 2'; gameVersion='DLC4 (2026)'; unity='2021.3.45f2'; platform='win-x64'
     sourceCommits=$commits
     files=@($payload | ForEach-Object { [ordered]@{ path=$_; sha256=(Get-FileHash -LiteralPath (Join-Path $packageRoot $_) -Algorithm SHA256).Hash.ToLowerInvariant() } })
@@ -65,7 +65,7 @@ $manifest=[ordered]@{
 $manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $packageRoot 'release.json') -Encoding utf8
 $allowed=$payload+@('release.json')
 foreach($file in Get-ChildItem -LiteralPath $packageRoot -File -Recurse) {
-    $relative=[IO.Path]::GetRelativePath($packageRoot,$file.FullName).Replace('\','/')
+    $relative=$file.FullName.Substring($packageRoot.Length+1).Replace('\','/')
     if($allowed -notcontains $relative) { throw "Package contains unexpected file: $relative" }
 }
 $zip=Join-Path $repoRoot ('dist\'+$name+'.zip')
@@ -82,6 +82,6 @@ if($Deploy) {
         Copy-Item -LiteralPath $source -Destination $target -Force
         if((Get-FileHash -LiteralPath $source).Hash -ne (Get-FileHash -LiteralPath $target).Hash) {throw "Staged checksum mismatch: $dll"}
     }
-    Write-Host "Staged Samus for manual installation at $destination"
+    Write-Host "Staged Melee for manual installation at $destination"
 }
 Write-Host "Built and audited $zip"

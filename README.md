@@ -1,4 +1,11 @@
-# Samus from Melee for Risk of Rain 2
+# Melee for Risk of Rain 2
+
+Since 0.3.0 this repository builds the single **Melee** plugin (`com.libssbm.melee`, folder `BepInEx/plugins/Melee`): Samus, Fox,
+Luigi, Pikachu, Captain Falcon, Link, Yoshi and Donkey Kong. The player guide is `docs/Melee.md` in the ror2-characters release
+repository, and the notes below are the development record, written when Samus was the only fighter. Samus 0.2.x users must
+delete `BepInEx/plugins/MeleeSamus` before installing it (see CHANGELOG.md).
+
+## Samus (development record)
 
 Offline prototype for RoR2 DLC4 / Unity 2021.3.45f2, BepInEx 5. Uses libssbm for
 gameplay and disc presentation; ror2-common for the host. No R2API required.
