@@ -79,7 +79,7 @@ namespace Yoshi
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.35f,0.7f,0.35f),
             baseMaxHealth=100f,levelMaxHealth=30f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
-            sortPosition=106f,
+            sortPosition=108f,
             mainStateType=typeof(YoshiMain),driverType=typeof(YoshiDriver),
             skills=YoshiSkills.Layout,skins=YoshiSkins.Layout,
             displayFactory=YoshiDisplay.Make,

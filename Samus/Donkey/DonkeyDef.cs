@@ -78,7 +78,7 @@ namespace Donkey
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.55f,0.35f,0.2f),
             baseMaxHealth=130f,levelMaxHealth=39f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
-            sortPosition=107f,
+            sortPosition=109f,
             mainStateType=typeof(DonkeyMain),driverType=typeof(DonkeyDriver),
             skills=DonkeySkills.Layout,skins=DonkeySkins.Layout,
             displayFactory=DonkeyDisplay.Make,
