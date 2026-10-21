@@ -27,8 +27,6 @@ namespace Yoshi
         protected override uint AllowedButtons => YoshiSkills.Allowed(body);
         protected override bool ShieldSelected => YoshiSkills.ShieldSelected(body);
         protected override MeleeControlLayout Layout => MeleeControlLayout.Samus;
-        protected override bool GrabAttached => false;
-        protected override bool GrabHolding => false;
         protected override bool IsRangedMove(uint moveId) => moveId == 23; // Egg Throw
         protected override bool IsChargeMove(uint moveId) => false;
 
@@ -90,9 +88,6 @@ namespace Yoshi
         protected override void DrawHud() { }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 5), feet, rotation, scale));
-        protected override void GrabDetach() { }
-        protected override void GrabReleaseCapture() { }
-        protected override void GrabThrow(MeleeNative.Event e) { }
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
         protected override void OnEventStarted(MeleeNative.Event e)
         {

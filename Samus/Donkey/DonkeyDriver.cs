@@ -27,8 +27,6 @@ namespace Donkey
         protected override uint AllowedButtons => DonkeySkills.Allowed(body);
         protected override bool ShieldSelected => DonkeySkills.ShieldSelected(body);
         protected override MeleeControlLayout Layout => MeleeControlLayout.Samus;
-        protected override bool GrabAttached => false;
-        protected override bool GrabHolding => false;
         protected override bool IsRangedMove(uint moveId) => false;
         protected override bool IsChargeMove(uint moveId) => false;
 
@@ -90,9 +88,6 @@ namespace Donkey
         protected override void DrawHud() { }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
-        protected override void GrabDetach() { }
-        protected override void GrabReleaseCapture() { }
-        protected override void GrabThrow(MeleeNative.Event e) { }
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
         protected override void OnEventStarted(MeleeNative.Event e)
         {

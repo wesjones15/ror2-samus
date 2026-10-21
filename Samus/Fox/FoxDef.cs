@@ -14,7 +14,7 @@ namespace Fox
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeFox0",nameToken="SSBM_FOX_SKILL_0",descriptionToken="SSBM_FOX_SKILL_DESC_0",
-                displayName="Blaster",description="RT: fire Fox's laser straight ahead.",
+                displayName="Blaster",description="RT: fire the Blaster along your crosshair. Hold to keep firing.",
                 icon="CommandoBodyFirePistol",recharge=0.12f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeFox1",nameToken="SSBM_FOX_SKILL_1",descriptionToken="SSBM_FOX_SKILL_DESC_1",
@@ -22,15 +22,15 @@ namespace Fox
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeFox2",nameToken="SSBM_FOX_SKILL_2",descriptionToken="SSBM_FOX_SKILL_DESC_2",
-                displayName="Fox Illusion",description="RB: a quick horizontal dash.",
+                displayName="Fox Illusion",description="RB: dash forward in a blue streak, hitting everything in your path.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeFox3",nameToken="SSBM_FOX_SKILL_3",descriptionToken="SSBM_FOX_SKILL_DESC_3",
-                displayName="Fire Fox",description="LB: charge and launch upward.",
+                displayName="Fire Fox",description="LB: charge a fireball in place, then launch toward the camera, hitting hard.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeFoxReflector",nameToken="SSBM_FOX_REFLECTOR",descriptionToken="SSBM_FOX_REFLECTOR_DESC",
-                displayName="Reflector",description="B: a frame-1 shine that holds Fox in place.",
+                displayName="Reflector",description="B: a shine around Fox that damages and knocks back nearby enemies. Hold to keep it up.",
                 icon="EngiBodyPlaceBubbleShield",recharge=1f,stock=1,combat=true },
             extraAlt = new MeleeSkillInfo {
                 defName="MeleeFoxShield",nameToken="SSBM_FOX_SHIELD",descriptionToken="SSBM_FOX_SHIELD_DESC",

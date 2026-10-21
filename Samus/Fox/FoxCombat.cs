@@ -28,10 +28,15 @@ namespace Fox
         // shared sampler does not pose; this adapts it to an open-space burst.
         internal static class Reflector
         {
-            internal static void Burst(CharacterBody body, Vector3 center, float scale)
+            // Host adaptation: the burst clears a body-sized area (Melee units, so
+            // 28 units is 2.8 m) and throws everything in it outward and up hard.
+            const float RadiusUnits = 28f, OutwardForce = 4500f, UpwardForce = 2200f, Coefficient = 3.5f;
+            internal static void Burst(CharacterBody body, Vector3 feet, float scale)
             {
                 if (!NetworkServer.active) return;
-                float radius = 4f * scale;
+                // Centred on Fox's hips, not his feet.
+                var center = feet + Vector3.up * (body.radius + 0.4f);
+                float radius = RadiusUnits * scale;
                 var search = new SphereSearch { origin = center, radius = radius, mask = LayerIndex.entityPrecise.mask };
                 search.RefreshCandidates().FilterCandidatesByHurtBoxTeam(TeamMask.GetEnemyTeams(body.teamComponent.teamIndex)).FilterCandidatesByDistinctHurtBoxEntities();
                 foreach (var hurt in search.GetHurtBoxes())
@@ -40,10 +45,10 @@ namespace Fox
                     var to = hurt.transform.position - center; to.y = 0f;
                     var dir = to.sqrMagnitude > 0.01f ? to.normalized : Vector3.forward;
                     NativeHit.Deal(body, hurt.healthComponent, new NativeHitSpec {
-                        coefficient = 2f, position = hurt.transform.position,
-                        force = dir * 18f + Vector3.up * 6f, procCoefficient = 1f,
+                        coefficient = Coefficient, position = hurt.transform.position,
+                        force = dir * OutwardForce + Vector3.up * UpwardForce, procCoefficient = 1f,
                         damageType = DamageType.Generic, color = DamageColorIndex.Default,
-                        staggerDuration = 0.2f,
+                        staggerDuration = 0.4f,
                     });
                 }
             }

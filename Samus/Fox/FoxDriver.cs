@@ -14,6 +14,9 @@ namespace Fox
         static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Samus.Plugin.AssetsDir,MeleeNative.FighterFox,model);
         MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
         MeleeAudio audio;
+        // The Blaster's gun (the disc's second Fox article) while he shoots.
+        MeleeFighterView gunView;
+        readonly float[] gunMatrix = new float[16];
         readonly FoxCombat.HitTracker hits = new FoxCombat.HitTracker();
 
         internal static Run LocalRun { get; private set; }
@@ -31,8 +34,6 @@ namespace Fox
         protected override uint AllowedButtons => FoxSkills.Allowed(body);
         protected override bool ShieldSelected => FoxSkills.ShieldSelected(body);
         protected override MeleeControlLayout Layout => MeleeControlLayout.Samus;
-        protected override bool GrabAttached => false;
-        protected override bool GrabHolding => false;
         protected override bool IsRangedMove(uint moveId) => moveId == 20;
         protected override bool IsChargeMove(uint moveId) => false;
 
@@ -48,6 +49,7 @@ namespace Fox
         protected override void DisposePresentation()
         {
             shieldView?.Dispose(); shieldView = null;
+            gunView?.Dispose(); gunView = null;
             view?.Dispose(); view = null;
             entryPlatform?.Dispose(); entryPlatform = null;
             audio?.Dispose(); audio = null;
@@ -86,15 +88,28 @@ namespace Fox
                 if (MeleeNative.ssbm_entry_platform_update(entryPlatform.Handle, sim) == 1) entryPlatform.Models.Update(scale, d => (at, rotation));
                 else { entryPlatform.Dispose(); entryPlatform = null; }
             }
+            Present(() => DrawGun());
             Present(() => Particles?.Draw());
             Present(() => Effects?.Draw());
+        }
+        // Blaster (native move 20): the gun rides the right thumb (FtPart_RThumbNb 49), as
+        // the source attaches its Blaster item in ftFx_SpecialN_Enter.
+        void DrawGun()
+        {
+            if (state.move_id != 20 || MeleeNative.ssbm_sim_common_bone(sim, 49, gunMatrix) != 1) { gunView?.Models.HideAll(); return; }
+            if (gunView == null) gunView = new MeleeFighterView(AssetsDir, MeleeNative.FighterFox, 1, 0);
+            var m = new Matrix4x4();
+            for (int n = 0; n < 16; n++) m[n] = gunMatrix[n];
+            m *= Matrix4x4.Scale(new Vector3(-1, 1, 1));
+            var f = m.GetColumn(2); var u = m.GetColumn(1);
+            var rot = Quaternion.LookRotation(new Vector3(f.x, f.y, f.z), new Vector3(u.x, u.y, u.z));
+            var pos = new Vector3(gunMatrix[12], gunMatrix[13], gunMatrix[14]) * scale;
+            gunView.ObjectPose(MeleeNative.ssbm_sim_motion_frame(sim));
+            gunView.Models.Update(scale, d => (pos, rot));
         }
         protected override void DrawHud() { }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
-        protected override void GrabDetach() { }
-        protected override void GrabReleaseCapture() { }
-        protected override void GrabThrow(MeleeNative.Event e) { }
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
         protected override void OnEventStarted(MeleeNative.Event e)
         {

@@ -14,7 +14,10 @@ namespace Fox
             var source = new MeleeSelectSource(
                 Samus.Plugin.AssetsDir, MeleeNative.FighterFox, FoxSkins.Selected,
                 Samus.Plugin.MetresPerUnit.Value, logEffects: Samus.Plugin.LogEffects.Value,
-                effectView: model => MeleeFighterView.Effect(Samus.Plugin.AssetsDir, MeleeNative.FighterFox, model));
+                effectView: model => MeleeFighterView.Effect(Samus.Plugin.AssetsDir, MeleeNative.FighterFox, model),
+                // Fire Fox follows the aim, so aim it straight up or the preview would fly
+                // out of the frame; scale the preview back to the source reach.
+                introUp: true, speedScale: 0.5f);
             return new MeleeSelectDisplay(source);
         }
     }

@@ -50,6 +50,7 @@ namespace Samus
         protected override MeleeControlLayout Layout => MeleeControlLayout.Samus;
         protected override bool GrabAttached => Grab != null && Grab.Attached;
         protected override bool GrabHolding => Grab != null && Grab.Holding;
+        protected override bool GenericGrab => false;
         protected override bool IsRangedMove(uint moveId) => moveId >= 20 && moveId <= 22;
         protected override bool IsChargeMove(uint moveId) => moveId == 20;
 

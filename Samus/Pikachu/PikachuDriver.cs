@@ -36,8 +36,6 @@ namespace Pikachu
         protected override uint AllowedButtons => PikachuSkills.Allowed(body);
         protected override bool ShieldSelected => PikachuSkills.ShieldSelected(body);
         protected override MeleeControlLayout Layout => PikachuSkills.Controls;
-        protected override bool GrabAttached => false;
-        protected override bool GrabHolding => false;
         protected override bool IsRangedMove(uint moveId) => moveId == ThunderShock;
         protected override bool IsChargeMove(uint moveId) => false;
 
@@ -100,9 +98,6 @@ namespace Pikachu
         protected override void DrawHud() { }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
-        protected override void GrabDetach() { }
-        protected override void GrabReleaseCapture() { }
-        protected override void GrabThrow(MeleeNative.Event e) { }
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
 
         // Quick Attack steers to the enemy the lock-on picks, chosen when LB is pressed and
