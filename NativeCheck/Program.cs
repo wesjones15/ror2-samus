@@ -402,7 +402,8 @@ static class Program
                     if(bounces==1){MeleeNative.ssbm_projectile_state(shot,out s);Check(s.damage<flying,"Thunder Shock damage did not drop after landing ("+flying+" -> "+s.damage+")");}
                 }
             }
-            Check(wall&&bounces==10,"Thunder Shock bounced "+bounces+" times, expected 10");
+            // A wall reflect spends the same ten-contact budget as a ground bounce (Projectile::reflect).
+            Check(wall&&bounces+1==10,"Thunder Shock took "+bounces+" ground bounces plus one wall reflect, expected ten surface contacts in all");
         }finally{MeleeNative.ssbm_projectile_free(shot);}
         Console.WriteLine("PASS: Pikachu Quick Attack reaches a locked enemy, Skull Bash and Thunder complete without rubberbanding at 30/60/144 FPS, and Thunder Shock reflects and bounces ten times");
     }
