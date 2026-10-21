@@ -24,6 +24,7 @@ namespace Samus
         internal static ConfigEntry<float> MetresPerUnit,JumpScale,SpeedScale;
         internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
+        internal static ConfigEntry<bool> RimLight;
         internal static ConfigEntry<float> MissileRange,MissileDamageScale,ChargeShotHitboxScale;
         internal static ConfigEntry<float> StaggerDuration;
         internal static ConfigEntry<float> LockRange;
@@ -46,6 +47,8 @@ namespace Samus
             ChargeShotHitboxScale=Config.Bind("Combat","ChargeShotHitboxScale",3f,new ConfigDescription("Charge Shot enemy hit radius multiplier, so shots at range hit more easily. Walls and floor use the shot's own size.",new AcceptableValueRange<float>(1f,10f)));
             LockRange=Config.Bind("Combat","LockRangeMetres",25f,new ConfigDescription("How far away Pikachu's Quick Attack can lock onto an enemy (the nearest to your crosshair, preferring ones in front), in metres.",new AcceptableValueRange<float>(5f,100f)));
             StaggerDuration=Config.Bind("Combat","StaggerDuration",0.25f,new ConfigDescription("Seconds a melee A attack stuns a non-boss enemy. Refreshed per hit so continued attacks lock trash; bosses/elites are exempt. 0 disables.",new AcceptableValueRange<float>(0f,2f)));
+            RimLight=Config.Bind("Visuals","RimLight",true,"Draw the glow edge the source gives some moves (Captain Falcon's forward smash, Luigi's fireball) using RoR2's Fresnel emission. Turn off if models look wrong with it.");
+            MeleeFighterView.RimLight=RimLight.Value;
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
             string hint=Path.Combine(here,"assets_dir.txt");
             AssetsDir=Path.GetFullPath(!string.IsNullOrWhiteSpace(assets.Value)?assets.Value:
