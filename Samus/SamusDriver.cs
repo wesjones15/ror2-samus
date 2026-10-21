@@ -22,6 +22,7 @@ namespace Samus
         internal static Run LocalRun { get; private set; }
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
+        protected override MeleeEffects EffectsForSparks => Effects;
         internal IntPtr Simulation => sim;
         internal float Units => scale;
         internal SamusGrab Grab { get; private set; }

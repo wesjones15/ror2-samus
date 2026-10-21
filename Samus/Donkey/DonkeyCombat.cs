@@ -75,7 +75,7 @@ namespace Donkey
                             coefficient=hit.damage/3f,position=hurt.collider.ClosestPoint(point),force=direction*(hit.base_knockback+hit.growth)*5f*force,
                             procCoefficient=1f,damageType=type,color=DamageColorIndex.Default
                         })) {
-                            seen.Add(hurt.healthComponent);
+                            seen.Add(hurt.healthComponent);                            owner.GetComponent<MeleeDriver>()?.HitSpark(hit.element,hit.damage,hurt.collider.ClosestPoint(point));
                             if(bury)Bury(target);
                             // Every slam holds what it hits; the next one renews it.
                             if(moveId==24)EnemyHold.Hold(target,SlapHoldSeconds);

@@ -22,6 +22,7 @@ namespace Pikachu
         bool locked;
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
+        protected override MeleeEffects EffectsForSparks => Effects;
         internal IntPtr NativeSim => sim;
         readonly MeleeHitTracker hits = new MeleeHitTracker();
 

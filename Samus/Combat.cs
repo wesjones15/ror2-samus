@@ -72,7 +72,7 @@ namespace Samus
                             coefficient=hit.damage/3f,position=hurt.collider.ClosestPoint(point),force=direction*(hit.base_knockback+hit.growth)*5f,
                             procCoefficient=1f,damageType=type,color=DamageColorIndex.Default,staggerDuration=Plugin.StaggerDuration.Value
                         })) {
-                            seen.Add(hurt.healthComponent);
+                            seen.Add(hurt.healthComponent);                            owner.GetComponent<MeleeDriver>()?.HitSpark(hit.element,hit.damage,hurt.collider.ClosestPoint(point));
                             var driver=owner.GetComponent<SamusDriver>();
                             uint effect=MeleeNative.ssbm_hit_feedback(driver?driver.Simulation:System.IntPtr.Zero,hit.element,(hit.flags>>8)&31,(hit.flags>>16)&7);
                             if(effect!=0)driver?.Effects?.Spawn(effect,MeleeParticles.At(hurt.collider.ClosestPoint(point),Quaternion.identity,scale));

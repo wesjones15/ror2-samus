@@ -101,6 +101,7 @@ namespace Captain
         }
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
+        protected override MeleeEffects EffectsForSparks => Effects;
         protected override void DisposePresentation()
         {
             shieldView?.Dispose(); shieldView = null;

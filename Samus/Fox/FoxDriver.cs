@@ -22,6 +22,7 @@ namespace Fox
         internal static Run LocalRun { get; private set; }
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
+        protected override MeleeEffects EffectsForSparks => Effects;
 
         protected override string FighterName => "Fox";
         protected override string AssetsDir => Samus.Plugin.AssetsDir;

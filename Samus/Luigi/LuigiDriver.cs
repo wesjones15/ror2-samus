@@ -16,6 +16,7 @@ namespace Luigi
         MeleeAudio audio;
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
+        protected override MeleeEffects EffectsForSparks => Effects;
         readonly LuigiCombat.HitTracker hits = new LuigiCombat.HitTracker();
 
         protected override string FighterName => "Luigi";
