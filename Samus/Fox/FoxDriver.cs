@@ -137,7 +137,7 @@ namespace Fox
         {
             if (!reflecting) return;
             if (state.move_id != 24) { reflecting = false; return; }
-            if (!UnityEngine.Networking.NetworkServer.active) return;
+            if (!IsOwner) return;
             // Host adaptation: the bubble is as big as the burst, so a shot at range is caught the way
             // a Melee shot is caught at the bubble's edge.
             MeleeReflect.Reflect(body, body.corePosition, FoxCombat.Reflector.RadiusUnits * scale, reflectDamage, reflectSpeed);

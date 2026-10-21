@@ -35,7 +35,7 @@ namespace Captain
             Collider[] candidates=new Collider[64];
             internal void Apply(CharacterBody owner,MeleeNative.HitboxSample[] samples,int count,float scale,uint moveId)
             {
-                if(!NetworkServer.active)return;
+                if (!MeleeNet.Acts(owner)) return;
                 for(int i=0;i<count;i++) {
                     var hit=samples[i];
                     if(serial!=hit.serial){serial=hit.serial;victims.Clear();previous.Clear();}

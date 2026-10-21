@@ -18,7 +18,7 @@ namespace Pikachu
 
         internal static void Attack(PikachuDriver driver, CharacterBody body, MeleeNative.Event e, float scale)
         {
-            if (!NetworkServer.active) return;
+            if (!MeleeNet.Acts(body)) return;
             var feet = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             if (e.move_id == 20) Shock(driver, body, feet, scale, e);
             else if (e.move_id == 24)
@@ -148,7 +148,7 @@ namespace Pikachu
             if (!owner || !owner.healthComponent || !owner.healthComponent.alive) { Destroy(gameObject); return; }
             tick++;
             if (tick > strikeTick + SegmentDelay * (Segments - 1) + LingerTicks) { Destroy(gameObject); return; }
-            if (!NetworkServer.active) return;
+            if (!MeleeNet.Acts(owner)) return;
             float length = SegmentLength * scale;
             for (int i = 0; i < Segments; i++)
             {

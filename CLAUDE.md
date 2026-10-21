@@ -15,8 +15,9 @@
   update it when a fighter's behavior changes.
 - `build.ps1 -Deploy` runs the native C# boundary checks first and stages nothing if one
   fails. When a libssbm change alters behavior, update the matching check in NativeCheck.
-- Offline prototype. Do not claim multiplayer support or in-game verification
-  from a successful build. State unfinished fidelity/integration work in README.
+- Offline and friends-only. Melee multiplayer is implemented (ror2-common `MeleeNet`, libssbm-ffi `replay.rs`) but has never
+  been run with two players: do not claim it, or in-game verification, from a successful build. State unfinished
+  fidelity/integration work in README.
 - Compare native ABI and every shared struct size before using a handle. Pin
   callback delegates; prevent C# exceptions from crossing unmanaged callbacks.
 - Keep a runnable .NET native-boundary harness, build against the installed DLC4

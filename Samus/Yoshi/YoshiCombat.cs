@@ -20,7 +20,7 @@ namespace Yoshi
 
         internal static void Attack(CharacterBody body, MeleeNative.Event e, float scale)
         {
-            if (!NetworkServer.active) return;
+            if (!MeleeNet.Acts(body)) return;
             var aim = new Vector3(e.direction.x, e.direction.y, e.direction.z).normalized;
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             var camera = body.inputBank ? MeleeAim.CameraRay(body, body.inputBank).direction : aim;
@@ -96,7 +96,7 @@ namespace Yoshi
             Collider[] candidates=new Collider[64];
             internal void Apply(CharacterBody owner,MeleeNative.HitboxSample[] samples,int count,float scale)
             {
-                if(!NetworkServer.active)return;
+                if (!MeleeNet.Acts(owner)) return;
                 for(int i=0;i<count;i++) {
                     var hit=samples[i];
                     if(serial!=hit.serial){serial=hit.serial;victims.Clear();previous.Clear();}
@@ -163,18 +163,19 @@ namespace Yoshi
             return Mathf.Clamp(0.55f + r * 0.9f, 0.8f, 2.4f);
         }
 
-        CharacterBody victim;
+        CharacterBody owner, victim;
         float releaseAt, eggRadius;
         MeleeFighterView view;
 
         internal static bool Lay(CharacterBody owner, CharacterBody victim)
         {
-            if (!NetworkServer.active || !owner || !victim || IsTrapped(victim)) return false;
+            if (!MeleeNet.Acts(owner) || !victim || IsTrapped(victim)) return false;
             bool boss = MeleeGrapple.IsBoss(victim);
             float seconds = boss ? BossSeconds : victim.radius >= LargeRadius ? LargeSeconds : NormalSeconds;
             if (!EnemyHold.Hold(victim, seconds)) return false;
             var go = new GameObject("Yoshi egg (laid)");
             var egg = go.AddComponent<YoshiEgg>();
+            egg.owner = owner;
             egg.victim = victim;
             egg.eggRadius = EggRadius(victim);
             egg.releaseAt = Time.time + seconds;
@@ -193,9 +194,12 @@ namespace Yoshi
 
         void FixedUpdate()
         {
-            if (!NetworkServer.active) return;
+            if (!MeleeNet.Acts(owner)) return;
             // The hold ends it: it ran out, or the victim died.
-            if (!victim || !EnemyHold.IsHeld(victim)) { BreakOut(); return; }
+            // On the server the hold itself says so; a client fighter's egg runs on its own clock.
+            bool over = NetworkServer.active ? !victim || !EnemyHold.IsHeld(victim)
+                : !victim || !victim.healthComponent || !victim.healthComponent.alive || Time.time >= releaseAt;
+            if (over) { BreakOut(); return; }
             transform.position = victim.corePosition;
         }
 
@@ -203,7 +207,7 @@ namespace Yoshi
         {
             try {
                 var effect = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OmniExplosionVFX");
-                if (effect && victim) EffectManager.SpawnEffect(effect, new EffectData { origin = victim.corePosition, scale = eggRadius }, true);
+                if (effect && victim) EffectManager.SpawnEffect(effect, new EffectData { origin = victim.corePosition, scale = eggRadius }, NetworkServer.active);
             } catch (Exception) { }
             Destroy(gameObject);
         }
@@ -243,7 +247,7 @@ namespace Yoshi
 
         void FixedUpdate()
         {
-            if (!NetworkServer.active) return;
+            if (owner && !MeleeNet.Acts(owner)) return;
             float dt = Time.fixedDeltaTime;
             age += dt;
             if (age > Life || !owner) { Destroy(gameObject); return; }
@@ -312,7 +316,7 @@ namespace Yoshi
 
         void FixedUpdate()
         {
-            if (!NetworkServer.active) return;
+            if (owner && !MeleeNet.Acts(owner)) return;
             if (!owner || !owner.healthComponent || !owner.healthComponent.alive) { Destroy(gameObject); return; }
             if (projectile == IntPtr.Zero) return;
             var from = transform.position;
@@ -357,7 +361,7 @@ namespace Yoshi
             ReadState();
             try {
                 var effect = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OmniExplosionVFX");
-                if (effect) EffectManager.SpawnEffect(effect, new EffectData { origin = at, scale = BurstRadius }, true);
+                if (effect) EffectManager.SpawnEffect(effect, new EffectData { origin = at, scale = BurstRadius }, NetworkServer.active);
             } catch (Exception) { }
             var search = new SphereSearch { origin = at, radius = Mathf.Max(state.radius * modelScale, BurstRadius), mask = LayerIndex.entityPrecise.mask };
             search.RefreshCandidates().FilterCandidatesByHurtBoxTeam(TeamMask.GetEnemyTeams(owner.teamComponent.teamIndex)).FilterCandidatesByDistinctHurtBoxEntities();

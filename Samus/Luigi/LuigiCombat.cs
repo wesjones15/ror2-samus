@@ -13,7 +13,7 @@ namespace Luigi
     {
         internal static void Attack(LuigiDriver driver, CharacterBody body, MeleeNative.Event e, float scale)
         {
-            if (!NetworkServer.active) return;
+            if (!MeleeNet.Acts(body)) return;
             var aim = new Vector3(e.direction.x, e.direction.y, e.direction.z).normalized;
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             if (e.move_id == 20 && body.inputBank)
@@ -48,7 +48,7 @@ namespace Luigi
         static readonly System.Collections.Generic.List<HurtBox> pulled = new System.Collections.Generic.List<HurtBox>();
         internal static void Pull(CharacterBody owner)
         {
-            if (!NetworkServer.active || !owner || !owner.teamComponent) return;
+            if (!MeleeNet.Acts(owner) || !owner.teamComponent) return;
             var centre = owner.corePosition;
             var search = new SphereSearch { origin = centre, radius = PullRadius, mask = LayerIndex.entityPrecise.mask };
             search.RefreshCandidates().FilterCandidatesByHurtBoxTeam(TeamMask.GetEnemyTeams(owner.teamComponent.teamIndex)).FilterCandidatesByDistinctHurtBoxEntities();
@@ -60,6 +60,8 @@ namespace Luigi
                 var to = centre - target.corePosition; to.y = 0f;
                 if (to.magnitude <= PullStop) continue;
                 var dir = to.normalized;
+                // The enemy is the server's to move: a client Luigi asks for the pull.
+                if (!NetworkServer.active) { MeleeNet.SendPush(target, dir.x * PullSpeed, dir.z * PullSpeed); continue; }
                 if (target.characterMotor)
                 {
                     var v = target.characterMotor.velocity;
@@ -88,7 +90,7 @@ namespace Luigi
             Collider[] candidates=new Collider[64];
             internal void Apply(CharacterBody owner,MeleeNative.HitboxSample[] samples,int count,float scale,uint moveId)
             {
-                if(!NetworkServer.active)return;
+                if (!MeleeNet.Acts(owner)) return;
                 for(int i=0;i<count;i++) {
                     var hit=samples[i];
                     if(serial!=hit.serial){serial=hit.serial;victims.Clear();previous.Clear();}

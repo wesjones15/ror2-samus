@@ -15,6 +15,50 @@ static class Program
     { result=new MeleeNative.Collision { position=new MeleeNative.Vec3(to.x,Math.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
     static void Event(IntPtr user,in MeleeNative.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++;if(e.kind==6)throws++;if(e.kind==2&&e.move_id==20){lastShot=e;shotCount++;} if(e.kind==2&&e.move_id==24){if(e.strength<1.5f){thunderSpawn++;lastThunder=e;}else thunderStrike++;} }
     static void Check(bool ok,string what) { if(!ok) throw new Exception(what); }
+    // Multiplayer: another machine replays an owner's recorded calls on a shadow sim and ends each batch where
+    // the owner is, in the same action, for every fighter; a corrupt log is refused.
+    static void ReplayRegressions(string assets,in MeleeNative.Host host)
+    {
+        if(!MeleeNative.HasReplay) {Console.WriteLine("SKIP: this ssbm.dll has no multiplayer replay");return;}
+        uint[] kinds={MeleeNative.FighterSamus,MeleeNative.FighterFox,MeleeNative.FighterLuigi,MeleeNative.FighterPikachu,MeleeNative.FighterCaptain,MeleeNative.FighterLink,MeleeNative.FighterYoshi,MeleeNative.FighterDonkey};
+        var tuning=new MeleeNative.Tuning {speed_scale=1.37f,jump_scale=1f,smash_max_frames=60};
+        var buffer=new byte[1<<14];
+        foreach(uint kind in kinds) {
+            var owner=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,kind);
+            if(owner==IntPtr.Zero) continue;
+            var shadow=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,kind);
+            Check(shadow!=IntPtr.Zero,MeleeNative.Error);
+            try {
+                Check(MeleeNative.ssbm_sim_record(owner,1)==1,"recording did not start");
+                for(int batch=0;batch<200;batch++) {
+                    for(int i=0;i<3;i++) {
+                        int t=batch*3+i;
+                        var pad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(1,0,0),allowed=31};
+                        if(t>=30&&t<90) pad.movement=new MeleeNative.Vec3(1,0,0);
+                        if(t==90||t==91) pad.buttons=1;
+                        if(t==152||t==158||t==164) pad.buttons=2;
+                        if(t==260) pad.buttons=4;
+                        MeleeNative.ssbm_sim_tuning(owner,tuning);
+                        MeleeNative.ssbm_sim_facing(owner,new MeleeNative.Vec3(1,0,0));
+                        if(t==300) MeleeNative.ssbm_sim_hurt_scaled(owner,0.3f);
+                        MeleeNative.ssbm_sim_step(owner,in host,in pad,1.0/60);
+                    }
+                    uint length=MeleeNative.ssbm_sim_ops_take(owner,null,0);
+                    Check(length>0&&length<=buffer.Length,"recorded log size "+length);
+                    Check(MeleeNative.ssbm_sim_ops_take(owner,buffer,(uint)buffer.Length)==length,"taking the log failed");
+                    var bytes=new byte[length];Array.Copy(buffer,bytes,length);
+                    Check(MeleeNative.ssbm_sim_replay(shadow,in host,bytes,length)!=uint.MaxValue,"replay refused a good log: "+MeleeNative.Error);
+                    MeleeNative.ssbm_sim_state(owner,out var a);MeleeNative.ssbm_sim_state(shadow,out var b);
+                    float dx=a.position.x-b.position.x,dy=a.position.y-b.position.y,dz=a.position.z-b.position.z;
+                    Check(Math.Sqrt(dx*dx+dy*dy+dz*dz)<1.5&&a.move_id==b.move_id&&a.frame==b.frame&&a.grounded==b.grounded,
+                        "fighter "+kind+" shadow diverged at batch "+batch);
+                }
+                MeleeNative.ssbm_sim_state(owner,out var end);Check(end.position.x>5,"fighter "+kind+" never walked");
+                Check(MeleeNative.ssbm_sim_replay(shadow,in host,new byte[]{200,1,2,3},4)==uint.MaxValue,"replay accepted a corrupt log");
+            } finally {MeleeNative.ssbm_sim_free(owner);MeleeNative.ssbm_sim_free(shadow);}
+        }
+        Console.WriteLine("PASS: multiplayer replay keeps a shadow sim on the owner's position, action and frame for every fighter; corrupt logs are refused");
+    }
     static int Main(string[] args)
     {
         try {Run(args);return 0;}
@@ -52,6 +96,7 @@ static class Program
         AimingRegressions(assets,in host);
         DefenseRegressions(assets,in host);
         PikachuRegressions(assets,in host);
+        ReplayRegressions(assets,in host);
         jumps=hits=throws=0;
         foreach(int fps in new[]{30,60,144}) {
             var dash=MeleeNative.ssbm_sim_new(NativeLib.CString(assets),default);Check(dash!=IntPtr.Zero,MeleeNative.Error);

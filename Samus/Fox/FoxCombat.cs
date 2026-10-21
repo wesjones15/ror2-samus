@@ -13,7 +13,7 @@ namespace Fox
     {
         internal static void Attack(CharacterBody body, MeleeNative.Event e, float scale)
         {
-            if (!NetworkServer.active) return;
+            if (!MeleeNet.Acts(body)) return;
             var aim = new Vector3(e.direction.x, e.direction.y, e.direction.z).normalized;
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             if (e.move_id == 20 && body.inputBank)
@@ -35,7 +35,7 @@ namespace Fox
             const float OutwardForce = 4500f, UpwardForce = 2200f, Coefficient = 3.5f;
             internal static void Burst(CharacterBody body, Vector3 feet, float scale)
             {
-                if (!NetworkServer.active) return;
+                if (!MeleeNet.Acts(body)) return;
                 // Centred on Fox's hips, not his feet.
                 var center = feet + Vector3.up * (body.radius + 0.4f);
                 float radius = RadiusUnits * scale;
@@ -64,7 +64,7 @@ namespace Fox
             Collider[] candidates=new Collider[64];
             internal void Apply(CharacterBody owner,MeleeNative.HitboxSample[] samples,int count,float scale)
             {
-                if(!NetworkServer.active)return;
+                if (!MeleeNet.Acts(owner)) return;
                 for(int i=0;i<count;i++) {
                     var hit=samples[i];
                     if(serial!=hit.serial){serial=hit.serial;victims.Clear();previous.Clear();}

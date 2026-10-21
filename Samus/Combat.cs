@@ -12,7 +12,7 @@ namespace Samus
     {
         internal static void Attack(CharacterBody body,MeleeNative.Event e,float scale)
         {
-            if(!NetworkServer.active)return;
+            if (!MeleeNet.Acts(body)) return;
             var aim=new Vector3(e.direction.x,e.direction.y,e.direction.z).normalized;
             var origin=new Vector3(e.position.x,e.position.y,e.position.z)*scale;
             if(e.move_id!=24&&body.inputBank) {
@@ -35,7 +35,7 @@ namespace Samus
             Collider[] candidates=new Collider[64];
             internal void Apply(CharacterBody owner,MeleeNative.HitboxSample[] samples,int count,float scale)
             {
-                if(!NetworkServer.active)return;
+                if (!MeleeNet.Acts(owner)) return;
                 for(int i=0;i<count;i++) {
                     var hit=samples[i];
                     var grab=owner.GetComponent<SamusDriver>()?.Grab;

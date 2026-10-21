@@ -13,7 +13,7 @@ namespace Link
     {
         internal static void Attack(CharacterBody body, MeleeNative.Event e, float scale)
         {
-            if (!NetworkServer.active) return;
+            if (!MeleeNet.Acts(body)) return;
             var aim = new Vector3(e.direction.x, e.direction.y, e.direction.z).normalized;
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             if (e.move_id == 20 || e.move_id == 21 || e.move_id == 24) {
@@ -34,7 +34,7 @@ namespace Link
             Collider[] candidates=new Collider[64];
             internal void Apply(CharacterBody owner,MeleeNative.HitboxSample[] samples,int count,float scale)
             {
-                if(!NetworkServer.active)return;
+                if (!MeleeNet.Acts(owner)) return;
                 for(int i=0;i<count;i++) {
                     var hit=samples[i];
                     if(serial!=hit.serial){serial=hit.serial;victims.Clear();previous.Clear();}
@@ -182,7 +182,7 @@ namespace Link
 
         void FixedUpdate()
         {
-            if (!NetworkServer.active) return;
+            if (owner && !MeleeNet.Acts(owner)) return;
             if (!owner || !owner.healthComponent || !owner.healthComponent.alive) { Destroy(gameObject); return; }
             if (kind == Bomb) { StepBomb(); return; }
             if (projectile == IntPtr.Zero) return;
@@ -313,7 +313,7 @@ namespace Link
             var center = transform.position;
             try {
                 var effect = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OmniExplosionVFX");
-                if (effect) EffectManager.SpawnEffect(effect, new EffectData { origin = center, scale = BombBlastRadius }, true);
+                if (effect) EffectManager.SpawnEffect(effect, new EffectData { origin = center, scale = BombBlastRadius }, NetworkServer.active);
             } catch (Exception) { }
             var search = new SphereSearch { origin = center, radius = BombBlastRadius, mask = LayerIndex.entityPrecise.mask };
             search.RefreshCandidates().FilterCandidatesByHurtBoxTeam(TeamMask.GetEnemyTeams(owner.teamComponent.teamIndex)).FilterCandidatesByDistinctHurtBoxEntities();

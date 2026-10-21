@@ -13,7 +13,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Melee","0.3.1")]
+    [BepInPlugin(Guid,"Melee","0.3.2")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -49,6 +49,8 @@ namespace Samus
             StaggerDuration=Config.Bind("Combat","StaggerDuration",0.25f,new ConfigDescription("Seconds a melee A attack stuns a non-boss enemy. Refreshed per hit so continued attacks lock trash; bosses/elites are exempt. 0 disables.",new AcceptableValueRange<float>(0f,2f)));
             RimLight=Config.Bind("Visuals","RimLight",true,"Draw the glow edge the source gives some moves (Captain Falcon's forward smash, Luigi's fireball) using RoR2's Fresnel emission. Turn off if models look wrong with it.");
             MeleeFighterView.RimLight=RimLight.Value;
+            // Melee multiplayer: the messages that carry a fighter to the other players (MeleeNet).
+            MeleeNet.Register();
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
             string hint=Path.Combine(here,"assets_dir.txt");
             AssetsDir=Path.GetFullPath(!string.IsNullOrWhiteSpace(assets.Value)?assets.Value:
@@ -77,7 +79,7 @@ namespace Samus
                 try{MeleeGameBanner.Show(new MeleeGameEffect(AssetsDir, MeleeNative.FighterSamus, MetresPerUnit.Value));}
                 catch(Exception e){Logger.LogError("Melee GAME presentation: "+e);MeleeGameBanner.Show(null);}
             };
-            Logger.LogInfo("Melee 0.3.1 registered; native initialization waits for RoR2 startup completion.");
+            Logger.LogInfo("Melee 0.3.2 registered; native initialization waits for RoR2 startup completion.");
         }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         void InitializeAssets()
@@ -127,7 +129,7 @@ namespace Samus
                         }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
                 } else AssetsBusy=false;
-                Logger.LogInfo("Melee 0.3.1 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Melee 0.3.2 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
                 } catch(Exception e) {AssetsReady=false;FoxReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
         }
         static string FindDisc(string configured,string here)

@@ -22,7 +22,7 @@ namespace Donkey
 
         internal static void Attack(CharacterBody body, MeleeNative.Event e, float scale)
         {
-            if (!NetworkServer.active) return;
+            if (!MeleeNet.Acts(body)) return;
             // Giant Punch, Headbutt and Spinning Kong deal through the shared hitbox sampler.
             // Each Hand Slap slam sends a shockwave out along the ground.
             if (e.move_id == 24) HandSlapWave.Spawn(body, new Vector3(e.position.x, e.position.y, e.position.z) * scale);
@@ -36,7 +36,7 @@ namespace Donkey
             Collider[] candidates=new Collider[64];
             internal void Apply(CharacterBody owner,MeleeNative.HitboxSample[] samples,int count,float scale,uint moveId)
             {
-                if(!NetworkServer.active)return;
+                if (!MeleeNet.Acts(owner)) return;
                 for(int i=0;i<count;i++) {
                     var hit=samples[i];
                     if(serial!=hit.serial){serial=hit.serial;victims.Clear();previous.Clear();}
@@ -89,7 +89,7 @@ namespace Donkey
                 if(!EnemyHold.Hold(target,BurySeconds))return;
                 try {
                     var effect=LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OmniExplosionVFX");
-                    if(effect)EffectManager.SpawnEffect(effect,new EffectData{origin=target.footPosition,scale=Mathf.Max(1f,target.radius)},true);
+                    if(effect)EffectManager.SpawnEffect(effect,new EffectData{origin=target.footPosition,scale=Mathf.Max(1f,target.radius)},NetworkServer.active);
                 } catch(Exception){}
             }
         }
@@ -116,13 +116,13 @@ namespace Donkey
             wave.center = feet;
             try {
                 var effect = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OmniExplosionVFX");
-                if (effect) EffectManager.SpawnEffect(effect, new EffectData { origin = feet + Vector3.up * 0.2f, scale = 3f }, true);
+                if (effect) EffectManager.SpawnEffect(effect, new EffectData { origin = feet + Vector3.up * 0.2f, scale = 3f }, NetworkServer.active);
             } catch (Exception) { }
         }
 
         void FixedUpdate()
         {
-            if (!NetworkServer.active) return;
+            if (owner && !MeleeNet.Acts(owner)) return;
             if (!owner) { Destroy(gameObject); return; }
             radius += Speed * Time.fixedDeltaTime;
             if (radius > MaxRadius) { Destroy(gameObject); return; }
