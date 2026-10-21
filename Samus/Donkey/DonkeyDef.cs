@@ -14,7 +14,7 @@ namespace Donkey
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeDonkey0",nameToken="SSBM_DONKEY_SKILL_0",descriptionToken="SSBM_DONKEY_SKILL_DESC_0",
-                displayName="Giant Punch",description="RT: a slow, devastating punch.",
+                displayName="Giant Punch",description="RT: hold to wind the arm up, one swing at a time, then let go for a punch whose damage and knockback grow with the swings (full at 10). Shield cancels and keeps the swings for later. No cooldown.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeDonkey1",nameToken="SSBM_DONKEY_SKILL_1",descriptionToken="SSBM_DONKEY_SKILL_DESC_1",
@@ -22,15 +22,15 @@ namespace Donkey
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeDonkey2",nameToken="SSBM_DONKEY_SKILL_2",descriptionToken="SSBM_DONKEY_SKILL_DESC_2",
-                displayName="Headbutt",description="RB: a quick horizontal lunge.",
+                displayName="Headbutt",description="RB: a headbutt. On the ground it buries what it hits for a few seconds, bosses included; in the air it spikes them downward.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeDonkey3",nameToken="SSBM_DONKEY_SKILL_3",descriptionToken="SSBM_DONKEY_SKILL_DESC_3",
-                displayName="Spinning Kong",description="LB: spin upward and recover.",
+                displayName="Spinning Kong",description="LB: spin upward, steering with the move stick. Strong first hit, then repeated hits, with a limited rise.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeDonkeySlap",nameToken="SSBM_DONKEY_SLAP",descriptionToken="SSBM_DONKEY_SLAP_DESC",
-                displayName="Hand Slap",description="B: a ground-pounding wave.",
+                displayName="Hand Slap",description="B: slam the ground over and over while it is held, planted in place. Each slam sends a shockwave along the ground that hits and holds enemies, bosses too, for as long as you keep slapping. No cooldown.",
                 icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
             extraAlt = new MeleeSkillInfo {
                 defName="MeleeDonkeyShield",nameToken="SSBM_DONKEY_SHIELD",descriptionToken="SSBM_DONKEY_SHIELD_DESC",

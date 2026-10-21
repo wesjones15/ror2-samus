@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using EntityStates;
 using RoR2;
-using RoR2.CharacterAI;
 using Ror2Common;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -138,11 +137,11 @@ namespace Yoshi
         }
     }
 
-    // An enemy laid in an egg (Egg Lay). Its AI and state machines are held idle, and it
-    // stays put until it breaks out: a few seconds for most, longer for the large and
-    // longest for bosses. It can still be hit meanwhile. The egg is sized to the victim,
-    // but not to scale: a large enemy's egg tops out near 2.4 m, a boss's is bigger than
-    // that and still well short of the boss itself.
+    // An enemy laid in an egg (Egg Lay). EnemyHold keeps it helpless where it stands until
+    // it breaks out: a few seconds for most, longer for the large and longest for bosses.
+    // It can still be hit meanwhile. The egg is sized to the victim, but not to scale: a
+    // large enemy's egg tops out near 2.4 m, a boss's is bigger than that and still well
+    // short of the boss itself.
     internal sealed class YoshiEgg : MonoBehaviour
     {
         const float NormalSeconds = 4f, LargeSeconds = 6f, BossSeconds = 9f;
@@ -164,28 +163,21 @@ namespace Yoshi
             return Mathf.Clamp(0.55f + r * 0.9f, 0.8f, 2.4f);
         }
 
-        CharacterBody owner, victim;
+        CharacterBody victim;
         float releaseAt, eggRadius;
         MeleeFighterView view;
-        BaseAI[] brains = Array.Empty<BaseAI>();
-        bool[] brainWasOn = Array.Empty<bool>();
-        EntityStateMachine[] machines = Array.Empty<EntityStateMachine>();
 
         internal static bool Lay(CharacterBody owner, CharacterBody victim)
         {
-            if (!NetworkServer.active || !owner || !victim || victim.isPlayerControlled || IsTrapped(victim)) return false;
+            if (!NetworkServer.active || !owner || !victim || IsTrapped(victim)) return false;
+            bool boss = MeleeGrapple.IsBoss(victim);
+            float seconds = boss ? BossSeconds : victim.radius >= LargeRadius ? LargeSeconds : NormalSeconds;
+            if (!EnemyHold.Hold(victim, seconds)) return false;
             var go = new GameObject("Yoshi egg (laid)");
             var egg = go.AddComponent<YoshiEgg>();
-            egg.owner = owner;
             egg.victim = victim;
             egg.eggRadius = EggRadius(victim);
-            bool boss = MeleeGrapple.IsBoss(victim);
-            egg.releaseAt = Time.time + (boss ? BossSeconds : victim.radius >= LargeRadius ? LargeSeconds : NormalSeconds);
-            egg.brains = victim.master ? victim.master.GetComponents<BaseAI>() : Array.Empty<BaseAI>();
-            egg.brainWasOn = new bool[egg.brains.Length];
-            for (int i = 0; i < egg.brains.Length; i++) { egg.brainWasOn[i] = egg.brains[i].enabled; egg.brains[i].enabled = false; }
-            egg.machines = victim.GetComponents<EntityStateMachine>();
-            egg.Hold();
+            egg.releaseAt = Time.time + seconds;
             egg.view = new MeleeFighterView(Samus.Plugin.AssetsDir, MeleeNative.FighterYoshi, 2, 0);
             egg.view.ObjectPose(0f);
             go.transform.position = victim.corePosition;
@@ -196,29 +188,14 @@ namespace Yoshi
         void OnDestroy()
         {
             live.Remove(this);
-            Release();
             view?.Dispose(); view = null;
-        }
-
-        void Hold()
-        {
-            foreach (var machine in machines)
-                if (machine && !(machine.state is Idle)) machine.SetNextState(new Idle());
-        }
-        void Release()
-        {
-            for (int i = 0; i < brains.Length; i++) if (brains[i]) brains[i].enabled = brainWasOn[i];
-            brains = Array.Empty<BaseAI>();
-            foreach (var machine in machines) if (machine) machine.SetNextStateToMain();
-            machines = Array.Empty<EntityStateMachine>();
         }
 
         void FixedUpdate()
         {
             if (!NetworkServer.active) return;
-            if (!victim || !victim.healthComponent || !victim.healthComponent.alive || Time.time >= releaseAt) { BreakOut(); return; }
-            Hold();
-            if (victim.characterMotor) victim.characterMotor.velocity = Vector3.zero;
+            // The hold ends it: it ran out, or the victim died.
+            if (!victim || !EnemyHold.IsHeld(victim)) { BreakOut(); return; }
             transform.position = victim.corePosition;
         }
 
@@ -243,7 +220,6 @@ namespace Yoshi
             view.Models.Update(units, d => (transform.position, rotation));
         }
     }
-
     // A star from the Yoshi Bomb's landing: it runs out along the ground and hits what it meets.
     internal sealed class YoshiStar : MonoBehaviour
     {
