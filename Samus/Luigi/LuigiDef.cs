@@ -22,16 +22,16 @@ namespace Luigi
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeLuigi2",nameToken="SSBM_LUIGI_SKILL_2",descriptionToken="SSBM_LUIGI_SKILL_DESC_2",
-                displayName="Green Missile",description="RB: hold to charge, release to launch forward. Damage scales from 250% to 1600% with charge.",
+                displayName="Green Missile",description="RB: hold to charge (up to 90 frames), release to launch along your crosshair. Speed and damage grow with the charge, and it stops on what it hits. One launch in eight misfires: a far faster, 25% blast.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeLuigi3",nameToken="SSBM_LUIGI_SKILL_3",descriptionToken="SSBM_LUIGI_SKILL_DESC_3",
-                displayName="Super Jump Punch",description="LB: launch upward with a sweetspotted punch.",
+                displayName="Super Jump Punch",description="LB: rise with a punch. Right on top of Luigi it is a 25% fire hit (20% in the air); anything farther gets a weak coin hit that pays gold. It ends in a helpless fall with long landing lag.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeLuigiCyclone",nameToken="SSBM_LUIGI_CYCLONE",descriptionToken="SSBM_LUIGI_CYCLONE_DESC",
-                displayName="Luigi Cyclone",description="B: a spinning down-B strike.",
-                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
+                displayName="Luigi Cyclone",description="B: spin, pulling nearby enemies into repeated hits before a launching last hit. Steer while spinning; tap B again and again in the air to climb.",
+                icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
             extraAlt = new MeleeSkillInfo {
                 defName="MeleeLuigiShield",nameToken="SSBM_LUIGI_SHIELD",descriptionToken="SSBM_LUIGI_SHIELD_DESC",
                 displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air.",

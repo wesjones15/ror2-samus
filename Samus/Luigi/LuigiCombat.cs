@@ -35,13 +35,58 @@ namespace Luigi
                 });
         }
 
+        // Host adaptations for an open world. The specials hit far harder than the generic knockback
+        // formula gives; this scales it per move so a Green Missile, a sweetspotted Super Jump Punch
+        // and the Cyclone's last hit send an enemy flying, while the Cyclone's earlier hits keep it
+        // where it is being pulled.
+        static float ForceScale(uint moveId, float damage, uint element) =>
+            moveId == 21 ? 4f : moveId == 23 ? (element == 4 ? 1f : 6f) : moveId == 24 ? (damage >= 11f ? 5f : 0.3f) : 1f;
+
+        // The Cyclone pulls everything near it toward Luigi while it spins (the source's hits keep
+        // enemies close; here they are drawn in), bosses included.
+        const float PullRadius = 7f, PullSpeed = 14f, PullStop = 1.5f;
+        static readonly System.Collections.Generic.List<HurtBox> pulled = new System.Collections.Generic.List<HurtBox>();
+        internal static void Pull(CharacterBody owner)
+        {
+            if (!NetworkServer.active || !owner || !owner.teamComponent) return;
+            var centre = owner.corePosition;
+            var search = new SphereSearch { origin = centre, radius = PullRadius, mask = LayerIndex.entityPrecise.mask };
+            search.RefreshCandidates().FilterCandidatesByHurtBoxTeam(TeamMask.GetEnemyTeams(owner.teamComponent.teamIndex)).FilterCandidatesByDistinctHurtBoxEntities();
+            foreach (var hurt in search.GetHurtBoxes())
+            {
+                if (!hurt || !hurt.healthComponent || !hurt.healthComponent.alive) continue;
+                var target = hurt.healthComponent.body;
+                if (!target || target.isPlayerControlled) continue;
+                var to = centre - target.corePosition; to.y = 0f;
+                if (to.magnitude <= PullStop) continue;
+                var dir = to.normalized;
+                if (target.characterMotor)
+                {
+                    var v = target.characterMotor.velocity;
+                    target.characterMotor.velocity = new Vector3(dir.x * PullSpeed, v.y, dir.z * PullSpeed);
+                }
+                else
+                {
+                    var rb = target.GetComponent<Rigidbody>();
+                    if (rb && !rb.isKinematic) rb.velocity = new Vector3(dir.x * PullSpeed, rb.velocity.y, dir.z * PullSpeed);
+                }
+            }
+        }
+
+        // A coin hit (element 4: the Super Jump Punch's weak hit) pays out, scaled to the stage.
+        static void Coins(CharacterBody owner)
+        {
+            if (!owner || !owner.master || !Run.instance) return;
+            owner.master.GiveMoney((uint)Mathf.Max(1, Run.instance.GetDifficultyScaledCost(2)));
+        }
+
         internal sealed class HitTracker
         {
             ulong serial=ulong.MaxValue;
             readonly Dictionary<(uint,uint),HashSet<HealthComponent>> victims=new Dictionary<(uint,uint),HashSet<HealthComponent>>();
             readonly Dictionary<(uint,uint,uint),Vector3> previous=new Dictionary<(uint,uint,uint),Vector3>();
             Collider[] candidates=new Collider[64];
-            internal void Apply(CharacterBody owner,MeleeNative.HitboxSample[] samples,int count,float scale)
+            internal void Apply(CharacterBody owner,MeleeNative.HitboxSample[] samples,int count,float scale,uint moveId)
             {
                 if(!NetworkServer.active)return;
                 for(int i=0;i<count;i++) {
@@ -75,9 +120,12 @@ namespace Luigi
                         var direction=forward.normalized*Mathf.Cos(angle*Mathf.Deg2Rad)+Vector3.up*Mathf.Sin(angle*Mathf.Deg2Rad);
                         var type=hit.element==1?DamageType.IgniteOnHit:DamageType.Generic;
                         if(NativeHit.Deal(owner,hurt.healthComponent,new NativeHitSpec {
-                            coefficient=hit.damage/3f,position=hurt.collider.ClosestPoint(point),force=direction*(hit.base_knockback+hit.growth)*5f,
+                            coefficient=hit.damage/3f,position=hurt.collider.ClosestPoint(point),force=direction*(hit.base_knockback+hit.growth)*5f*ForceScale(moveId,hit.damage,hit.element),
                             procCoefficient=1f,damageType=type,color=DamageColorIndex.Default
-                        })) seen.Add(hurt.healthComponent);
+                        })) {
+                            seen.Add(hurt.healthComponent);
+                            if(hit.element==4)Coins(owner);
+                        }
                     }
                 }
             }

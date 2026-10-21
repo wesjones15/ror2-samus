@@ -30,7 +30,7 @@ namespace Luigi
         protected override uint AllowedButtons => LuigiSkills.Allowed(body);
         protected override bool ShieldSelected => LuigiSkills.ShieldSelected(body);
         protected override MeleeControlLayout Layout => MeleeControlLayout.Samus;
-        protected override bool IsRangedMove(uint moveId) => moveId == 20;
+        protected override bool IsRangedMove(uint moveId) => moveId == 20 || moveId == 21;
         protected override bool IsChargeMove(uint moveId) => false;
 
         protected override void UpdateAudio() => audio?.Update();
@@ -89,7 +89,7 @@ namespace Luigi
         protected override void DrawHud() { }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
-        protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
+        protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale, state.move_id);
         protected override void OnEventStarted(MeleeNative.Event e)
         {
             int slot = LuigiSkills.Slot(e.move_id);
@@ -98,7 +98,19 @@ namespace Luigi
             bool own = skill.skillDef == expected;
             permitDamage = NativeSkills.Spend(skill, expected) && own;
         }
-        protected override void OnEventHit(MeleeNative.Event e) => LuigiCombat.Attack(this, body, e, scale);
+        // The Cyclone's spin pulls enemies in from its start event to its end event.
+        bool pulling;
+        protected override void OnEventHit(MeleeNative.Event e)
+        {
+            if (e.move_id == 24) pulling = e.strength < 1.5f;
+            LuigiCombat.Attack(this, body, e, scale);
+        }
+        protected override void BeforeStep(in MeleeNative.Pad pad)
+        {
+            if (!pulling) return;
+            if (state.move_id != 24) { pulling = false; return; }
+            LuigiCombat.Pull(body);
+        }
         protected override void FallbackSkills()
         {
             var extraIcon = GetComponent<ExtraSkillIcon>(); if (extraIcon) extraIcon.enabled = false;
