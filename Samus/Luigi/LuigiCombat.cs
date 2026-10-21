@@ -8,17 +8,31 @@ using UnityEngine.Networking;
 namespace Luigi
 {
     // Luigi's combat: disc hitboxes posed on their original bones, mapped to RoR2
-    // damage, plus the Fireball projectile.
+    // damage, plus the Fireball projectile (the shared bouncing shot).
     internal static class LuigiCombat
     {
-        internal static void Attack(CharacterBody body, MeleeNative.Event e, float scale)
+        internal static void Attack(LuigiDriver driver, CharacterBody body, MeleeNative.Event e, float scale)
         {
             if (!NetworkServer.active) return;
             var aim = new Vector3(e.direction.x, e.direction.y, e.direction.z).normalized;
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             if (e.move_id == 20 && body.inputBank)
                 aim = MeleeAim.ProjectileDirection(body, origin, MeleeAim.CameraRay(body, body.inputBank));
-            if (e.move_id == 20) Fireball.Spawn(body, origin, aim, scale);
+            if (e.move_id == 20)
+                MeleeBouncingShot.Spawn(body, origin, aim, new MeleeBouncingShot.Config
+                {
+                    AssetsDir = Samus.Plugin.AssetsDir,
+                    Fighter = MeleeNative.FighterLuigi,
+                    Article = 0, State = 0,
+                    ViewArticle = 0, ViewState = 0,
+                    Scale = scale,
+                    Particles = driver.Particles,
+                    // The fireball is a model (article 0), not a particle trail.
+                    TrailParticle = 0, BouncePuff = 0,
+                    ImpactPuff = 1036,   // efasync.c fireball impact
+                    DespawnPuff = 1001,  // fireball despawn puff
+                    BounceSound = 0,
+                });
         }
 
         internal sealed class HitTracker
@@ -68,117 +82,5 @@ namespace Luigi
                 }
             }
         }
-    }
-
-    // A straight Fireball: spawns the native article, steps it, and deals its
-    // authored damage on impact. No charge scaling.
-    internal sealed class Fireball : MonoBehaviour
-    {
-        CharacterBody owner;
-        Vector3 origin;
-        float modelScale;
-        bool impacted;
-        IntPtr projectile;
-        MeleeNative.ProjectileState state;
-        MeleeFighterView view;
-        readonly HashSet<HealthComponent> victims = new HashSet<HealthComponent>();
-
-        internal static void Spawn(CharacterBody owner, Vector3 point, Vector3 direction, float scale)
-        {
-            var go = new GameObject("Luigi fireball");
-            go.transform.position = point;
-            var shot = go.AddComponent<Fireball>();
-            shot.owner = owner;
-            shot.origin = point;
-            shot.modelScale = scale;
-            shot.projectile = MeleeNative.ssbm_projectile_new(NativeLib.CString(Samus.Plugin.AssetsDir), MeleeNative.FighterLuigi, 0, 0, 0, new MeleeNative.Vec3(direction.x, direction.y, direction.z));
-            if (shot.projectile == IntPtr.Zero) { Destroy(go); return; }
-            MeleeNative.ssbm_projectile_lifetime(shot.projectile, 0);
-            shot.view = new MeleeFighterView(Samus.Plugin.AssetsDir, MeleeNative.FighterLuigi, 0, 0);
-            shot.ReadState();
-        }
-
-        void FixedUpdate()
-        {
-            if (!owner || !owner.healthComponent || !owner.healthComponent.alive) { Destroy(gameObject); return; }
-            if (projectile == IntPtr.Zero) return;
-            var from = transform.position;
-            MeleeNative.ssbm_projectile_step(projectile, Time.fixedDeltaTime, default, 0);
-            ReadState();
-            if (!impacted && (state.flags & 1) != 0) Impact(from);
-            if (!impacted)
-            {
-                var next = origin + new Vector3(state.position.x, state.position.y, state.position.z) * modelScale;
-                var step = next - from;
-                if (step.sqrMagnitude > 0 && Physics.SphereCast(from, state.radius * modelScale, step.normalized, out var hit, step.magnitude, WorldProbe.Mask | LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Ignore))
-                {
-                    if (hit.normal.y > 0.5f)
-                    {
-                        // Ground: bounce (Melee-style), dying after the source
-                        // bounce budget is spent. Walls and ceilings never bounce.
-                        if (MeleeNative.ssbm_projectile_bounce(projectile) == 0)
-                        {
-                            Impact(hit.point);
-                        }
-                        else
-                        {
-                            var nativePoint = new MeleeNative.Vec3(
-                                (hit.point.x - origin.x) / modelScale,
-                                (hit.point.y - origin.y) / modelScale,
-                                (hit.point.z - origin.z) / modelScale);
-                            MeleeNative.ssbm_projectile_place(projectile, nativePoint, 0);
-                            transform.position = hit.point + Vector3.up * 0.02f;
-                        }
-                    }
-                    else
-                    {
-                        Impact(hit.point);
-                    }
-                }
-                else transform.position = next;
-            }
-            if ((state.flags & 2) != 0)
-            {
-                if (!impacted)
-                {
-                    // Despawn puff: the fireball's life expired without a wall hit.
-                    var driver = owner ? owner.GetComponent<LuigiDriver>() : null;
-                    driver?.Effects?.Spawn(1001, MeleeParticles.At(transform.position, Quaternion.identity, modelScale));
-                }
-                Destroy(gameObject);
-                return;
-            }
-        }
-
-        void Impact(Vector3 at)
-        {
-            if (impacted) return;
-            impacted = true;
-            transform.position = at;
-            MeleeNative.ssbm_projectile_impact(projectile, IntPtr.Zero);
-            ReadState();
-            var search = new SphereSearch { origin = at, radius = state.radius * modelScale, mask = LayerIndex.entityPrecise.mask };
-            search.RefreshCandidates().FilterCandidatesByHurtBoxTeam(TeamMask.GetEnemyTeams(owner.teamComponent.teamIndex)).FilterCandidatesByDistinctHurtBoxEntities();
-            foreach (var hurt in search.GetHurtBoxes())
-            {
-                if (!hurt || !hurt.healthComponent || !victims.Add(hurt.healthComponent)) continue;
-                NativeHit.Deal(owner, hurt.healthComponent, new NativeHitSpec {
-                    coefficient = state.damage / 3f, position = hurt.transform.position, force = Vector3.zero,
-                    procCoefficient = 1f, damageType = DamageType.Generic, color = DamageColorIndex.Default
-                });
-            }
-        }
-
-        void ReadState() { if (MeleeNative.ssbm_projectile_state(projectile, out state) != 1) throw new InvalidOperationException(MeleeNative.Error); }
-        void LateUpdate()
-        {
-            if (view == null) return;
-            view.ObjectPose(state.animation_frame);
-            var velocity = new Vector3(state.velocity.x, state.velocity.y, state.velocity.z);
-            var rotation = velocity.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(velocity) : Quaternion.identity;
-            view.FaceCamera(transform.position, rotation, modelScale);
-            view.Models.Update(modelScale, d => (transform.position, rotation));
-        }
-        void OnDestroy() { view?.Dispose(); view = null; if (projectile != IntPtr.Zero) { MeleeNative.ssbm_projectile_free(projectile); projectile = IntPtr.Zero; } }
     }
 }

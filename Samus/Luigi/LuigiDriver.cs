@@ -97,7 +97,7 @@ namespace Luigi
             bool own = skill.skillDef == expected;
             permitDamage = NativeSkills.Spend(skill, expected) && own;
         }
-        protected override void OnEventHit(MeleeNative.Event e) => LuigiCombat.Attack(body, e, scale);
+        protected override void OnEventHit(MeleeNative.Event e) => LuigiCombat.Attack(this, body, e, scale);
         protected override void FallbackSkills()
         {
             var extraIcon = GetComponent<ExtraSkillIcon>(); if (extraIcon) extraIcon.enabled = false;
