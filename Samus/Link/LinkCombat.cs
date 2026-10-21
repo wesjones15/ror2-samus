@@ -103,7 +103,6 @@ namespace Link
         const float BombSelfSpeed = 20f;      // metres per second at the centre of a blast
 
         static readonly List<LinkShot> live = new List<LinkShot>();
-        static readonly RaycastHit[] sweepHits = new RaycastHit[16];
         static readonly Collider[] touching = new Collider[32];
 
         internal static uint HostFlags(CharacterBody owner)
@@ -345,24 +344,7 @@ namespace Link
         // --- Shared ------------------------------------------------------------
         // The nearest thing a swept sphere meets, ignoring Link and his allies.
         bool Sweep(Vector3 from, float radius, Vector3 direction, float distance, int mask, out RaycastHit best)
-        {
-            best = default;
-            int n = Physics.SphereCastNonAlloc(from, radius, direction, sweepHits, distance, mask, QueryTriggerInteraction.Ignore);
-            float nearest = float.MaxValue;
-            bool found = false;
-            for (int i = 0; i < n; i++)
-            {
-                var hit = sweepHits[i];
-                if (!hit.collider) continue;
-                var hurt = hit.collider.GetComponent<HurtBox>();
-                if (hurt && hurt.healthComponent) {
-                    var body = hurt.healthComponent.body;
-                    if (!body || body == owner || !body.teamComponent || body.teamComponent.teamIndex == owner.teamComponent.teamIndex) continue;
-                } else if (hit.collider.GetComponentInParent<CharacterBody>()) continue;
-                if (hit.distance < nearest) { nearest = hit.distance; best = hit; found = true; }
-            }
-            return found;
-        }
+            => MeleeSweep.First(owner, from, radius, direction, distance, mask, out best);
 
         void ReadState() { if (MeleeNative.ssbm_projectile_state(projectile, out state) != 1) throw new InvalidOperationException(MeleeNative.Error); }
 

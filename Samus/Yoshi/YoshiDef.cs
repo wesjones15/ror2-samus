@@ -14,7 +14,7 @@ namespace Yoshi
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeYoshi0",nameToken="SSBM_YOSHI_SKILL_0",descriptionToken="SSBM_YOSHI_SKILL_DESC_0",
-                displayName="Egg Lay",description="RT: lash out with Yoshi's tongue to grab a target.",
+                displayName="Egg Lay",description="RT: lash the tongue along the camera aim and swallow the first enemy it touches, bosses too, laying it in an egg sized to it. It breaks out after a few seconds (longest for bosses). Use it back to back.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeYoshi1",nameToken="SSBM_YOSHI_SKILL_1",descriptionToken="SSBM_YOSHI_SKILL_DESC_1",
@@ -22,15 +22,15 @@ namespace Yoshi
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeYoshi2",nameToken="SSBM_YOSHI_SKILL_2",descriptionToken="SSBM_YOSHI_SKILL_DESC_2",
-                displayName="Egg Roll",description="RB: roll forward as an egg.",
+                displayName="Egg Roll",description="RB: curl into an egg and roll, steering with the move stick. It hits what it runs into, bounces off walls, and a second press ends it.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeYoshi3",nameToken="SSBM_YOSHI_SKILL_3",descriptionToken="SSBM_YOSHI_SKILL_DESC_3",
-                displayName="Egg Throw",description="LB: lob an egg and hop upward to recover.",
+                displayName="Egg Throw",description="LB: hop and throw an egg that bursts on contact. The camera pitch sets the arc. No cooldown.",
                 icon="LoaderBodyChargeFist",recharge=0f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeYoshiBomb",nameToken="SSBM_YOSHI_BOMB",descriptionToken="SSBM_YOSHI_BOMB_DESC",
-                displayName="Yoshi Bomb",description="B: a fast ground-pound.",
+                displayName="Yoshi Bomb",description="B: a short hop and a slam straight down (in the air, the slam is immediate). The landing hits everything near and sends stars running out along the ground.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
             extraAlt = new MeleeSkillInfo {
                 defName="MeleeYoshiShield",nameToken="SSBM_YOSHI_SHIELD",descriptionToken="SSBM_YOSHI_SHIELD_DESC",

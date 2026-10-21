@@ -28,7 +28,18 @@ namespace Yoshi
         protected override uint AllowedButtons => YoshiSkills.Allowed(body);
         protected override bool ShieldSelected => YoshiSkills.ShieldSelected(body);
         protected override MeleeControlLayout Layout => MeleeControlLayout.Samus;
-        protected override bool IsRangedMove(uint moveId) => moveId == 23; // Egg Throw
+        protected override bool IsRangedMove(uint moveId) => moveId == 20 || moveId == 23; // Egg Lay's tongue, Egg Throw
+
+        // The tongue reports a swallow while the sim is stepping; the sim hears about it
+        // before the next step (ssbm_sim_connect cannot run inside a callback).
+        bool connectQueued;
+        internal void QueueConnect() => connectQueued = true;
+        protected override void BeforeStep(in MeleeNative.Pad pad)
+        {
+            if (!connectQueued) return;
+            connectQueued = false;
+            MeleeNative.ssbm_sim_connect(sim);
+        }
         protected override bool IsChargeMove(uint moveId) => false;
 
         protected override void UpdateAudio() => audio?.Update();
