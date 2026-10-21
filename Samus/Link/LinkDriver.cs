@@ -25,11 +25,39 @@ namespace Link
         protected override bool HoldCharge => false;
         protected override bool AssetsReady => Samus.Plugin.LinkReady;
         protected override bool AssetsBusy => Samus.Plugin.AssetsBusy;
-        protected override uint AllowedButtons => LinkSkills.Allowed(body);
+        // With a bomb in his hand LT throws it and B drops it (BeforeStep), so the sim must not
+        // start a jab or pull a second bomb on the same press.
+        protected override uint AllowedButtons => LinkSkills.Allowed(body) & ~(LinkShot.CarriedBomb(body) != null ? (2u | 16u) : 0u);
         protected override bool ShieldSelected => LinkSkills.ShieldSelected(body);
         protected override MeleeControlLayout Layout => MeleeControlLayout.Samus;
         protected override bool IsRangedMove(uint moveId) => moveId == 20 || moveId == 21 || moveId == 24;
         protected override bool IsChargeMove(uint moveId) => moveId == 20;
+
+        readonly float[] handMatrix = new float[16];
+        uint previousButtons;
+        /// Link's left hand (FtPart_LThumbNb) in the world, where the bomb is carried.
+        internal Vector3 HandWorld()
+        {
+            if (sim != IntPtr.Zero && MeleeNative.ssbm_sim_common_bone(sim, 31, handMatrix) == 1)
+                return new Vector3(handMatrix[12], handMatrix[13], handMatrix[14]) * scale;
+            return body.corePosition;
+        }
+        protected override void BeforeStep(in MeleeNative.Pad pad)
+        {
+            // What the world is doing that the sim cares about: a boomerang still out
+            // plays the empty-handed throw, a bomb in hand is not pulled twice.
+            MeleeNative.ssbm_sim_set_host_flags(sim, LinkShot.HostFlags(body));
+            uint pressed = pad.buttons & ~previousButtons;
+            previousButtons = pad.buttons;
+            var bomb = LinkShot.CarriedBomb(body);
+            if (bomb == null) return;
+            if ((pressed & MeleeControls.Attack) != 0)
+            {
+                var muzzle = bomb.transform.position;
+                bomb.Throw(body.inputBank ? MeleeAim.ProjectileDirection(body, muzzle, MeleeAim.CameraRay(body, body.inputBank)) : body.transform.forward);
+            }
+            else if ((pressed & MeleeControls.DownB) != 0) bomb.Drop();
+        }
 
         protected override void UpdateAudio() => audio?.Update();
         protected override void CreatePresentation()

@@ -14,7 +14,7 @@ namespace Link
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeLink0",nameToken="SSBM_LINK_SKILL_0",descriptionToken="SSBM_LINK_SKILL_DESC_0",
-                displayName="Hero's Bow",description="RT: hold to draw, release to fire an arrow. Damage and speed scale with charge.",
+                displayName="Hero's Bow",description="RT: hold to draw the bow, release to fire an arrow at the crosshair. Speed, range and damage grow with the charge; a tap fires a weak arrow.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeLink1",nameToken="SSBM_LINK_SKILL_1",descriptionToken="SSBM_LINK_SKILL_DESC_1",
@@ -22,16 +22,16 @@ namespace Link
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeLink2",nameToken="SSBM_LINK_SKILL_2",descriptionToken="SSBM_LINK_SKILL_DESC_2",
-                displayName="Boomerang",description="RB: throw a boomerang that flies out and despawns.",
-                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
+                displayName="Boomerang",description="RB: throw a boomerang along the camera aim. It slows, curves back to you and hits on both passes, bouncing off walls. You cannot throw another until it is caught.",
+                icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeLink3",nameToken="SSBM_LINK_SKILL_3",descriptionToken="SSBM_LINK_SKILL_DESC_3",
                 displayName="Spin Attack",description="LB: launch upward with a rising spin.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeLinkBomb",nameToken="SSBM_LINK_BOMB",descriptionToken="SSBM_LINK_BOMB_DESC",
-                displayName="Bomb",description="B: lob a bomb that detonates on the ground.",
-                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
+                displayName="Bomb",description="B: pull a bomb out and carry it. LT throws it, B drops it. It explodes on touching an enemy or when its fuse runs out, launching you too if you are close (bomb jumping).",
+                icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
             extraAlt = new MeleeSkillInfo {
                 defName="MeleeLinkShield",nameToken="SSBM_LINK_SHIELD",descriptionToken="SSBM_LINK_SHIELD_DESC",
                 displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air.",
@@ -74,7 +74,7 @@ namespace Link
             nameToken="SSBM_LINK_NAME",subtitleToken="SSBM_LINK_SUBTITLE",descriptionToken="SSBM_LINK_DESCRIPTION",
             outroToken="SSBM_LINK_OUTRO",failToken="SSBM_LINK_FAIL",
             nameStr="Link",subtitleStr="Hero of Hyrule",
-            descriptionStr="Link brings his Melee loadout to Petrichor V.\n\nRT: Hero's Bow. LT: contextual A. RB: Boomerang. LB: Spin Attack. B: Bomb, with Shield / Air Feint as the fifth skill alternate.\n\nOffline prototype.",
+            descriptionStr="Link brings his Melee loadout to Petrichor V.\n\nRT: Hero's Bow. LT: contextual A. RB: Boomerang. LB: Spin Attack. B: Bomb (LT throws it, B drops it), with Shield / Air Feint as the fifth skill alternate.\n\nOffline prototype.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.3f,0.7f,0.3f),
             baseMaxHealth=100f,levelMaxHealth=30f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
