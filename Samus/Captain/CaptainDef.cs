@@ -14,7 +14,7 @@ namespace Captain
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeCaptain0",nameToken="SSBM_CAPTAIN_SKILL_0",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_0",
-                displayName="Falcon Punch",description="RT: a slow, devastating flaming punch.",
+                displayName="Falcon Punch",description="RT: a long wind-up, then a flaming punch of enormous damage and knockback. Turn the camera during the wind-up to reverse it. No cooldown.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeCaptain1",nameToken="SSBM_CAPTAIN_SKILL_1",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_1",
@@ -22,15 +22,15 @@ namespace Captain
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeCaptain2",nameToken="SSBM_CAPTAIN_SKILL_2",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_2",
-                displayName="Raptor Boost",description="RB: a quick horizontal lunge.",
+                displayName="Raptor Boost",description="RB: lunge forward. Touching anything turns the lunge into a launching uppercut; in the air it spikes them down instead. A miss leaves you open.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeCaptain3",nameToken="SSBM_CAPTAIN_SKILL_3",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_3",
-                displayName="Falcon Dive",description="LB: launch upward and recover.",
+                displayName="Falcon Dive",description="LB: leap upward with a grab. Whatever it touches, bosses included, is caught, burned, blasted away and you rebound off it.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeCaptainKick",nameToken="SSBM_CAPTAIN_KICK",descriptionToken="SSBM_CAPTAIN_KICK_DESC",
-                displayName="Falcon Kick",description="B: a flaming dash kick.",
+                displayName="Falcon Kick",description="B: a fast flaming kick that travels with you; in the air it dives diagonally downward.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
             extraAlt = new MeleeSkillInfo {
                 defName="MeleeCaptainShield",nameToken="SSBM_CAPTAIN_SHIELD",descriptionToken="SSBM_CAPTAIN_SHIELD_DESC",

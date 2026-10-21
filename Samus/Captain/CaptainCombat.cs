@@ -12,19 +12,28 @@ namespace Captain
     // projectile to spawn here.
     internal static class CaptainCombat
     {
+        // Falcon's specials hit far harder than the generic knockback formula gives (an
+        // enemy shrugs off 660 N): these scale it per move. Host adaptation; the translation
+        // keeps his attacks overpowered on purpose.
+        static float ForceScale(uint moveId) => moveId == 20 ? 10f : moveId == 21 ? 5f : moveId == 23 ? 4f : moveId == 24 ? 6f : 1f;
+        internal const float ThrowForce = 6500f;
+
         internal static void Attack(CharacterBody body, MeleeNative.Event e, float scale)
         {
-            // Falcon Punch / Raptor Boost / Falcon Dive / Falcon Kick all deal
-            // through the shared hitbox sampler; no projectile path.
+            // Falcon Punch / Raptor Boost / Falcon Kick deal through the shared hitbox
+            // sampler. The Dive's catch (strength 1) and its explosion throw (strength 2)
+            // are the driver's.
         }
 
         internal sealed class HitTracker
         {
+            readonly CaptainDriver driver;
+            internal HitTracker(CaptainDriver driver) { this.driver = driver; }
             ulong serial=ulong.MaxValue;
             readonly Dictionary<(uint,uint),HashSet<HealthComponent>> victims=new Dictionary<(uint,uint),HashSet<HealthComponent>>();
             readonly Dictionary<(uint,uint,uint),Vector3> previous=new Dictionary<(uint,uint,uint),Vector3>();
             Collider[] candidates=new Collider[64];
-            internal void Apply(CharacterBody owner,MeleeNative.HitboxSample[] samples,int count,float scale)
+            internal void Apply(CharacterBody owner,MeleeNative.HitboxSample[] samples,int count,float scale,uint moveId)
             {
                 if(!NetworkServer.active)return;
                 for(int i=0;i<count;i++) {
@@ -52,13 +61,18 @@ namespace Captain
                         if(!target||!target.teamComponent||target.teamComponent.teamIndex==owner.teamComponent.teamIndex)continue;
                         bool ground=target.characterMotor&&target.characterMotor.isGrounded;
                         if((hit.flags&(ground?1u:2u))==0)continue;
+                        // Raptor Boost's lunge carries inert trigger boxes: touching anything
+                        // turns the lunge into the uppercut (ftCa_SpecialS_OnDetect).
+                        if(hit.element==11&&hit.damage==0){ if(moveId==21)driver.QueueConnect(); continue; }
+                        // The Dive's grab boxes take hold of what they touch, bosses too.
+                        if(hit.element==8&&moveId==23&&hit.damage>0){ if(driver.Catch(hurt.healthComponent,point))seen.Add(hurt.healthComponent); continue; }
                         if(hit.element==8&&hit.damage==0)continue;
                         if(hit.damage<=0)continue;
                         float angle=hit.angle==361?45f:Mathf.Min(hit.angle,360u);
                         var direction=forward.normalized*Mathf.Cos(angle*Mathf.Deg2Rad)+Vector3.up*Mathf.Sin(angle*Mathf.Deg2Rad);
                         var type=hit.element==1?DamageType.IgniteOnHit:DamageType.Generic;
                         if(NativeHit.Deal(owner,hurt.healthComponent,new NativeHitSpec {
-                            coefficient=hit.damage/3f,position=hurt.collider.ClosestPoint(point),force=direction*(hit.base_knockback+hit.growth)*5f,
+                            coefficient=hit.damage/3f,position=hurt.collider.ClosestPoint(point),force=direction*(hit.base_knockback+hit.growth)*5f*ForceScale(moveId),
                             procCoefficient=1f,damageType=type,color=DamageColorIndex.Default
                         })) seen.Add(hurt.healthComponent);
                     }

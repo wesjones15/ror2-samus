@@ -14,7 +14,8 @@ namespace Captain
         static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Samus.Plugin.AssetsDir,MeleeNative.FighterCaptain,model);
         MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
         MeleeAudio audio;
-        readonly CaptainCombat.HitTracker hits = new CaptainCombat.HitTracker();
+        CaptainCombat.HitTracker hitTracker;
+        CaptainCombat.HitTracker hits => hitTracker ?? (hitTracker = new CaptainCombat.HitTracker(this));
 
         protected override string FighterName => "Captain Falcon";
         protected override string AssetsDir => Samus.Plugin.AssetsDir;
@@ -31,6 +32,64 @@ namespace Captain
         protected override bool IsRangedMove(uint moveId) => false;
         protected override bool IsChargeMove(uint moveId) => false;
 
+        // --- Raptor Boost and Falcon Dive ---------------------------------------------
+        // The sim hears about contact before its next step (ssbm_sim_connect cannot run
+        // inside a callback). The Dive takes hold of what its grab boxes touch: an
+        // ordinary enemy is held in front of him through the explosion; a boss cannot
+        // be carried, so Falcon clings to the spot he hit until he throws.
+        bool connectQueued;
+        EnemyCapture catchCapture;
+        CharacterBody attachedBoss;
+        Vector3 bossLocal;
+        float pinUntil;
+        internal void QueueConnect() => connectQueued = true;
+
+        internal bool Catch(HealthComponent target, Vector3 point)
+        {
+            if (!target || !target.alive || (catchCapture != null && catchCapture.Target) || attachedBoss) return false;
+            if (MeleeGrapple.IsBoss(target.body))
+            {
+                attachedBoss = target.body;
+                bossLocal = target.body.transform.InverseTransformPoint(point);
+                pinUntil = Time.time + 0.45f;
+                connectQueued = true;
+                return true;
+            }
+            if (catchCapture == null) catchCapture = new EnemyCapture(body);
+            if (!catchCapture.TryCapture(target)) return false;
+            connectQueued = true;
+            return true;
+        }
+
+        // The explosion throw: whatever he caught is launched up and away.
+        void ThrowCaught()
+        {
+            var forward = new Vector3(state.facing.x, 0f, state.facing.z).normalized;
+            var launch = (forward * 0.7f + Vector3.up * 0.8f).normalized * CaptainCombat.ThrowForce;
+            HealthComponent victim = catchCapture != null ? catchCapture.Target : null;
+            if (!victim && attachedBoss) victim = attachedBoss.healthComponent;
+            catchCapture?.Dispose();
+            attachedBoss = null;
+            if (!victim || !victim.alive) return;
+            NativeHit.Deal(body, victim, new NativeHitSpec {
+                coefficient = 2f, position = victim.body ? victim.body.corePosition : transform.position, force = launch,
+                procCoefficient = 1f, damageType = DamageType.IgniteOnHit, color = DamageColorIndex.Default,
+            });
+        }
+
+        protected override void BeforeStep(in MeleeNative.Pad pad)
+        {
+            if (connectQueued) { connectQueued = false; MeleeNative.ssbm_sim_connect(sim); }
+            if (state.move_id != 23) { catchCapture?.Dispose(); attachedBoss = null; return; }
+            var forward = new Vector3(state.facing.x, 0f, state.facing.z);
+            if (catchCapture != null && catchCapture.Target) catchCapture.Step(forward, Time.fixedDeltaTime);
+            if (attachedBoss && Time.time < pinUntil)
+            {
+                var anchor = attachedBoss.transform.TransformPoint(bossLocal);
+                var feet = anchor - (body.corePosition - body.footPosition) - forward.normalized * (body.radius * 0.6f);
+                MeleeNative.ssbm_sim_place(sim, ToSim(feet), 0);
+            }
+        }
         protected override void UpdateAudio() => audio?.Update();
         protected override void CreatePresentation()
         {
@@ -89,7 +148,7 @@ namespace Captain
         protected override void DrawHud() { }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 5), feet, rotation, scale));
-        protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
+        protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale, state.move_id);
         protected override void OnEventStarted(MeleeNative.Event e)
         {
             int slot = CaptainSkills.Slot(e.move_id);
@@ -98,7 +157,7 @@ namespace Captain
             bool own = skill.skillDef == expected;
             permitDamage = NativeSkills.Spend(skill, expected) && own;
         }
-        protected override void OnEventHit(MeleeNative.Event e) => CaptainCombat.Attack(body, e, scale);
+        protected override void OnEventHit(MeleeNative.Event e) { CaptainCombat.Attack(body, e, scale); if (e.move_id == 23 && e.strength >= 2f) ThrowCaught(); }
         protected override void FallbackSkills()
         {
             var extraIcon = GetComponent<ExtraSkillIcon>(); if (extraIcon) extraIcon.enabled = false;
