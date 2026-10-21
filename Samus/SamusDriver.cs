@@ -42,6 +42,7 @@ namespace Samus
         protected override uint FighterKind => MeleeNative.FighterSamus;
         protected override float MetresPerUnit => Plugin.MetresPerUnit.Value;
         protected override float JumpScale => Plugin.JumpScale.Value;
+        protected override float SpeedScale => Plugin.SpeedScale.Value;
         protected override bool HoldCharge => Plugin.HoldCharge.Value;
         protected override bool AssetsReady => Plugin.AssetsReady;
         protected override bool AssetsBusy => Plugin.AssetsBusy;

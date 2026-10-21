@@ -21,6 +21,7 @@ namespace Captain
         protected override uint FighterKind => MeleeNative.FighterCaptain;
         protected override float MetresPerUnit => Samus.Plugin.MetresPerUnit.Value;
         protected override float JumpScale => Samus.Plugin.JumpScale.Value;
+        protected override float SpeedScale => Samus.Plugin.SpeedScale.Value;
         protected override bool HoldCharge => false;
         protected override bool AssetsReady => Samus.Plugin.CaptainReady;
         protected override bool AssetsBusy => Samus.Plugin.AssetsBusy;
