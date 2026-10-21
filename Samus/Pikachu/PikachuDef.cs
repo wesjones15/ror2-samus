@@ -93,7 +93,7 @@ namespace Pikachu
             outroStr="..and so he left, shocked and satisfied.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.97f,0.84f,0.24f),
             baseMaxHealth=90f,levelMaxHealth=27f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
-            sortPosition=105f,
+            sortPosition=107f,
             mainStateType=typeof(PikachuMain),driverType=typeof(PikachuDriver),
             skills=PikachuSkills.Layout,skins=PikachuSkins.Layout,
             displayFactory=PikachuDisplay.Make,
