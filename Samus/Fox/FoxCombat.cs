@@ -19,7 +19,8 @@ namespace Fox
             if (e.move_id == 20 && body.inputBank)
                 aim = MeleeAim.ProjectileDirection(body, origin, MeleeAim.CameraRay(body, body.inputBank));
             if (e.move_id == 20) FoxShot.Spawn(body, origin, aim, scale);
-            else if (e.move_id == 24) Reflector.Burst(body, origin, scale);
+            // Strength 1 is the shine starting (the burst, then the bubble stays up); 2 is it going down.
+            else if (e.move_id == 24 && e.strength < 1.5f) Reflector.Burst(body, origin, scale);
         }
 
         // The Reflector (down-B): a frame-1 AoE that clears space around Fox with
@@ -30,7 +31,8 @@ namespace Fox
         {
             // Host adaptation: the burst clears a body-sized area (Melee units, so
             // 28 units is 2.8 m) and throws everything in it outward and up hard.
-            const float RadiusUnits = 28f, OutwardForce = 4500f, UpwardForce = 2200f, Coefficient = 3.5f;
+            internal const float RadiusUnits = 28f;
+            const float OutwardForce = 4500f, UpwardForce = 2200f, Coefficient = 3.5f;
             internal static void Burst(CharacterBody body, Vector3 feet, float scale)
             {
                 if (!NetworkServer.active) return;
@@ -48,7 +50,7 @@ namespace Fox
                         coefficient = Coefficient, position = hurt.transform.position,
                         force = dir * OutwardForce + Vector3.up * UpwardForce, procCoefficient = 1f,
                         damageType = DamageType.Generic, color = DamageColorIndex.Default,
-                        staggerDuration = 0.4f,
+                        staggerDuration = 0.4f, staggerBosses = true,
                     });
                 }
             }

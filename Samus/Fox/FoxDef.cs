@@ -30,8 +30,8 @@ namespace Fox
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeFoxReflector",nameToken="SSBM_FOX_REFLECTOR",descriptionToken="SSBM_FOX_REFLECTOR_DESC",
-                displayName="Reflector",description="B: a shine around Fox that damages and knocks back nearby enemies. Hold to keep it up.",
-                icon="EngiBodyPlaceBubbleShield",recharge=1f,stock=1,combat=true },
+                displayName="Reflector",description="B: a shine around Fox that damages and knocks back nearby enemies, bosses included. Hold to keep it up: it turns enemy projectiles back on their shooters. Jump cancels it, and it can be used again at once.",
+                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=true },
             extraAlt = new MeleeSkillInfo {
                 defName="MeleeFoxShield",nameToken="SSBM_FOX_SHIELD",descriptionToken="SSBM_FOX_SHIELD_DESC",
                 displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air.",

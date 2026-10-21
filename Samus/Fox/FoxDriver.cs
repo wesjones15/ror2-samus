@@ -120,7 +120,27 @@ namespace Fox
             bool own = skill.skillDef == expected;
             permitDamage = NativeSkills.Spend(skill, expected) && own;
         }
-        protected override void OnEventHit(MeleeNative.Event e) => FoxCombat.Attack(body, e, scale);
+        // The shine's bubble: up from its start event until the release event, the jump cancel or a hit.
+        bool reflecting;
+        float reflectDamage = 1.5f, reflectSpeed = 1f;
+        protected override void OnEventHit(MeleeNative.Event e)
+        {
+            if (e.move_id == 24)
+            {
+                reflecting = e.strength < 1.5f;
+                if (reflecting) { reflectDamage = Mathf.Max(e.direction.y, 1f); reflectSpeed = e.direction.z > 0f ? e.direction.z : 1f; }
+            }
+            FoxCombat.Attack(body, e, scale);
+        }
+        protected override void BeforeStep(in MeleeNative.Pad pad)
+        {
+            if (!reflecting) return;
+            if (state.move_id != 24) { reflecting = false; return; }
+            if (!UnityEngine.Networking.NetworkServer.active) return;
+            // Host adaptation: the bubble is as big as the burst, so a shot at range is caught the way
+            // a Melee shot is caught at the bubble's edge.
+            MeleeReflect.Reflect(body, body.corePosition, FoxCombat.Reflector.RadiusUnits * scale, reflectDamage, reflectSpeed);
+        }
         protected override void FallbackSkills()
         {
             var extraIcon = GetComponent<ExtraSkillIcon>(); if (extraIcon) extraIcon.enabled = false;
