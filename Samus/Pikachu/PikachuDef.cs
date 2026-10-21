@@ -20,7 +20,7 @@ namespace Pikachu
         {
             primary = new MeleeSkillInfo {
                 defName="MeleePikachu0",nameToken="SSBM_PIKACHU_SKILL_0",descriptionToken="SSBM_PIKACHU_SKILL_DESC_0",
-                displayName="Thunder Shock",description="RT: shoot an electric orb along your crosshair. It bounces off every surface and fizzles after ten ground bounces.",
+                displayName="Thunder Jolt",description="RT: shoot an electric orb diagonally down along your crosshair. Once it touches a surface it crawls along the ground, up walls and across ceilings, dropping off ledges, until it hits something.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleePikachu1",nameToken="SSBM_PIKACHU_SKILL_1",descriptionToken="SSBM_PIKACHU_SKILL_DESC_1",
@@ -89,7 +89,7 @@ namespace Pikachu
             nameToken="SSBM_PIKACHU_NAME",subtitleToken="SSBM_PIKACHU_SUBTITLE",descriptionToken="SSBM_PIKACHU_DESCRIPTION",
             outroToken="SSBM_PIKACHU_OUTRO",failToken="SSBM_PIKACHU_FAIL",
             nameStr="Pikachu",subtitleStr="The Electric Mouse Pokemon",
-            descriptionStr="Pikachu brings his Melee loadout to Petrichor V.\n\nRT: Thunder Shock. LT: contextual A. RB: Thunder. LB: Quick Attack, homing on your lock-on. B: Skull Bash, with Shield / Air Feint as the fifth skill alternate.\n\nOffline prototype.",
+            descriptionStr="Pikachu brings his Melee loadout to Petrichor V.\n\nRT: Thunder Jolt. LT: contextual A. RB: Thunder. LB: Quick Attack, homing on your lock-on. B: Skull Bash, with Shield / Air Feint as the fifth skill alternate.\n\nOffline prototype.",
             outroStr="..and so he left, shocked and satisfied.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.97f,0.84f,0.24f),
             baseMaxHealth=90f,levelMaxHealth=27f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
