@@ -71,8 +71,11 @@ namespace Link
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
         protected override MeleeEffects EffectsForSparks => Effects;
+        // Link's sword trail (the afterimage his scripts switch on during a swing).
+        MeleeTrail trail;
         protected override void DisposePresentation()
         {
+            trail?.Dispose(); trail = null;
             shieldView?.Dispose(); shieldView = null;
             view?.Dispose(); view = null;
             entryPlatform?.Dispose(); entryPlatform = null;
@@ -112,6 +115,7 @@ namespace Link
                 if (MeleeNative.ssbm_entry_platform_update(entryPlatform.Handle, sim) == 1) entryPlatform.Models.Update(scale, d => (at, rotation));
                 else { entryPlatform.Dispose(); entryPlatform = null; }
             }
+            Present(() => { if (trail == null) trail = new MeleeTrail(); trail.Draw(sim, scale); });
             Present(() => Particles?.Draw());
             Present(() => Effects?.Draw());
         }

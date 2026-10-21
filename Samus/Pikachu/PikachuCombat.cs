@@ -197,7 +197,8 @@ namespace Pikachu
                     var centre = new Vector3(feet.x, bottom + length * 0.5f, feet.z);
                     // The quad hangs from its top edge in the article's local space.
                     var at = centre + Vector3.up * length * 0.5f;
-                    view.ObjectPose(0);
+                    // The bolt's own animation runs from the tick this segment is released.
+                    view.ObjectPose(Mathf.Max(0f, tick - SegmentDelay * i));
                     view.FaceCamera(at, Quaternion.identity, scale);
                     view.Models.Update(scale, d => (at, Quaternion.identity));
                 }
