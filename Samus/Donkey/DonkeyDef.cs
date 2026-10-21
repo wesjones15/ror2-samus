@@ -15,7 +15,7 @@ namespace Donkey
             primary = new MeleeSkillInfo {
                 defName="MeleeDonkey0",nameToken="SSBM_DONKEY_SKILL_0",descriptionToken="SSBM_DONKEY_SKILL_DESC_0",
                 displayName="Giant Punch",description="RT: a slow, devastating punch.",
-                icon="CommandoBodyFirePistol",recharge=0.5f,stock=1,combat=true },
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeDonkey1",nameToken="SSBM_DONKEY_SKILL_1",descriptionToken="SSBM_DONKEY_SKILL_DESC_1",
                 displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",
@@ -31,7 +31,7 @@ namespace Donkey
             extra = new MeleeSkillInfo {
                 defName="MeleeDonkeySlap",nameToken="SSBM_DONKEY_SLAP",descriptionToken="SSBM_DONKEY_SLAP_DESC",
                 displayName="Hand Slap",description="B: a ground-pounding wave.",
-                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
+                icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
             extraAlt = new MeleeSkillInfo {
                 defName="MeleeDonkeyShield",nameToken="SSBM_DONKEY_SHIELD",descriptionToken="SSBM_DONKEY_SHIELD_DESC",
                 displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air.",

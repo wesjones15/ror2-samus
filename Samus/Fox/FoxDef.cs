@@ -15,7 +15,7 @@ namespace Fox
             primary = new MeleeSkillInfo {
                 defName="MeleeFox0",nameToken="SSBM_FOX_SKILL_0",descriptionToken="SSBM_FOX_SKILL_DESC_0",
                 displayName="Blaster",description="RT: fire the Blaster along your crosshair. Hold to keep firing.",
-                icon="CommandoBodyFirePistol",recharge=0.12f,stock=1,combat=true },
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeFox1",nameToken="SSBM_FOX_SKILL_1",descriptionToken="SSBM_FOX_SKILL_DESC_1",
                 displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",

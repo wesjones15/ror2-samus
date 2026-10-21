@@ -15,7 +15,7 @@ namespace Captain
             primary = new MeleeSkillInfo {
                 defName="MeleeCaptain0",nameToken="SSBM_CAPTAIN_SKILL_0",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_0",
                 displayName="Falcon Punch",description="RT: a slow, devastating flaming punch.",
-                icon="CommandoBodyFirePistol",recharge=0.5f,stock=1,combat=true },
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeCaptain1",nameToken="SSBM_CAPTAIN_SKILL_1",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_1",
                 displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",

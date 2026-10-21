@@ -15,7 +15,7 @@ namespace Luigi
             primary = new MeleeSkillInfo {
                 defName="MeleeLuigi0",nameToken="SSBM_LUIGI_SKILL_0",descriptionToken="SSBM_LUIGI_SKILL_DESC_0",
                 displayName="Fireball",description="RT: fire a bouncing green fireball.",
-                icon="CommandoBodyFirePistol",recharge=0.15f,stock=1,combat=true },
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeLuigi1",nameToken="SSBM_LUIGI_SKILL_1",descriptionToken="SSBM_LUIGI_SKILL_DESC_1",
                 displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",

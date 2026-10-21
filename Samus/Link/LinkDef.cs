@@ -15,7 +15,7 @@ namespace Link
             primary = new MeleeSkillInfo {
                 defName="MeleeLink0",nameToken="SSBM_LINK_SKILL_0",descriptionToken="SSBM_LINK_SKILL_DESC_0",
                 displayName="Hero's Bow",description="RT: hold to draw, release to fire an arrow. Damage and speed scale with charge.",
-                icon="CommandoBodyFirePistol",recharge=0.3f,stock=1,combat=true },
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeLink1",nameToken="SSBM_LINK_SKILL_1",descriptionToken="SSBM_LINK_SKILL_DESC_1",
                 displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",

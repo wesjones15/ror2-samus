@@ -15,7 +15,7 @@ namespace Yoshi
             primary = new MeleeSkillInfo {
                 defName="MeleeYoshi0",nameToken="SSBM_YOSHI_SKILL_0",descriptionToken="SSBM_YOSHI_SKILL_DESC_0",
                 displayName="Egg Lay",description="RT: lash out with Yoshi's tongue to grab a target.",
-                icon="CommandoBodyFirePistol",recharge=0.5f,stock=1,combat=true },
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeYoshi1",nameToken="SSBM_YOSHI_SKILL_1",descriptionToken="SSBM_YOSHI_SKILL_DESC_1",
                 displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",
@@ -27,7 +27,7 @@ namespace Yoshi
             special = new MeleeSkillInfo {
                 defName="MeleeYoshi3",nameToken="SSBM_YOSHI_SKILL_3",descriptionToken="SSBM_YOSHI_SKILL_DESC_3",
                 displayName="Egg Throw",description="LB: lob an egg and hop upward to recover.",
-                icon="LoaderBodyChargeFist",recharge=2f,stock=1,combat=true },
+                icon="LoaderBodyChargeFist",recharge=0f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeYoshiBomb",nameToken="SSBM_YOSHI_BOMB",descriptionToken="SSBM_YOSHI_BOMB_DESC",
                 displayName="Yoshi Bomb",description="B: a fast ground-pound.",

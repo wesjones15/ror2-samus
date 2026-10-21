@@ -21,7 +21,7 @@ namespace Pikachu
             primary = new MeleeSkillInfo {
                 defName="MeleePikachu0",nameToken="SSBM_PIKACHU_SKILL_0",descriptionToken="SSBM_PIKACHU_SKILL_DESC_0",
                 displayName="Thunder Shock",description="RT: shoot an electric orb along your crosshair. It bounces off every surface and fizzles after ten ground bounces.",
-                icon="CommandoBodyFirePistol",recharge=0.25f,stock=1,combat=true },
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleePikachu1",nameToken="SSBM_PIKACHU_SKILL_1",descriptionToken="SSBM_PIKACHU_SKILL_DESC_1",
                 displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",
