@@ -13,6 +13,7 @@ namespace Samus
         public static ControlSheet SamusSheet() => MeleeSheet.Build(
             "Intergalactic Bounty Hunter", Skills.Layout,
             footer: "X is also RoR2's interact: with a prompt up it goes to that, not the grapple.",
+            grapple: true,
             grabPad: "Aim the 20 m grapple. Bosses pull Samus to them; other enemies are captured.",
             grabKeys: "Aim the 20 m grapple. Bosses pull Samus to them; other enemies are captured.",
             extras: sheet =>

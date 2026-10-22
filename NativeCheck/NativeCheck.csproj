@@ -3,6 +3,7 @@
   <ItemGroup>
     <Compile Include="../../ror2-common/src/MeleeNative.cs" Link="MeleeNative.cs" />
     <Compile Include="../../ror2-common/src/NativeLib.cs" Link="NativeLib.cs" />
+    <Compile Include="../../ror2-common/src/MeleeMoveset.cs" Link="MeleeMoveset.cs" />
     <Compile Include="../../ror2-common/src/MaterialAlpha.cs" Link="MaterialAlpha.cs" />
     <Compile Include="../../ror2-common/src/ViewSource.cs" Link="ViewSource.cs" />
     <Compile Include="../../ror2-common/src/ParticleSource.cs" Link="ParticleSource.cs" />
