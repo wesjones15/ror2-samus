@@ -20,7 +20,7 @@ namespace Pikachu
         {
             primary = new MeleeSkillInfo {
                 defName="MeleePikachu0",nameToken="SSBM_PIKACHU_SKILL_0",descriptionToken="SSBM_PIKACHU_SKILL_DESC_0",
-                displayName="Thunder Jolt",description="RT: shoot an electric orb diagonally down along your crosshair. Once it touches a surface it crawls along the ground, up walls and across ceilings, dropping off ledges, until it hits something.",
+                displayName="Thunder Jolt",description="RT: shoot an electric orb along your crosshair. It bounces off the ground, walls and ceilings like Luigi's fireball and fizzles after ten bounces.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleePikachu1",nameToken="SSBM_PIKACHU_SKILL_1",descriptionToken="SSBM_PIKACHU_SKILL_DESC_1",

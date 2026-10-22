@@ -9,12 +9,11 @@ namespace Pikachu
 {
     // Pikachu's world-side moves. Body hitboxes (A attacks, Skull Bash, Thunder's
     // 17% crackle) are applied by the shared MeleeHitTracker; this adds the two
-    // articles: Thunder Shock (the shared bouncing shot) and Thunder's bolt.
+    // articles: Thunder Jolt (the shared bouncing shot) and Thunder's bolt.
     internal static class PikachuCombat
     {
         // itpikachuthunder.c / ftpikachuspecialn.c sound ids.
         const uint ShockBounceSound = 240079; // 0x3A9CF: the jolt landing on a surface
-        const float JoltAngle = 40f;          // degrees below level; the disc's -0.698 rad
 
         internal static void Attack(PikachuDriver driver, CharacterBody body, MeleeNative.Event e, float scale)
         {
@@ -28,9 +27,13 @@ namespace Pikachu
             }
         }
 
-        // Thunder Shock: spawned at Pikachu's mouth, then shot along the crosshair like any
+        // Thunder Jolt: spawned at Pikachu's mouth, then shot along the crosshair like any
         // projectile of the other Melee survivors. The source spawns it at foot height; a
-        // crosshair-aimed shot comes from chest height instead.
+        // crosshair-aimed shot comes from chest height instead. It rides the shared bouncing
+        // shot, the same arc and surface bounce as Luigi's fireball, and ends after ten surface
+        // contacts (Projectile::bounce / reflect). It does not use the shot's Crawl mode: the
+        // source's terrain-hugging crawl (itpikachutjoltground.c) read as a rolling ball and
+        // never bounced, which broke the design rule for this move (ddba74e regressed it).
         static void Shock(PikachuDriver driver, CharacterBody body, Vector3 feet, float scale, MeleeNative.Event e)
         {
             var heading = new Vector3(e.direction.x, 0, e.direction.z);
@@ -39,15 +42,6 @@ namespace Pikachu
             var aim = body.inputBank
                 ? MeleeAim.ProjectileDirection(body, muzzle, MeleeAim.CameraRay(body, body.inputBank))
                 : heading;
-            // The jolt leaves diagonally downward (itPikachutJoltGroundAttributes.x4 is -0.698 rad on the
-            // disc), grounded or not. An aim near level takes that angle; a deliberately raised or lowered
-            // crosshair keeps its own, so the shot still goes where it is pointed (host adaptation).
-            if (Mathf.Abs(aim.y) < Mathf.Sin(8f * Mathf.Deg2Rad))
-            {
-                var level = new Vector3(aim.x, 0f, aim.z);
-                level = level.sqrMagnitude > 1e-4f ? level.normalized : heading;
-                aim = level * Mathf.Cos(JoltAngle * Mathf.Deg2Rad) + Vector3.down * Mathf.Sin(JoltAngle * Mathf.Deg2Rad);
-            }
             MeleeBouncingShot.Spawn(body, muzzle, aim, new MeleeBouncingShot.Config
             {
                 AssetsDir = Samus.Plugin.AssetsDir,
@@ -62,8 +56,6 @@ namespace Pikachu
                 TrailParticle = 7000, BouncePuff = 7001, ImpactPuff = 7002, DespawnPuff = 7003,
                 PlaySound = id => { if (driver.NativeSim != IntPtr.Zero) MeleeNative.ssbm_sim_play_sound(driver.NativeSim, id); },
                 BounceSound = ShockBounceSound,
-                // It follows the ground, walls and ceilings after its first contact (itpikachutjoltground.c).
-                Crawl = true,
             });
         }
     }
