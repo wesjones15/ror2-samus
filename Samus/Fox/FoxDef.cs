@@ -14,7 +14,7 @@ namespace Fox
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeFox0",nameToken="SSBM_FOX_SKILL_0",descriptionToken="SSBM_FOX_SKILL_DESC_0",
-                displayName="Blaster",description="RT: fire the Blaster along your crosshair. Hold to keep firing.",
+                displayName="Blaster",description="RT: fire the Blaster along your crosshair. Every tap fires (at most one shot per 0.12 s); hold to keep firing at a steady rate.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeFox1",nameToken="SSBM_FOX_SKILL_1",descriptionToken="SSBM_FOX_SKILL_DESC_1",
