@@ -68,14 +68,14 @@ namespace Samus
             Language.onCurrentLanguageChanged+=Tokens;
             ItemHooks.Install();GlyphOverride.Install();MeleeSkins.Install();
             PauseControls.Install(gameObject);
-            PauseControls.Register("MeleeSamusBody", _ => MeleeSheets.SamusSheet());
-            PauseControls.Register("MeleeFoxBody", _ => MeleeSheets.FoxSheet());
-            PauseControls.Register("MeleeLuigiBody", _ => MeleeSheets.LuigiSheet());
-            PauseControls.Register("MeleeCaptainBody", _ => MeleeSheets.CaptainSheet());
-            PauseControls.Register("MeleeLinkBody", _ => MeleeSheets.LinkSheet());
-            PauseControls.Register("MeleePikachuBody", _ => MeleeSheets.PikachuSheet());
-            PauseControls.Register("MeleeYoshiBody", _ => MeleeSheets.YoshiSheet());
-            PauseControls.Register("MeleeDonkeyBody", _ => MeleeSheets.DonkeySheet());
+            PauseControls.Register("MeleeSamusBody", body => MeleeSheets.SamusSheet(body));
+            PauseControls.Register("MeleeFoxBody", body => MeleeSheets.FoxSheet(body));
+            PauseControls.Register("MeleeLuigiBody", body => MeleeSheets.LuigiSheet(body));
+            PauseControls.Register("MeleeCaptainBody", body => MeleeSheets.CaptainSheet(body));
+            PauseControls.Register("MeleeLinkBody", body => MeleeSheets.LinkSheet(body));
+            PauseControls.Register("MeleePikachuBody", body => MeleeSheets.PikachuSheet(body));
+            PauseControls.Register("MeleeYoshiBody", body => MeleeSheets.YoshiSheet(body));
+            PauseControls.Register("MeleeDonkeyBody", body => MeleeSheets.DonkeySheet(body));
             RunAudio.Initialize(MeleeAudio.StopAll);
             // End of run: the GAME! banner for whichever Melee fighter the local player played (MeleeLocal,
             // recorded by every MeleeDriver when its sim starts), voiced from that fighter's own audio bank.

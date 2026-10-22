@@ -59,14 +59,15 @@ static class Program
         }
         Console.WriteLine("PASS: multiplayer replay keeps a shadow sim on the owner's position, action and frame for every fighter; corrupt logs are refused");
     }
-    // The pause sheet's moveset is generated from the sim's own move list: every fighter reports its common
-    // moves and four specials, every common move has a shared name and an input, and the roster differs per
-    // fighter the way the disc's action tables do (Fox has a rapid jab, Pikachu has no second jab).
+    // The pause sheet words its Attacks and Grab rows by the sim's own move list: every fighter reports its
+    // common moves and four specials, and the roster differs per fighter the way the disc's action tables do
+    // (Fox has a rapid jab, Pikachu has no second jab), so the jab row names only what the fighter has.
     static void MovesetChecks(string assets)
     {
         if(!MeleeNative.HasMoves) {Console.WriteLine("SKIP: this ssbm.dll has no move-list export");return;}
         uint[] kinds={MeleeNative.FighterSamus,MeleeNative.FighterFox,MeleeNative.FighterLuigi,MeleeNative.FighterPikachu,MeleeNative.FighterCaptain,MeleeNative.FighterLink,MeleeNative.FighterYoshi,MeleeNative.FighterDonkey};
         var lists=new System.Collections.Generic.Dictionary<uint,System.Collections.Generic.HashSet<uint>>();
+        var all=new System.Collections.Generic.Dictionary<uint,MeleeMoveInfo[]>();
         foreach(uint kind in kinds) {
             var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,kind);
             if(sim==IntPtr.Zero) {Console.WriteLine("SKIP: moveset check for fighter "+kind+" ("+MeleeNative.Error+")");continue;}
@@ -76,14 +77,12 @@ static class Program
                 foreach(var move in moves) {
                     Check(ids.Add(move.Id),"fighter "+kind+" lists move "+move.Id+" twice");
                     Check(move.Source.Length>0,"move "+move.Id+" has no source name");
-                    bool special=move.Id>=MeleeMoveset.SpecialN&&move.Id<=MeleeMoveset.SpecialLw;
-                    Check(special||MeleeMoveset.Name(move.Id)!=null,"fighter "+kind+" move "+move.Id+" ("+move.Source+") has no shared name");
                 }
                 foreach(uint id in new[]{MeleeMoveset.Jab,MeleeMoveset.SideTilt,MeleeMoveset.UpTilt,MeleeMoveset.DownTilt,MeleeMoveset.DashAttack,MeleeMoveset.SideSmash,MeleeMoveset.UpSmash,
                     MeleeMoveset.DownSmash,MeleeMoveset.NeutralAir,MeleeMoveset.ForwardAir,MeleeMoveset.BackAir,MeleeMoveset.UpAir,MeleeMoveset.DownAir,MeleeMoveset.Grab,MeleeMoveset.Pummel,
                     MeleeMoveset.ThrowForward,MeleeMoveset.ThrowBack,MeleeMoveset.ThrowUp,MeleeMoveset.ThrowDown,MeleeMoveset.SpecialN,MeleeMoveset.SpecialHi,MeleeMoveset.SpecialLw})
                     Check(ids.Contains(id),"fighter "+kind+" lacks move "+id);
-                lists[kind]=ids;
+                lists[kind]=ids;all[kind]=moves;
             } finally {MeleeNative.ssbm_sim_free(sim);}
         }
         if(lists.Count==kinds.Length) {
@@ -91,8 +90,11 @@ static class Program
             Check(!lists[MeleeNative.FighterPikachu].Contains(MeleeMoveset.Jab2),"Pikachu gained a second jab");
             Check(!lists[MeleeNative.FighterSamus].Contains(MeleeMoveset.RapidJab),"Samus gained a rapid jab");
             Check(lists[MeleeNative.FighterLuigi].Contains(MeleeMoveset.Jab3),"Luigi lost his third jab");
+            Check(MeleeMoveset.JabText(all[MeleeNative.FighterFox]).Contains("rapid jab"),"Fox's jab row lost its rapid jab");
+            Check(!MeleeMoveset.JabText(all[MeleeNative.FighterSamus]).Contains("rapid"),"Samus's jab row names a rapid jab");
+            Check(MeleeMoveset.JabText(null)=="Jab combo","the jab row without a move list changed");
         }
-        Console.WriteLine("PASS: the move list each fighter's sim reports (common moves and specials) names every move for the pause moveset and differs per fighter");
+        Console.WriteLine("PASS: the move list each fighter's sim reports (common moves and specials) words the pause sheet's jab row per fighter and differs per fighter");
     }
     static int Main(string[] args)
     {
