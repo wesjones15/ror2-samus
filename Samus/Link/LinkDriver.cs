@@ -14,7 +14,7 @@ namespace Link
         static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Samus.Plugin.AssetsDir,MeleeNative.FighterLink,model);
         MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
         MeleeAudio audio;
-        readonly LinkCombat.HitTracker hits = new LinkCombat.HitTracker();
+        readonly MeleeHitTracker hits = new MeleeHitTracker();
 
         protected override string FighterName => "Link";
         protected override string AssetsDir => Samus.Plugin.AssetsDir;
@@ -123,14 +123,7 @@ namespace Link
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
-        protected override void OnEventStarted(MeleeNative.Event e)
-        {
-            int slot = LinkSkills.Slot(e.move_id);
-            var skill = LinkSkills.Get(body, slot);
-            var expected = LinkSkills.Expected(body, slot);
-            bool own = skill.skillDef == expected;
-            permitDamage = NativeSkills.Spend(skill, expected) && own;
-        }
+        protected override MeleeSkillSet SkillSet => LinkSkills.Built;
         protected override void OnEventHit(MeleeNative.Event e) => LinkCombat.Attack(body, e, scale);
         protected override void FallbackSkills()
         {

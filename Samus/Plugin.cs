@@ -29,6 +29,7 @@ namespace Samus
         internal static ConfigEntry<float> StaggerDuration;
         internal static ConfigEntry<float> LockRange;
         internal static ConfigEntry<bool> LogEffects;
+        internal static ConfigEntry<bool> Diagnostics;
         string nativePath,configuredDisc,pluginDirectory;
         bool nativeStarted,destroyed;
         void Awake()
@@ -49,6 +50,8 @@ namespace Samus
             StaggerDuration=Config.Bind("Combat","StaggerDuration",0.25f,new ConfigDescription("Seconds a melee A attack stuns a non-boss enemy. Refreshed per hit so continued attacks lock trash; bosses/elites are exempt. 0 disables.",new AcceptableValueRange<float>(0f,2f)));
             RimLight=Config.Bind("Visuals","RimLight",true,"Draw the glow edge the source gives some moves (Captain Falcon's forward smash, Luigi's fireball) using RoR2's Fresnel emission. Turn off if models look wrong with it.");
             MeleeFighterView.RimLight=RimLight.Value;
+            Diagnostics=Config.Bind("Debug","Diagnostics",true,"Log each Melee move start (slot, charge, authority, whether it may deal damage), each hitbox batch and each hit dealt, as [MeleeDiag] lines in the BepInEx log. For finding why a move deals no damage. Cheap, but turn it off once everything works.");
+            MeleeDiag.On=Diagnostics.Value;
             // Melee multiplayer: the messages that carry a fighter to the other players (MeleeNet).
             MeleeNet.Register();
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
@@ -74,12 +77,29 @@ namespace Samus
             PauseControls.Register("MeleeYoshiBody", _ => MeleeSheets.YoshiSheet());
             PauseControls.Register("MeleeDonkeyBody", _ => MeleeSheets.DonkeySheet());
             RunAudio.Initialize(MeleeAudio.StopAll);
+            // End of run: the GAME! banner for whichever Melee fighter the local player played (MeleeLocal,
+            // recorded by every MeleeDriver when its sim starts), voiced from that fighter's own audio bank.
             Run.onClientGameOverGlobal+=(run,report)=>{
-                if(run!=SamusDriver.LocalRun||!AssetsReady)return;
-                try{MeleeGameBanner.Show(new MeleeGameEffect(AssetsDir, MeleeNative.FighterSamus, MetresPerUnit.Value));}
+                if(!MeleeLocal.TryGet(run,out uint kind)){if(MeleeDiag.On)Logger.LogInfo("[MeleeDiag] GAME!: the local player has no Melee fighter in this run");return;}
+                if(!AssetsFor(kind)){Logger.LogWarning("Melee GAME!: assets for fighter kind "+kind+" are not ready");return;}
+                if(MeleeDiag.On)Logger.LogInfo("[MeleeDiag] GAME!: banner for fighter kind "+kind);
+                try{MeleeGameBanner.Show(new MeleeGameEffect(AssetsDir, kind, MetresPerUnit.Value));}
                 catch(Exception e){Logger.LogError("Melee GAME presentation: "+e);MeleeGameBanner.Show(null);}
             };
             Logger.LogInfo("Melee 0.3.2 registered; native initialization waits for RoR2 startup completion.");
+        }
+        /// Whether the extracted cache for the fighter of native kind `kind` is complete.
+        static bool AssetsFor(uint kind)
+        {
+            if(kind==MeleeNative.FighterSamus)return AssetsReady;
+            if(kind==MeleeNative.FighterFox)return FoxReady;
+            if(kind==MeleeNative.FighterLuigi)return LuigiReady;
+            if(kind==MeleeNative.FighterCaptain)return CaptainReady;
+            if(kind==MeleeNative.FighterLink)return LinkReady;
+            if(kind==MeleeNative.FighterPikachu)return PikachuReady;
+            if(kind==MeleeNative.FighterYoshi)return YoshiReady;
+            if(kind==MeleeNative.FighterDonkey)return DonkeyReady;
+            return false;
         }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         void InitializeAssets()

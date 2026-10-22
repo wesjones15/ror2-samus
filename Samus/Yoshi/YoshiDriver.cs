@@ -14,7 +14,7 @@ namespace Yoshi
         static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Samus.Plugin.AssetsDir,MeleeNative.FighterYoshi,model);
         MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
         MeleeAudio audio;
-        readonly YoshiCombat.HitTracker hits = new YoshiCombat.HitTracker();
+        readonly MeleeHitTracker hits = new MeleeHitTracker();
 
         protected override string FighterName => "Yoshi";
         protected override string AssetsDir => Samus.Plugin.AssetsDir;
@@ -102,14 +102,7 @@ namespace Yoshi
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 5), feet, rotation, scale));
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
-        protected override void OnEventStarted(MeleeNative.Event e)
-        {
-            int slot = YoshiSkills.Slot(e.move_id);
-            var skill = YoshiSkills.Get(body, slot);
-            var expected = YoshiSkills.Expected(body, slot);
-            bool own = skill.skillDef == expected;
-            permitDamage = NativeSkills.Spend(skill, expected) && own;
-        }
+        protected override MeleeSkillSet SkillSet => YoshiSkills.Built;
         protected override void OnEventHit(MeleeNative.Event e) => YoshiCombat.Attack(body, e, scale);
         protected override void FallbackSkills()
         {

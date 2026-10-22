@@ -123,14 +123,7 @@ namespace Pikachu
             locked = true;
         }
 
-        protected override void OnEventStarted(MeleeNative.Event e)
-        {
-            int slot = PikachuSkills.Slot(e.move_id);
-            var skill = PikachuSkills.Get(body, slot);
-            var expected = PikachuSkills.Expected(body, slot);
-            bool own = skill.skillDef == expected;
-            permitDamage = NativeSkills.Spend(skill, expected) && own;
-        }
+        protected override MeleeSkillSet SkillSet => PikachuSkills.Built;
         protected override void OnEventHit(MeleeNative.Event e) => PikachuCombat.Attack(this, body, e, scale);
         protected override void FallbackSkills()
         {

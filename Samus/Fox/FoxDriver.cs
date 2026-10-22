@@ -17,9 +17,8 @@ namespace Fox
         // The Blaster's gun (the disc's second Fox article) while he shoots.
         MeleeFighterView gunView;
         readonly float[] gunMatrix = new float[16];
-        readonly FoxCombat.HitTracker hits = new FoxCombat.HitTracker();
+        readonly MeleeHitTracker hits = new MeleeHitTracker();
 
-        internal static Run LocalRun { get; private set; }
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
         protected override MeleeEffects EffectsForSparks => Effects;
@@ -113,14 +112,7 @@ namespace Fox
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
-        protected override void OnEventStarted(MeleeNative.Event e)
-        {
-            int slot = FoxSkills.Slot(e.move_id);
-            var skill = FoxSkills.Get(body, slot);
-            var expected = FoxSkills.Expected(body, slot);
-            bool own = skill.skillDef == expected;
-            permitDamage = NativeSkills.Spend(skill, expected) && own;
-        }
+        protected override MeleeSkillSet SkillSet => FoxSkills.Built;
         // The shine's bubble: up from its start event until the release event, the jump cancel or a hit.
         bool reflecting;
         float reflectDamage = 1.5f, reflectSpeed = 1f;
@@ -152,10 +144,6 @@ namespace Fox
                 if (skill && replacement && replacement.skillFamily && replacement.skillFamily.variants.Length > 0)
                     skill.SetSkillOverride(this, replacement.skillFamily.variants[0].skillDef, GenericSkill.SkillOverridePriority.Contextual);
             }
-        }
-        protected override void OnSimStarted()
-        {
-            if (body.isPlayerControlled && body.hasEffectiveAuthority) LocalRun = Run.instance;
         }
     }
 }

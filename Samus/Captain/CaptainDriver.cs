@@ -150,14 +150,7 @@ namespace Captain
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 5), feet, rotation, scale));
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale, state.move_id);
-        protected override void OnEventStarted(MeleeNative.Event e)
-        {
-            int slot = CaptainSkills.Slot(e.move_id);
-            var skill = CaptainSkills.Get(body, slot);
-            var expected = CaptainSkills.Expected(body, slot);
-            bool own = skill.skillDef == expected;
-            permitDamage = NativeSkills.Spend(skill, expected) && own;
-        }
+        protected override MeleeSkillSet SkillSet => CaptainSkills.Built;
         protected override void OnEventHit(MeleeNative.Event e) { CaptainCombat.Attack(body, e, scale); if (e.move_id == 23 && e.strength >= 2f) ThrowCaught(); }
         protected override void FallbackSkills()
         {

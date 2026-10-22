@@ -40,6 +40,8 @@ namespace Luigi
         };
 
         internal static readonly SkillSlot[] Slots = MeleeSkillSet.Slots;
+        /// This fighter's built skill layout, for the shared MeleeDriver.BeginMove.
+        internal static MeleeSkillSet Built => set;
         internal static void Set(MeleeSkillSet built) => set = built;
         internal static GenericSkill Get(CharacterBody body, int slot) => set.Get(body, slot);
         internal static bool ShieldSelected(CharacterBody body) => set.ShieldSelected(body);

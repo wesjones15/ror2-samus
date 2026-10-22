@@ -91,14 +91,7 @@ namespace Donkey
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale, state.move_id);
-        protected override void OnEventStarted(MeleeNative.Event e)
-        {
-            int slot = DonkeySkills.Slot(e.move_id);
-            var skill = DonkeySkills.Get(body, slot);
-            var expected = DonkeySkills.Expected(body, slot);
-            bool own = skill.skillDef == expected;
-            permitDamage = NativeSkills.Spend(skill, expected) && own;
-        }
+        protected override MeleeSkillSet SkillSet => DonkeySkills.Built;
         protected override void OnEventHit(MeleeNative.Event e) => DonkeyCombat.Attack(body, e, scale);
         protected override void FallbackSkills()
         {

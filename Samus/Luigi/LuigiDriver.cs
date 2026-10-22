@@ -91,14 +91,7 @@ namespace Luigi
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale, state.move_id);
-        protected override void OnEventStarted(MeleeNative.Event e)
-        {
-            int slot = LuigiSkills.Slot(e.move_id);
-            var skill = LuigiSkills.Get(body, slot);
-            var expected = LuigiSkills.Expected(body, slot);
-            bool own = skill.skillDef == expected;
-            permitDamage = NativeSkills.Spend(skill, expected) && own;
-        }
+        protected override MeleeSkillSet SkillSet => LuigiSkills.Built;
         // The Cyclone's spin pulls enemies in from its start event to its end event.
         bool pulling;
         protected override void OnEventHit(MeleeNative.Event e)

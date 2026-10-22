@@ -19,7 +19,6 @@ namespace Samus
         float chargeFraction;
         readonly Combat.HitTracker hits = new Combat.HitTracker();
 
-        internal static Run LocalRun { get; private set; }
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
         protected override MeleeEffects EffectsForSparks => Effects;
@@ -130,14 +129,7 @@ namespace Samus
         protected override void GrabReleaseCapture() => Grab.ReleaseCapture();
         protected override void GrabThrow(MeleeNative.Event e) => Grab?.Throw(e);
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
-        protected override void OnEventStarted(MeleeNative.Event e)
-        {
-            int slot = Skills.Slot(e.move_id);
-            var skill = Skills.Get(body, slot);
-            var expected = Skills.Expected(body, slot);
-            bool own = skill.skillDef == expected;
-            permitDamage = NativeSkills.Spend(skill, expected) && own;
-        }
+        protected override MeleeSkillSet SkillSet => Skills.Built;
         protected override void OnEventHit(MeleeNative.Event e) => Combat.Attack(body, e, scale);
         protected override void FallbackSkills()
         {
@@ -149,10 +141,6 @@ namespace Samus
                 if (skill && replacement && replacement.skillFamily && replacement.skillFamily.variants.Length > 0)
                     skill.SetSkillOverride(this, replacement.skillFamily.variants[0].skillDef, GenericSkill.SkillOverridePriority.Contextual);
             }
-        }
-        protected override void OnSimStarted()
-        {
-            if (body.isPlayerControlled && body.hasEffectiveAuthority) LocalRun = Run.instance;
         }
     }
 }
