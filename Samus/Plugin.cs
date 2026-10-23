@@ -30,6 +30,7 @@ namespace Samus
         internal static ConfigEntry<float> LockRange;
         internal static ConfigEntry<bool> LogEffects;
         internal static ConfigEntry<bool> Diagnostics;
+        internal static ConfigEntry<float> ScopeRefill,ScopeRange;
         string nativePath,configuredDisc,pluginDirectory;
         bool nativeStarted,destroyed;
         void Awake()
@@ -52,6 +53,8 @@ namespace Samus
             MeleeFighterView.RimLight=RimLight.Value;
             Diagnostics=Config.Bind("Debug","Diagnostics",true,"Log each Melee move start (slot, charge, authority, whether it may deal damage), each hitbox batch and each hit dealt, as [MeleeDiag] lines in the BepInEx log. For finding why a move deals no damage. Cheap, but turn it off once everything works.");
             MeleeDiag.On=Diagnostics.Value;
+            ScopeRefill=Config.Bind("Luigi","ScopeAmmoPerSecond",6f,new ConfigDescription("Super Scope: shots of ammo the 48-shot magazine refills a second after a moment idle (host adaptation; the source never refills). 0 never refills.",new AcceptableValueRange<float>(0f,100f)));
+            ScopeRange=Config.Bind("Luigi","ScopeRangeScale",3f,new ConfigDescription("Super Scope: how many times as fast and as far as the source's the beam flies, because an open world is bigger than a stage.",new AcceptableValueRange<float>(1f,10f)));
             // Melee multiplayer: the messages that carry a fighter to the other players (MeleeNet).
             MeleeNet.Register();
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
@@ -117,10 +120,13 @@ namespace Samus
                 PikachuReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterPikachu)==1;
                 YoshiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterYoshi)==1;
                 DonkeyReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterDonkey)==1;
-                if(!AssetsReady||!FoxReady||!LuigiReady||!CaptainReady||!LinkReady||!PikachuReady||!YoshiReady||!DonkeyReady) {
+                bool itemsMissing=MeleeNative.HasScope&&!File.Exists(Path.Combine(AssetsDir,"ItCo.dat"));
+                if(!AssetsReady||!FoxReady||!LuigiReady||!CaptainReady||!LinkReady||!PikachuReady||!YoshiReady||!DonkeyReady||itemsMissing) {
                     new Thread(()=> {
                         try {
                             string image=FindDisc(configuredDisc,pluginDirectory);
+                            if(image==null&&itemsMissing&&AssetsReady&&FoxReady&&LuigiReady&&CaptainReady&&LinkReady&&PikachuReady&&YoshiReady&&DonkeyReady)
+                                throw new FileNotFoundException("Set Paths.Disc to your Melee disc to extract the Super Scope's data.");
                             if(image==null) throw new FileNotFoundException("Set Paths.Disc to your Melee GALE01 rev 2 disc image.");
                             // Each fighter extracts independently; a failure only affects that fighter.
                             if(!AssetsReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)!=1)throw new IOException(MeleeNative.Error);}
@@ -131,6 +137,13 @@ namespace Samus
                             if(!PikachuReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterPikachu)!=1)throw new IOException(MeleeNative.Error);}
                             if(!YoshiReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterYoshi)!=1)throw new IOException(MeleeNative.Error);}
                             if(!DonkeyReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterDonkey)!=1)throw new IOException(MeleeNative.Error);}
+                            // The items archive (the Super Scope): optional, so a failure only loses the scope.
+                            if(itemsMissing){
+                                try {
+                                    if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),100)!=1)throw new IOException(MeleeNative.Error);
+                                    Log.LogInfo("Super Scope data extracted from your disc.");
+                                } catch(Exception e) { Log.LogWarning("Super Scope data unavailable: "+e.Message); }
+                            }
                             Log.LogInfo("Melee assets extracted from your disc.");
                         } catch(Exception e) { Log.LogError("Melee assets unavailable: "+e.Message); }
                         finally {

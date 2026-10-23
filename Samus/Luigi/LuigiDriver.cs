@@ -12,7 +12,10 @@ namespace Luigi
     public sealed class LuigiDriver : MeleeDriver
     {
         static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Samus.Plugin.AssetsDir,MeleeNative.FighterLuigi,model);
-        MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
+        MeleeFighterView view, entryPlatform, shieldView, scopeView; uint shieldModel;
+        // The Super Scope: whether it is in hand, and the right-hand bone it is drawn on.
+        bool scopeOn, scopeWarned;
+        readonly float[] scopeMatrix = new float[16];
         MeleeAudio audio;
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
@@ -31,7 +34,7 @@ namespace Luigi
         protected override uint AllowedButtons => LuigiSkills.Allowed(body);
         protected override bool ShieldSelected => LuigiSkills.ShieldSelected(body);
         protected override MeleeControlLayout Layout => MeleeControlLayout.Samus;
-        protected override bool IsRangedMove(uint moveId) => moveId == 20 || moveId == 21;
+        protected override bool IsRangedMove(uint moveId) => moveId == 20 || moveId == 21 || moveId == 17;
         protected override bool IsChargeMove(uint moveId) => false;
 
         protected override void UpdateAudio() => audio?.Update();
@@ -46,6 +49,7 @@ namespace Luigi
         protected override void DisposePresentation()
         {
             shieldView?.Dispose(); shieldView = null;
+            scopeView?.Dispose(); scopeView = null;
             view?.Dispose(); view = null;
             entryPlatform?.Dispose(); entryPlatform = null;
             audio?.Dispose(); audio = null;
@@ -84,10 +88,44 @@ namespace Luigi
                 if (MeleeNative.ssbm_entry_platform_update(entryPlatform.Handle, sim) == 1) entryPlatform.Models.Update(scale, d => (at, rotation));
                 else { entryPlatform.Dispose(); entryPlatform = null; }
             }
+            Present(() => DrawScope());
             Present(() => Particles?.Draw());
             Present(() => Effects?.Draw());
         }
-        protected override void DrawHud() { }
+        // The Super Scope rides the right hand (the same bone Fox's Blaster does) while it is being used.
+        void DrawScope()
+        {
+            if (state.move_id != 17 || !MeleeNative.HasScope || MeleeNative.ssbm_sim_common_bone(sim, 49, scopeMatrix) != 1) { scopeView?.Models.HideAll(); return; }
+            if (scopeView == null) scopeView = MeleeFighterView.Item(AssetsDir, 0x15, 0);
+            var m = new Matrix4x4();
+            for (int n = 0; n < 16; n++) m[n] = scopeMatrix[n];
+            m *= Matrix4x4.Scale(new Vector3(-1, 1, 1));
+            var f = m.GetColumn(2); var u = m.GetColumn(1);
+            var rot = Quaternion.LookRotation(new Vector3(f.x, f.y, f.z), new Vector3(u.x, u.y, u.z));
+            var pos = new Vector3(scopeMatrix[12], scopeMatrix[13], scopeMatrix[14]) * scale;
+            scopeView.ObjectPose(0f);
+            scopeView.Models.Update(scale, d => (pos, rot));
+        }
+        // Gives the sim the scope while the loadout holds it (and the items archive was extracted), every step.
+        void UpdateScope()
+        {
+            if (!MeleeNative.HasScope || !IsOwner) return;
+            var set = SkillSet;
+            bool want = set != null && set.PrimaryAltSelected(body);
+            bool available = MeleeScopeBeam.Available(AssetsDir);
+            scopeOn = MeleeNative.ssbm_sim_scope(sim, want && available ? 1u : 0u, Samus.Plugin.ScopeRefill.Value) == 1;
+            if (want && !scopeOn && !scopeWarned)
+            {
+                scopeWarned = true;
+                CommonLog.Warn("Luigi: the Super Scope is selected but not available (" + (available ? MeleeNative.Error : "ItCo.dat is not extracted yet: set Paths.Disc to your Melee disc and restart") + "); RT is the Fireball.");
+            }
+        }
+        protected override void DrawHud()
+        {
+            if (!scopeOn || Arriving || MeleeNative.ssbm_sim_scope_state(sim, out var info) != 1) return;
+            string charge = info.stage == 1 ? "   charge " + (info.level * 100 / 9) + "%" : "";
+            GUI.Box(new Rect(Screen.width / 2f - 130, Screen.height - 130, 260, 30), "Super Scope  " + info.ammo + " / " + info.capacity + charge);
+        }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale, state.move_id);
@@ -96,11 +134,13 @@ namespace Luigi
         bool pulling;
         protected override void OnEventHit(MeleeNative.Event e)
         {
+            if (e.move_id == 17) { LuigiCombat.Scope(body, e, scale); return; }
             if (e.move_id == 24) pulling = e.strength < 1.5f;
             LuigiCombat.Attack(this, body, e, scale);
         }
         protected override void BeforeStep(in MeleeNative.Pad pad)
         {
+            UpdateScope();
             if (!pulling) return;
             if (state.move_id != 24) { pulling = false; return; }
             LuigiCombat.Pull(body);

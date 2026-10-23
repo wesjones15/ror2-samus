@@ -35,6 +35,18 @@ namespace Luigi
                 });
         }
 
+        /// The Super Scope's shot: a beam of the charge level in `e.strength`, from the right hand along the crosshair.
+        internal static void Scope(CharacterBody body, MeleeNative.Event e, float scale)
+        {
+            if (!MeleeNet.Acts(body) || !MeleeScopeBeam.Available(Samus.Plugin.AssetsDir)) return;
+            var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
+            var aim = new Vector3(e.direction.x, e.direction.y, e.direction.z).normalized;
+            if (body.inputBank)
+                aim = MeleeAim.ProjectileDirection(body, origin, MeleeAim.CameraRay(body, body.inputBank));
+            MeleeScopeBeam.Spawn(body, origin + aim * 0.6f, aim, (uint)Mathf.Clamp(Mathf.RoundToInt(e.strength), 0, 9),
+                new MeleeScopeBeam.Config { AssetsDir = Samus.Plugin.AssetsDir, Scale = scale, RangeScale = Samus.Plugin.ScopeRange.Value });
+        }
+
         // Host adaptations for an open world. The specials hit far harder than the generic knockback
         // formula gives; this scales it per move so a Green Missile, a sweetspotted Super Jump Punch
         // and the Cyclone's last hit send an enemy flying, while the Cyclone's earlier hits keep it

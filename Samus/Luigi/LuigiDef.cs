@@ -16,6 +16,10 @@ namespace Luigi
                 defName="MeleeLuigi0",nameToken="SSBM_LUIGI_SKILL_0",descriptionToken="SSBM_LUIGI_SKILL_DESC_0",
                 displayName="Fireball",description="RT: fire a bouncing green fireball.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
+            primaryAlt = new MeleeSkillInfo {
+                defName="MeleeLuigiScope",nameToken="SSBM_LUIGI_SCOPE",descriptionToken="SSBM_LUIGI_SCOPE_DESC",
+                displayName="Super Scope",description="RT, in place of the Fireball: tap for a burst of small shots; hold to charge, release to fire a bigger beam (up to ten levels, the biggest burning), along your crosshair. 48 shots of ammo; a charged shot costs more, and it refills slowly when you stop. Needs the items archive from your disc (extracted with the rest).",
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeLuigi1",nameToken="SSBM_LUIGI_SKILL_1",descriptionToken="SSBM_LUIGI_SKILL_DESC_1",
                 displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",
@@ -37,6 +41,8 @@ namespace Luigi
                 displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air.",
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
+            // The Super Scope (native move 17) is the primary skill's.
+            slotForMove=m => m == 17 ? 0 : MeleeSkillSet.DefaultSlot(m),
         };
 
         internal static readonly SkillSlot[] Slots = MeleeSkillSet.Slots;
