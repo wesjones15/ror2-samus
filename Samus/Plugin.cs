@@ -25,6 +25,7 @@ namespace Samus
         internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
         internal static ConfigEntry<bool> RimLight;
+        internal static ConfigEntry<float> FighterBrightness;
         internal static ConfigEntry<float> MissileRange,MissileDamageScale,ChargeShotHitboxScale,ProjectileSpeed;
         internal static ConfigEntry<float> StaggerDuration;
         internal static ConfigEntry<float> LockRange;
@@ -44,7 +45,7 @@ namespace Samus
             SpeedScale=Config.Bind("Sim","SpeedScale",1.37f,new ConfigDescription("Walk/run speed multiplier. 1 uses raw Melee tuning; 1.37 lifts the slowest walker (Captain Falcon) to Commando's walk speed and the slowest runner to Commando's sprint, preserving each fighter's relative speed.",new AcceptableValueRange<float>(0.5f,3f)));
             Armor=Config.Bind("Combat","Armor",20f,new ConfigDescription("Base armor. RoR2 multiplies incoming damage by 100/(100+armor), so 20 cuts a hit to ~83%. Melee survivors (Mercenary, Loader) use 20.",new AcceptableValueRange<float>(0f,100f)));
             HoldCharge=Config.Bind("Controls","HoldCharge",false,"False: tap neutral special to charge, tap again to fire; sprint/jump/X grab stores. True: hold and release to fire.");
-            MissileRange=Config.Bind("Combat","MissileRangeMetres",120f,new ConfigDescription("How far a side-B missile flies before it is removed, in metres. 0 is unlimited. Melee's own cutoff is off-screen distance.",new AcceptableValueRange<float>(0f,2000f)));
+            MissileRange=Config.Bind("Combat","MissileRangeMetres",120f,new ConfigDescription("How far away a homing missile can lock onto an enemy, in metres. A flying Charge Shot or missile has no range cap: it is removed when it has flown 20 s, left the stage's bounds or fallen far below the stage.",new AcceptableValueRange<float>(0f,2000f)));
             ProjectileSpeed=Config.Bind("Combat","ProjectileSpeedScale",3f,new ConfigDescription("How many times as fast the Charge Shot and the missiles fly as the source's (host adaptation: an open world is bigger than a stage). 1 is the source's speed.",new AcceptableValueRange<float>(1f,10f)));
             MissileDamageScale=Config.Bind("Combat","MissileDamageScale",5f,new ConfigDescription("Multiplier on side-B missile and Super Missile damage, because the move has a cooldown.",new AcceptableValueRange<float>(0.1f,50f)));
             ChargeShotHitboxScale=Config.Bind("Combat","ChargeShotHitboxScale",3f,new ConfigDescription("Charge Shot enemy hit radius multiplier, so shots at range hit more easily. Walls and floor use the shot's own size.",new AcceptableValueRange<float>(1f,10f)));
@@ -52,6 +53,8 @@ namespace Samus
             StaggerDuration=Config.Bind("Combat","StaggerDuration",0.25f,new ConfigDescription("Seconds a melee A attack stuns a non-boss enemy. Refreshed per hit so continued attacks lock trash; bosses/elites are exempt. 0 disables.",new AcceptableValueRange<float>(0f,2f)));
             RimLight=Config.Bind("Visuals","RimLight",true,"Draw the glow edge the source gives some moves (Captain Falcon's forward smash, Luigi's fireball) using RoR2's Fresnel emission. Turn off if models look wrong with it.");
             MeleeFighterView.RimLight=RimLight.Value;
+            FighterBrightness=Config.Bind("Visuals","FighterBrightness",1.5f,new ConfigDescription("How much brighter than the source's material colour the fighters are drawn. Melee's models carry a diffuse colour of 0.70 and its stage lighting makes up for it; RoR2's lighting does not, so they looked dark. 1 is the source's colour; raise it if they still look dark, lower it if they look washed out.",new AcceptableValueRange<float>(0.5f,3f)));
+            MeleeFighterView.FighterBrightness=FighterBrightness.Value;
             Diagnostics=Config.Bind("Debug","Diagnostics",true,"Log each Melee move start (slot, charge, authority, whether it may deal damage), each hitbox batch and each hit dealt, as [MeleeDiag] lines in the BepInEx log. For finding why a move deals no damage. Cheap, but turn it off once everything works.");
             MeleeDiag.On=Diagnostics.Value;
             ScopeRefill=Config.Bind("Luigi","ScopeAmmoPerSecond",6f,new ConfigDescription("Super Scope: shots of ammo the 48-shot magazine refills a second after a moment idle (host adaptation; the source never refills). 0 never refills.",new AcceptableValueRange<float>(0f,100f)));

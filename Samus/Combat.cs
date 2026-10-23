@@ -99,7 +99,7 @@ namespace Samus
     }
     internal sealed class Shot:MonoBehaviour
     {
-        CharacterBody owner;Vector3 origin,velocity;float modelScale,maxRange,speed=1f;bool impacted;readonly Collider[] assistHits=new Collider[16];
+        CharacterBody owner;Vector3 origin,velocity;float modelScale,speed=1f,age;bool impacted;readonly Collider[] assistHits=new Collider[16];
         System.IntPtr projectile;MeleeNative.ProjectileState state;
         readonly HashSet<HealthComponent> explosionVictims=new HashSet<HealthComponent>();
         HealthComponent target;SamusDriver driver;MeleeFighterView view;MeleeParticles particles;ulong particleKey;uint particleKind,particleState,particleFrame;bool fullCharge;readonly uint[] effectCues=new uint[32];
@@ -115,7 +115,7 @@ namespace Samus
                 shot.projectile=MeleeNative.ssbm_projectile_new(NativeLib.CString(Plugin.AssetsDir),MeleeNative.FighterSamus,article,state,charge,new MeleeNative.Vec3(direction.x,direction.y,direction.z));
                 if(shot.projectile==System.IntPtr.Zero)throw new System.InvalidOperationException(MeleeNative.Error);
                 if(article==1)MeleeNative.ssbm_projectile_lifetime(shot.projectile,0); // RoR2 gun travel: no offscreen lifetime cutoff.
-                if(article==2){MeleeNative.ssbm_projectile_lifetime(shot.projectile,0);shot.maxRange=Plugin.MissileRange.Value;} // Range is the host's cap, not Melee's off-screen cutoff.
+                if(article==2)MeleeNative.ssbm_projectile_lifetime(shot.projectile,0); // Culled by Culled(), not by Melee's off-screen cutoff.
                 shot.view=new MeleeFighterView(Plugin.AssetsDir,MeleeNative.FighterSamus,article,state);
                 shot.ReadState();
             }
@@ -134,7 +134,8 @@ namespace Samus
             MeleeNative.ssbm_projectile_step(projectile,Time.fixedDeltaTime,new MeleeNative.Vec3(at.x,at.y,at.z),target&&target.alive?1u:0u);
             ReadState();
             if(!impacted&&(state.flags&1)!=0)Impact(from);
-            if(!impacted&&maxRange>0&&(transform.position-origin).sqrMagnitude>maxRange*maxRange){Destroy(gameObject);return;}
+            age+=Time.fixedDeltaTime;
+            if(!impacted&&Culled(transform.position)){Destroy(gameObject);return;}
             if(!impacted) {
                 var next=origin+new Vector3(state.position.x,state.position.y,state.position.z)*(modelScale*speed);
                 var step=next-from;
@@ -156,6 +157,10 @@ namespace Samus
             particles?.Attach(particleKey,particleTransform);
             uint frame=(uint)state.frame;if(!impacted)SourceEffects(particleFrame,frame,particleTransform);particleFrame=frame;
         }
+        // The only cull a flying shot has (it has no range cap): it has flown long enough, left the stage's bounds
+        // (a map zone that returns bodies) or fallen far below the stage's lowest ground.
+        const float MaxSeconds=20f,BelowStage=30f;
+        bool Culled(Vector3 at)=>age>MaxSeconds||WorldProbe.InMapZone(at)||(StageFloor.TryLowest(out float floor)&&at.y<floor-BelowStage);
         float HitboxScale=>particleKind==1?Plugin.ChargeShotHitboxScale.Value:1f;
         float DamageScale=>particleKind==2?Plugin.MissileDamageScale.Value:1f;
         // A larger, enemy-only sweep for the Charge Shot: it detonates on a hurtbox the shot
