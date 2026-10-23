@@ -99,7 +99,7 @@ namespace Samus
     }
     internal sealed class Shot:MonoBehaviour
     {
-        CharacterBody owner;Vector3 origin,velocity;float modelScale,maxRange;bool impacted;readonly Collider[] assistHits=new Collider[16];
+        CharacterBody owner;Vector3 origin,velocity;float modelScale,maxRange,speed=1f;bool impacted;readonly Collider[] assistHits=new Collider[16];
         System.IntPtr projectile;MeleeNative.ProjectileState state;
         readonly HashSet<HealthComponent> explosionVictims=new HashSet<HealthComponent>();
         HealthComponent target;SamusDriver driver;MeleeFighterView view;MeleeParticles particles;ulong particleKey;uint particleKind,particleState,particleFrame;bool fullCharge;readonly uint[] effectCues=new uint[32];
@@ -107,6 +107,9 @@ namespace Samus
         {
             var go=new GameObject("Samus disc article");go.transform.position=point;
             var shot=go.AddComponent<Shot>();shot.owner=owner;shot.origin=point;shot.modelScale=scale;shot.fullCharge=charge>=1;
+            // Host adaptation: the Charge Shot and the missiles fly this many times as fast as the source's (the bomb is
+            // placed, not flown). Only the distance covered is scaled; their size, damage and timing are the disc's.
+            shot.speed=article==1||article==2?Mathf.Max(1f,Plugin.ProjectileSpeed.Value):1f;
             shot.driver=owner.GetComponent<SamusDriver>();shot.particles=shot.driver?.Particles;shot.particleKey=0x100000000ul|(uint)go.GetInstanceID();shot.particleKind=article;shot.particleState=state;
             try {
                 shot.projectile=MeleeNative.ssbm_projectile_new(NativeLib.CString(Plugin.AssetsDir),MeleeNative.FighterSamus,article,state,charge,new MeleeNative.Vec3(direction.x,direction.y,direction.z));
@@ -127,13 +130,13 @@ namespace Samus
             if(!owner||!owner.healthComponent||!owner.healthComponent.alive||!Run.instance){Destroy(gameObject);return;}
             if(projectile==System.IntPtr.Zero)return;
             var from=transform.position;
-            var at=target&&target.alive?(target.transform.position-origin)/modelScale:Vector3.zero;
+            var at=target&&target.alive?(target.transform.position-origin)/(modelScale*speed):Vector3.zero;
             MeleeNative.ssbm_projectile_step(projectile,Time.fixedDeltaTime,new MeleeNative.Vec3(at.x,at.y,at.z),target&&target.alive?1u:0u);
             ReadState();
             if(!impacted&&(state.flags&1)!=0)Impact(from);
             if(!impacted&&maxRange>0&&(transform.position-origin).sqrMagnitude>maxRange*maxRange){Destroy(gameObject);return;}
             if(!impacted) {
-                var next=origin+new Vector3(state.position.x,state.position.y,state.position.z)*modelScale;
+                var next=origin+new Vector3(state.position.x,state.position.y,state.position.z)*(modelScale*speed);
                 var step=next-from;
                 if(AssistTarget(from,next,out var assistPoint))Impact(assistPoint);
                 else if(step.sqrMagnitude>0&&Physics.SphereCast(from,state.radius*modelScale,step.normalized,out var hit,step.magnitude,WorldProbe.Mask|LayerIndex.entityPrecise.mask,QueryTriggerInteraction.Ignore)) {

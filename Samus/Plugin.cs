@@ -25,7 +25,7 @@ namespace Samus
         internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
         internal static ConfigEntry<bool> RimLight;
-        internal static ConfigEntry<float> MissileRange,MissileDamageScale,ChargeShotHitboxScale;
+        internal static ConfigEntry<float> MissileRange,MissileDamageScale,ChargeShotHitboxScale,ProjectileSpeed;
         internal static ConfigEntry<float> StaggerDuration;
         internal static ConfigEntry<float> LockRange;
         internal static ConfigEntry<bool> LogEffects;
@@ -45,6 +45,7 @@ namespace Samus
             Armor=Config.Bind("Combat","Armor",20f,new ConfigDescription("Base armor. RoR2 multiplies incoming damage by 100/(100+armor), so 20 cuts a hit to ~83%. Melee survivors (Mercenary, Loader) use 20.",new AcceptableValueRange<float>(0f,100f)));
             HoldCharge=Config.Bind("Controls","HoldCharge",false,"False: tap neutral special to charge, tap again to fire; sprint/jump/X grab stores. True: hold and release to fire.");
             MissileRange=Config.Bind("Combat","MissileRangeMetres",120f,new ConfigDescription("How far a side-B missile flies before it is removed, in metres. 0 is unlimited. Melee's own cutoff is off-screen distance.",new AcceptableValueRange<float>(0f,2000f)));
+            ProjectileSpeed=Config.Bind("Combat","ProjectileSpeedScale",3f,new ConfigDescription("How many times as fast the Charge Shot and the missiles fly as the source's (host adaptation: an open world is bigger than a stage). 1 is the source's speed.",new AcceptableValueRange<float>(1f,10f)));
             MissileDamageScale=Config.Bind("Combat","MissileDamageScale",5f,new ConfigDescription("Multiplier on side-B missile and Super Missile damage, because the move has a cooldown.",new AcceptableValueRange<float>(0.1f,50f)));
             ChargeShotHitboxScale=Config.Bind("Combat","ChargeShotHitboxScale",3f,new ConfigDescription("Charge Shot enemy hit radius multiplier, so shots at range hit more easily. Walls and floor use the shot's own size.",new AcceptableValueRange<float>(1f,10f)));
             LockRange=Config.Bind("Combat","LockRangeMetres",25f,new ConfigDescription("How far away Pikachu's Quick Attack can lock onto an enemy (the nearest to your crosshair, preferring ones in front), in metres.",new AcceptableValueRange<float>(5f,100f)));
