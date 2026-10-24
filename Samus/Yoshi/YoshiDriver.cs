@@ -66,6 +66,14 @@ namespace Yoshi
                 CommonLog.Warn("Yoshi sound " + sound + ": " + MeleeNative.Error);
         }
 
+        /// Spawn one of Yoshi's own effect models at a world point (the egg shell bits,
+        /// 1231, are the source's 0x4CF impact).
+        internal void PlayEffect(uint id, Vector3 world, Quaternion rotation)
+        {
+            if (Effects == null || scale <= 0f) return;
+            Present(() => Effects.Spawn(id, Matrix4x4.TRS(world / scale, rotation, new Vector3(-1, 1, 1))));
+        }
+
         // Egg Lay draws its tongue from the first frame of the clip, so it is already out
         // when the sim's frame-20 grab event runs. It stretches to the first enemy in the
         // camera line (or the full 20 m when the lash is thrown into empty space).

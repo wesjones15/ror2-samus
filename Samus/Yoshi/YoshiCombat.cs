@@ -28,7 +28,7 @@ namespace Yoshi
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             var camera = body.inputBank ? MeleeAim.CameraRay(body, body.inputBank).direction : aim;
             if (e.move_id == 20 && e.strength < 1.5f) Tongue(body, camera);
-            else if (e.move_id == 23) ThrowEgg(body, origin, camera, scale);
+            else if (e.move_id == 23) ThrowEgg(body, camera, scale);
             else if (e.move_id == 24) Bomb(body, origin, scale);
         }
 
@@ -96,13 +96,17 @@ namespace Yoshi
         // Egg Throw: the camera pitch sets the arc, as the reticle did, and the egg
         // follows it ballistically (the source's launch speed grows with the time the
         // reticle was up; here it is fixed and the angle is the control).
-        static void ThrowEgg(CharacterBody body, Vector3 origin, Vector3 camera, float scale)
+        static void ThrowEgg(CharacterBody body, Vector3 camera, float scale)
         {
             float pitch = Mathf.Asin(Mathf.Clamp(camera.y, -1f, 1f)) * Mathf.Rad2Deg;
             float angle = Mathf.Clamp(pitch + EggAngleBias, 5f, 70f) * Mathf.Deg2Rad;
             var flat = new Vector3(camera.x, 0f, camera.z);
             flat = flat.sqrMagnitude > 0.0001f ? flat.normalized : body.transform.forward;
-            Egg.Spawn(body, origin, flat * Mathf.Cos(angle) + Vector3.up * Mathf.Sin(angle), scale, EggSpeed);
+            // Throw from the hand/chest, not the feet: the source spawns at the hand bone.
+            // At foot height the egg's first sweep starts inside the ground and bursts.
+            var hand = body.corePosition + Vector3.up * 0.2f;
+            body.GetComponent<YoshiDriver>()?.PlaySourceSound(0x44612); // SpecialHi frame 18: throw
+            Egg.Spawn(body, hand, flat * Mathf.Cos(angle) + Vector3.up * Mathf.Sin(angle), scale, EggSpeed);
         }
 
         // Yoshi Bomb: the landing's shockwave and the stars that run out from it.
@@ -660,6 +664,10 @@ namespace Yoshi
             transform.position = at;
             MeleeNative.ssbm_projectile_impact(projectile, IntPtr.Zero);
             ReadState();
+            var driver = owner ? owner.GetComponent<YoshiDriver>() : null;
+            driver?.PlaySourceSound(0x44618); // itYoshieggthrow_UnkMotion2: egg break
+            var velocity = new Vector3(state.velocity.x, state.velocity.y, state.velocity.z);
+            driver?.PlayEffect(1231, at, velocity.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(velocity) : Quaternion.identity);
             try {
                 var effect = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OmniExplosionVFX");
                 if (effect) EffectManager.SpawnEffect(effect, new EffectData { origin = at, scale = BurstRadius }, NetworkServer.active);
