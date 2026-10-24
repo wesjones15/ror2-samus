@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RoR2;
 using Ror2Common;
 using UnityEngine;
@@ -16,6 +17,13 @@ namespace Fox
         MeleeAudio audio;
         // The Blaster's gun (the disc's second Fox article) while he shoots.
         MeleeFighterView gunView;
+        // Fox Illusion's blue afterimages: the It_Kind_Fox_Illusion article, laid at the
+        // positions Fox has just left (ftfoxspecials.c::ftFox_SpecialS_SetPhys and
+        // itfoxillusion.c::itFoxillusion_Phys keep four historical positions; the item
+        // is drawn one frame behind and its ghost copy three frames behind).
+        MeleeFighterView illusionView;
+        readonly List<(Vector3 at, Quaternion rotation)> illusionTrail = new List<(Vector3 at, Quaternion rotation)>();
+        float illusionClock;
         readonly float[] gunMatrix = new float[16];
         readonly MeleeHitTracker hits = new MeleeHitTracker();
 
@@ -51,6 +59,7 @@ namespace Fox
         {
             shieldView?.Dispose(); shieldView = null;
             gunView?.Dispose(); gunView = null;
+            illusionView?.Dispose(); illusionView = null; illusionTrail.Clear(); illusionClock = 0f;
             view?.Dispose(); view = null;
             entryPlatform?.Dispose(); entryPlatform = null;
             audio?.Dispose(); audio = null;
@@ -59,6 +68,7 @@ namespace Fox
         }
         protected override void ResetPresentation()
         {
+            illusionView?.Dispose(); illusionView = null; illusionTrail.Clear(); illusionClock = 0f;
             Effects?.Dispose(); Particles?.Dispose();
             Particles = new MeleeParticles(AssetsDir, scale);
             Effects = new MeleeEffects(Particles, scale, EffectView, null, Samus.Plugin.LogEffects.Value);
@@ -76,6 +86,7 @@ namespace Fox
         {
             view.Pose(sim, Time.deltaTime);
             view.Models.Update(scale, d => (at, rotation));
+            Present(() => DrawIllusionGhosts(at, rotation));
             Present(() => {
                 uint defense = MeleeNative.ssbm_sim_defense_flags(sim);
                 if ((defense & 16) != 0) {
@@ -92,6 +103,42 @@ namespace Fox
             Present(() => DrawGun());
             Present(() => Particles?.Draw());
             Present(() => Effects?.Draw());
+        }
+        // Fox Illusion (native move 21) leaves the blue ghost copies of his body behind him.
+        // The source keeps four positions and one X rotation every dash tick; its
+        // It_Kind_Fox_Illusion item sits at history[1] and the extra ghost model at
+        // history[3] (ftfoxspecials.c, itfoxillusion.c). The article itself carries the
+        // translucent blue Fox trail, so one draw per historical position is enough.
+        void DrawIllusionGhosts(Vector3 at, Quaternion rotation)
+        {
+            var velocity = new Vector3(state.velocity.x, state.velocity.y, state.velocity.z);
+            // SpecialS is the dash; the 40-frame end clip keeps the last ghosts in place
+            // until the move ends, as ftFx_SpecialS_CheckGhostRemove does.
+            bool dashing = state.move_id == 21 && velocity.sqrMagnitude > 16f;
+            if (dashing)
+            {
+                illusionClock += Time.deltaTime;
+                if (illusionTrail.Count == 0 || illusionClock >= 1f / 60f)
+                {
+                    illusionClock = illusionTrail.Count == 0 ? 0f : Mathf.Max(0f, illusionClock - 1f / 60f);
+                    illusionTrail.Insert(0, (at, rotation));
+                    if (illusionTrail.Count > 6) illusionTrail.RemoveAt(6);
+                }
+            }
+            else if (state.move_id != 21) { illusionTrail.Clear(); illusionClock = 0f; }
+            int count = illusionTrail.Count >= 4 ? 2 : illusionTrail.Count >= 2 ? 1 : 0;
+            if (count == 0) { illusionView?.Models.HideAll(); return; }
+            if (illusionView == null) illusionView = new MeleeFighterView(AssetsDir, MeleeNative.FighterFox, 2, 0);
+            if (illusionView.InstanceDraws == null || illusionView.InstanceDraws.Length != count)
+            {
+                var draws = new ViewDraw[count];
+                for (int i = 0; i < count; i++) draws[i] = new ViewDraw { key = (ulong)(i + 1), alpha = 1f };
+                illusionView.InstanceDraws = draws;
+            }
+            var near = illusionTrail[Mathf.Min(1, illusionTrail.Count - 1)];
+            var far = illusionTrail[Mathf.Min(3, illusionTrail.Count - 1)];
+            illusionView.ObjectPose(0f);
+            illusionView.Models.Update(scale, d => d.key == 1 ? near : far);
         }
         // Blaster (native move 20): the gun rides the right thumb (FtPart_RThumbNb 49), as
         // the source attaches its Blaster item in ftFx_SpecialN_Enter.

@@ -96,6 +96,42 @@ static class Program
         }
         Console.WriteLine("PASS: the move list each fighter's sim reports (common moves and specials) words the pause sheet's jab row per fighter and differs per fighter");
     }
+    // Fox Illusion's blue visuals are two source pieces: efSync 0x48D, a generator attached to
+    // TopN (Party/Effect dispatch), and the It_Kind_Fox_Illusion ghost article, a translucent
+    // blue copy of Fox's body laid at the positions he just left.
+    static void FoxIllusionRegressions(string assets,in MeleeNative.Host host)
+    {
+        Check(MeleeNative.ssbm_effect_target(1165)==3008,"Fox Illusion streak target changed: "+MeleeNative.Error);
+        Check((MeleeNative.ssbm_effect_flags(1165)&1)!=0,"Fox Illusion streak is no longer joint-bound");
+        var ghost=MeleeNative.ssbm_article_new(NativeLib.CString(assets),MeleeNative.FighterFox,2,0);
+        if(ghost!=IntPtr.Zero) {
+            try {
+                Check(MeleeNative.ssbm_view_model(ghost,out var model)==1&&model.vertex_count>6000,"Fox Illusion ghost model is empty");
+                var colors=MeleeNative.ssbm_view_colors(ghost,out uint count);
+                Check(colors!=IntPtr.Zero&&count>0,"Fox Illusion ghost has no source colours");
+                var rgba=new float[count*4];Marshal.Copy(colors,rgba,0,rgba.Length);
+                Check(rgba.Length>=4&&rgba[3]<1f&&rgba[2]>rgba[0],"Fox Illusion ghost is not a faded blue body");
+            } finally {MeleeNative.ssbm_view_free(ghost);}
+        } else Console.WriteLine("SKIP: Fox Illusion ghost article ("+MeleeNative.Error+")");
+        var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterFox);
+        if(sim==IntPtr.Zero) {Console.WriteLine("SKIP: Fox Illusion cue ("+MeleeNative.Error+")");return;}
+        try {
+            var pad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(1,0,0),allowed=31};
+            for(int i=0;i<4;i++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+            pad.buttons=512; // SIDE_B
+            bool streak=false;
+            for(int i=0;i<40;i++) {
+                MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                uint n=MeleeNative.ssbm_sim_gfx(sim,null,0);
+                if(n==0)continue;
+                var cues=new MeleeNative.Event[n];
+                Check(MeleeNative.ssbm_sim_gfx(sim,cues,n)==n,"Fox Illusion GFX: "+MeleeNative.Error);
+                foreach(var cue in cues)if(cue.kind==1165){streak=true;Check(cue.move_id==0,"Illusion streak is not on TopN");}
+            }
+            Check(streak,"Fox Illusion never spawned its 0x48D blue streak");
+        } finally {MeleeNative.ssbm_sim_free(sim);}
+        Console.WriteLine("PASS: Fox Illusion's blue streak is joint-bound and its ghost article is a faded blue body through C#");
+    }
     static int Main(string[] args)
     {
         try {Run(args);return 0;}
@@ -135,6 +171,7 @@ static class Program
         PikachuRegressions(assets,in host);
         ReplayRegressions(assets,in host);
         MovesetChecks(assets);
+        FoxIllusionRegressions(assets,in host);
         jumps=hits=throws=0;
         foreach(int fps in new[]{30,60,144}) {
             var dash=MeleeNative.ssbm_sim_new(NativeLib.CString(assets),default);Check(dash!=IntPtr.Zero,MeleeNative.Error);
