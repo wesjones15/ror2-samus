@@ -22,7 +22,7 @@ namespace Yoshi
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeYoshi2",nameToken="SSBM_YOSHI_SKILL_2",descriptionToken="SSBM_YOSHI_SKILL_DESC_2",
-                displayName="Egg Roll",description="RB: curl into an egg and roll, steering with the move stick. It hits what it runs into, bounces off walls, and a second press ends it.",
+                displayName="Egg Roll",description="RB: curl into an egg and roll, steering with the move stick. It hits what it runs into and bounces off walls; press RB or B at any time to break out.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeYoshi3",nameToken="SSBM_YOSHI_SKILL_3",descriptionToken="SSBM_YOSHI_SKILL_DESC_3",

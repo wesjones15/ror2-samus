@@ -277,6 +277,11 @@ static class Program
                 MeleeNative.ssbm_view_free(view);view=IntPtr.Zero;
             }
             Check(MeleeNative.ssbm_view_new(NativeLib.CString(assets),MeleeNative.FighterSamus,99)==IntPtr.Zero,"bad costume not rejected");
+            // Alternate-DObj views (Yoshi's egg, Samus's morph ball) do not need a sim.
+            var variant=MeleeNative.ssbm_view_new_choice(NativeLib.CString(assets),MeleeNative.FighterSamus,0,1);Check(variant!=IntPtr.Zero,"alternate model view: "+MeleeNative.Error);
+            try {
+                MeleeNative.ssbm_view_model(variant,out var variantModel);Check(variantModel.vertex_count>0&&variantModel.batch_count>0,"alternate model view is empty");
+            } finally { MeleeNative.ssbm_view_free(variant); }
             // Samus character select uses one native down-B and its sound cues.
             // Different host rates must accept zero/multiple ticks per call.
             foreach(int fps in new[]{30,60,144}) {

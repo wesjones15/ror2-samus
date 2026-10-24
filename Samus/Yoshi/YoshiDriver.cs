@@ -42,6 +42,15 @@ namespace Yoshi
         }
         protected override bool IsChargeMove(uint moveId) => false;
 
+        // Egg Lay draws its tongue from the first frame of the clip, so it is already out
+        // when the sim's frame-20 grab event runs. The capture uses the same reach.
+        protected override void OnEventStarted(MeleeNative.Event e)
+        {
+            if (e.move_id != 20) return;
+            var aim = body.inputBank ? MeleeAim.CameraRay(body, body.inputBank).direction : body.transform.forward;
+            YoshiTongue.Show(body, aim, YoshiCombat.TongueReach);
+        }
+
         protected override void UpdateAudio() => audio?.Update();
         protected override void CreatePresentation()
         {
@@ -81,7 +90,10 @@ namespace Yoshi
         protected override void DrawPresentation(Vector3 at, Quaternion rotation)
         {
             view.Pose(sim, Time.deltaTime);
-            view.Models.Update(scale, d => (at, rotation));
+            // The egg model replaces the body through the fighter's visibility table and
+            // is spun about its own centre by the presentation's roll angle. Draw it a
+            // little larger than the body so it reads as Yoshi curled inside.
+            view.Models.Update(state.move_id == 23 ? scale * 1.2f : scale, d => (at, rotation));
             Present(() => {
                 uint defense = MeleeNative.ssbm_sim_defense_flags(sim);
                 if ((defense & 16) != 0) {

@@ -12,8 +12,11 @@ namespace Yoshi
     // damage, plus the tongue and egg, the thrown egg and the Yoshi Bomb's stars.
     internal static class YoshiCombat
     {
-        // Host adaptations for an open world.
-        const float TongueReach = 7f, TongueRadius = 0.8f;
+        // Host adaptations for an open world. The source tongue is a grab capsule at
+        // the mouth; the reach is stretched here so it matches the drawn tongue and
+        // the open-world scale (7 m read as short next to RoR2 enemies).
+        internal const float TongueReach = 9f;
+        const float TongueRadius = 0.7f;
         const float EggSpeed = 4.5f;                 // Melee units per tick of a thrown egg
         const float EggAngleBias = 22f;              // degrees added to the camera pitch
         const float BlastRadius = 4.5f, BlastCoefficient = 7f, BlastOutward = 3000f, BlastUpward = 1500f;
@@ -24,31 +27,57 @@ namespace Yoshi
             var aim = new Vector3(e.direction.x, e.direction.y, e.direction.z).normalized;
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             var camera = body.inputBank ? MeleeAim.CameraRay(body, body.inputBank).direction : aim;
-            if (e.move_id == 20 && e.strength < 1.5f) Tongue(body, origin + Vector3.up * (body.radius + 0.4f), camera);
+            if (e.move_id == 20 && e.strength < 1.5f) Tongue(body, camera);
             else if (e.move_id == 23) ThrowEgg(body, origin, camera, scale);
             else if (e.move_id == 24) Bomb(body, origin, scale);
         }
 
+        /// Where the tongue leaves the body: the sim position is at the feet, so lift it
+        /// to the head. Shared by the hit cast and the drawn tongue so they line up.
+        internal static Vector3 Mouth(CharacterBody body)
+            => body.corePosition + Vector3.up * Mathf.Max(0.35f, body.radius * 0.8f);
+
         // Egg Lay: the tongue swallows the first enemy in its reach. There is no boss
-        // immunity: Mithrix is laid in an egg like anything else.
-        static void Tongue(CharacterBody body, Vector3 mouth, Vector3 aim)
+        // immunity: Mithrix is laid in an egg like anything else. A capsule overlap
+        // (rather than a sphere cast) sweeps the whole tongue and cannot be stopped
+        // early by the ground under a downward camera aim; walls still block it.
+        static void Tongue(CharacterBody body, Vector3 aim)
         {
-            var hits = Physics.SphereCastAll(mouth, TongueRadius, aim, TongueReach, WorldProbe.Mask | LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Ignore);
-            Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
-            foreach (var hit in hits)
+            if (aim.sqrMagnitude < 0.0001f) aim = body.transform.forward;
+            aim = aim.normalized;
+            var mouth = Mouth(body);
+            var target = FindTarget(body, mouth, aim, out _);
+            if (target && YoshiEgg.Lay(body, target)) body.GetComponent<YoshiDriver>()?.QueueConnect();
+        }
+
+        static CharacterBody FindTarget(CharacterBody body, Vector3 mouth, Vector3 aim, out float distance)
+        {
+            distance = TongueReach;
+            var hits = new Collider[64];
+            int n = Physics.OverlapCapsuleNonAlloc(mouth, mouth + aim * TongueReach, TongueRadius, hits,
+                LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Collide);
+            CharacterBody best = null;
+            float bestDistance = float.MaxValue;
+            for (int i = 0; i < n; i++)
             {
-                if (!hit.collider) continue;
-                var hurt = hit.collider.GetComponent<HurtBox>();
-                if (hurt && hurt.healthComponent) {
-                    var target = hurt.healthComponent.body;
-                    if (!target || target == body || !target.teamComponent || target.teamComponent.teamIndex == body.teamComponent.teamIndex) continue;
-                    if (!hurt.healthComponent.alive || YoshiEgg.IsTrapped(target)) continue;
-                    if (YoshiEgg.Lay(body, target)) body.GetComponent<YoshiDriver>()?.QueueConnect();
-                    return;
-                }
-                // Something solid is in the way.
-                if (!hit.collider.isTrigger && !hit.collider.GetComponentInParent<CharacterBody>()) return;
+                var hurt = hits[i] ? hits[i].GetComponent<HurtBox>() : null;
+                if (!hurt || !hurt.healthComponent) continue;
+                var target = hurt.healthComponent.body;
+                if (!target || target == body || !target.teamComponent
+                    || target.teamComponent.teamIndex == body.teamComponent.teamIndex) continue;
+                if (!hurt.healthComponent.alive || YoshiEgg.IsTrapped(target)) continue;
+                var point = hurt.collider ? hurt.collider.ClosestPoint(mouth) : hurt.transform.position;
+                float d = Vector3.Distance(mouth, point);
+                if (d > TongueReach || d >= bestDistance) continue;
+                // Do not eat through a wall. Terrain only: the victim's own hurtboxes are
+                // on the entity layer and are excluded from this mask.
+                if (Physics.Linecast(mouth, point, out var wall, WorldProbe.Mask, QueryTriggerInteraction.Ignore)
+                    && Vector3.Distance(mouth, wall.point) < d - 0.05f) continue;
+                best = target;
+                bestDistance = d;
             }
+            if (best) distance = bestDistance;
+            return best;
         }
 
         // Egg Throw: the camera pitch sets the arc, as the reticle did, and the egg
@@ -89,6 +118,80 @@ namespace Yoshi
         }
     }
 
+    // The drawn Egg Lay tongue. The disc's tongue is a grab capsule with no model of its
+    // own in the fighter's costume archive, so the host draws the lash: a tapered,
+    // camera-facing ribbon from the mouth to the reach (or to the victim it caught) that
+    // shoots out, holds a moment and retracts. Its length is the same reach the capture
+    // uses, so what is drawn is what bites.
+    internal sealed class YoshiTongue : MonoBehaviour
+    {
+        // The SpecialN clip runs 40 ticks: the tongue is fully out at its frame-20 grab and
+        // back by the end of the clip.
+        const float ExtendSeconds = 0.18f, HoldSeconds = 0.22f, RetractSeconds = 0.25f;
+        const int Points = 12;
+        static Shader shader;
+        CharacterBody owner;
+        Vector3 aim;
+        float reach, age;
+        LineRenderer line;
+        Material material;
+
+        internal static void Show(CharacterBody owner, Vector3 aim, float reach)
+        {
+            if (!owner) return;
+            var go = new GameObject("Yoshi tongue");
+            var tongue = go.AddComponent<YoshiTongue>();
+            tongue.owner = owner;
+            tongue.aim = aim.normalized;
+            tongue.reach = Mathf.Clamp(reach, 1f, 12f);
+            if (!shader) shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color");
+            if (!shader) { Destroy(go); return; }
+            var line = go.AddComponent<LineRenderer>();
+            tongue.line = line;
+            tongue.material = new Material(shader) { color = new Color(0.92f, 0.27f, 0.36f, 1f) };
+            line.material = tongue.material;
+            line.useWorldSpace = true;
+            line.positionCount = Points;
+            line.startWidth = 0.26f;
+            line.endWidth = 0.11f;
+            line.numCapVertices = 6;
+            line.numCornerVertices = 2;
+            line.alignment = LineAlignment.View;
+            line.textureMode = LineTextureMode.Stretch;
+            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            line.receiveShadows = false;
+        }
+
+        void LateUpdate()
+        {
+            if (!owner || !owner.healthComponent || !owner.healthComponent.alive) { Destroy(gameObject); return; }
+            age += Time.deltaTime;
+            if (age >= ExtendSeconds + HoldSeconds + RetractSeconds) { Destroy(gameObject); return; }
+            float amount;
+            if (age < ExtendSeconds) amount = age / ExtendSeconds;
+            else if (age < ExtendSeconds + HoldSeconds) amount = 1f;
+            else amount = 1f - (age - ExtendSeconds - HoldSeconds) / RetractSeconds;
+            amount = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(amount));
+            float length = reach * amount;
+            var origin = YoshiCombat.Mouth(owner);
+            for (int i = 0; i < Points; i++)
+            {
+                float u = i / (Points - 1f);
+                var point = origin + aim * (length * u);
+                // A little gravity sag keeps it from reading as a laser.
+                point.y -= Mathf.Sin(u * Mathf.PI) * 0.06f * length;
+                line.SetPosition(i, point);
+            }
+            line.enabled = amount > 0.01f;
+        }
+
+        void OnDestroy()
+        {
+            if (line) line.material = null;
+            if (material) { Destroy(material); material = null; }
+        }
+    }
+
     // An enemy laid in an egg (Egg Lay). EnemyHold keeps it helpless where it stands until
     // it breaks out: a few seconds for most, longer for the large and longest for bosses.
     // It can still be hit meanwhile. The egg is sized to the victim, but not to scale: a
@@ -98,7 +201,9 @@ namespace Yoshi
     {
         const float NormalSeconds = 4f, LargeSeconds = 6f, BossSeconds = 9f;
         const float LargeRadius = 1.6f;
-        const float EggModelRadiusUnits = 9f;   // guess at the egg model's radius; unseen in game
+        // Costume model DObj 35's half-width in Melee units (the egg that replaces Yoshi
+        // in the roll); the laid egg uses the same mesh through the variant view.
+        const float EggModelRadiusUnits = 5.77f;
 
         static readonly List<YoshiEgg> live = new List<YoshiEgg>();
         internal static bool IsTrapped(CharacterBody body)
@@ -118,6 +223,7 @@ namespace Yoshi
         CharacterBody owner, victim;
         float releaseAt, eggRadius;
         MeleeFighterView view;
+        Transform victimModel;
 
         internal static bool Lay(CharacterBody owner, CharacterBody victim)
         {
@@ -131,16 +237,30 @@ namespace Yoshi
             egg.victim = victim;
             egg.eggRadius = EggRadius(victim);
             egg.releaseAt = Time.time + seconds;
-            egg.view = new MeleeFighterView(Samus.Plugin.AssetsDir, MeleeNative.FighterYoshi, 2, 0);
-            egg.view.ObjectPose(0f);
-            go.transform.position = victim.corePosition;
+            if (victim.modelLocator && victim.modelLocator.modelTransform) {
+                egg.victimModel = victim.modelLocator.modelTransform;
+                GameSettings.HideRenderers(egg.victimModel, true);
+            }
+            try {
+                egg.view = MeleeFighterView.FighterChoice(Samus.Plugin.AssetsDir, MeleeNative.FighterYoshi,
+                    (uint)Math.Min(owner.skinIndex, 5), 1);
+                egg.view.ObjectPose(0f);
+            } catch (Exception e) {
+                CommonLog.Warn("Yoshi egg view: " + e.Message);
+                egg.view?.Dispose(); egg.view = null;
+            }
+            go.transform.position = EggFoot(victim);
             return true;
         }
+
+        static Vector3 EggFoot(CharacterBody victim)
+            => victim.characterMotor && victim.characterMotor.isGrounded ? victim.footPosition : victim.corePosition;
 
         void OnEnable() { live.Add(this); }
         void OnDestroy()
         {
             live.Remove(this);
+            if (victimModel) { GameSettings.HideRenderers(victimModel, false); victimModel = null; }
             view?.Dispose(); view = null;
         }
 
@@ -152,7 +272,8 @@ namespace Yoshi
             bool over = NetworkServer.active ? !victim || !EnemyHold.IsHeld(victim)
                 : !victim || !victim.healthComponent || !victim.healthComponent.alive || Time.time >= releaseAt;
             if (over) { BreakOut(); return; }
-            transform.position = victim.corePosition;
+            if (victimModel) GameSettings.HideRenderers(victimModel, true);
+            transform.position = EggFoot(victim);
         }
 
         void BreakOut()
