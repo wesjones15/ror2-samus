@@ -421,7 +421,7 @@ namespace Yoshi
     // It can still be hit meanwhile. The egg is sized to the victim, but not to scale: a
     // large enemy's egg tops out near 2.4 m, a boss's is bigger than that and still well
     // short of the boss itself.
-    internal sealed class YoshiEgg : MonoBehaviour
+    internal sealed class YoshiEgg : MonoBehaviour, IOnIncomingDamageServerReceiver
     {
         const float NormalSeconds = 4f, LargeSeconds = 6f, BossSeconds = 9f;
         const float LargeRadius = 1.6f;
@@ -445,8 +445,8 @@ namespace Yoshi
         }
 
         CharacterBody owner, victim;
-        float releaseAt, eggRadius;
-        Vector3 eggOrigin;
+        float releaseAt, eggRadius, spin;
+        Vector3 eggOrigin, velocity;
         MeleeFighterView view;
         Transform victimModel;
 
@@ -477,6 +477,7 @@ namespace Yoshi
                 egg.view?.Dispose(); egg.view = null;
             }
             go.transform.position = egg.eggOrigin;
+            if (victim.healthComponent) victim.healthComponent.AddOnIncomingDamageServerReceiver(egg);
             return true;
         }
 
@@ -496,8 +497,26 @@ namespace Yoshi
         void OnDestroy()
         {
             live.Remove(this);
+            if (victim && victim.healthComponent) victim.healthComponent.RemoveOnIncomingDamageServerReceiver(this);
             if (victimModel) { GameSettings.HideRenderers(victimModel, false); victimModel = null; }
             view?.Dispose(); view = null;
+        }
+
+        // Hurtboxes follow the victim, which follows the egg, so damage to the enemy is
+        // damage to the egg: turn it into knockback. Mass scales with the egg's size, so a
+        // boss egg barely twitches while a small one can be launched.
+        public void OnIncomingDamageServer(DamageInfo info)
+        {
+            if (!NetworkServer.active || !isActiveAndEnabled || !victim || info.rejected) return;
+            var away = transform.position + Vector3.up * eggRadius - info.position;
+            var direction = info.force.sqrMagnitude > 1f ? info.force.normalized
+                : away.sqrMagnitude > 0.0001f ? away.normalized : Vector3.up;
+            float mass = Mathf.Max(0.5f, Mathf.Pow(Mathf.Max(0.3f, eggRadius), 1.5f));
+            float speed = (info.force.magnitude / 900f + Mathf.Max(0f, info.damage) * 0.6f) / mass;
+            speed = Mathf.Clamp(speed, 0f, 30f);
+            velocity += direction * speed;
+            velocity.y += Mathf.Min(speed * 0.3f, 5f);
+            velocity = Vector3.ClampMagnitude(velocity, 30f);
         }
 
         void FixedUpdate()
@@ -509,14 +528,62 @@ namespace Yoshi
                 : !victim || !victim.healthComponent || !victim.healthComponent.alive || Time.time >= releaseAt;
             if (over) { BreakOut(); return; }
             if (victimModel) GameSettings.HideRenderers(victimModel, true);
-            transform.position = eggOrigin;
+            float dt = Time.fixedDeltaTime;
+            velocity.y += Physics.gravity.y * dt;
+            velocity.y = Mathf.Max(velocity.y, -25f);
+            var from = transform.position;
+            var next = from + velocity * dt;
+            bool grounded = false;
+            // Ground: the model's origin is the bottom of the egg.
+            var probe = next + Vector3.up * (eggRadius + 0.2f);
+            if (Physics.Raycast(probe, Vector3.down, out var floor, eggRadius * 2f + 0.6f,
+                WorldProbe.Mask, QueryTriggerInteraction.Ignore))
+            {
+                float baseY = floor.point.y;
+                if (next.y <= baseY + 0.02f)
+                {
+                    next.y = baseY;
+                    if (velocity.y < 0f) velocity.y = -velocity.y * 0.25f;
+                    if (Mathf.Abs(velocity.y) < 0.6f) velocity.y = 0f;
+                    grounded = true;
+                }
+            }
+            // Horizontal walls: bounce the egg and keep its centre outside the wall.
+            var flat = new Vector3(next.x - from.x, 0f, next.z - from.z);
+            if (flat.sqrMagnitude > 0.000001f)
+            {
+                var dir = flat.normalized;
+                if (Physics.SphereCast(from + Vector3.up * eggRadius, eggRadius * 0.75f, dir,
+                    out var wall, flat.magnitude + 0.05f, WorldProbe.Mask, QueryTriggerInteraction.Ignore))
+                {
+                    var normal = new Vector3(wall.normal.x, 0f, wall.normal.z);
+                    if (normal.sqrMagnitude > 0.01f)
+                    {
+                        normal.Normalize();
+                        var horizontal = new Vector3(velocity.x, 0f, velocity.z);
+                        horizontal -= 2f * Vector3.Dot(horizontal, normal) * normal;
+                        horizontal *= 0.35f;
+                        velocity.x = horizontal.x;
+                        velocity.z = horizontal.z;
+                        next.x = wall.point.x + normal.x * eggRadius * 0.8f;
+                        next.z = wall.point.z + normal.z * eggRadius * 0.8f;
+                    }
+                }
+            }
+            float drag = grounded ? Mathf.Exp(-5f * dt) : Mathf.Exp(-0.2f * dt);
+            velocity.x *= drag;
+            velocity.z *= drag;
+            if (grounded && new Vector2(velocity.x, velocity.z).sqrMagnitude < 0.04f) { velocity.x = 0f; velocity.z = 0f; }
+            transform.position = next;
+            spin = Mathf.Repeat(spin + new Vector2(velocity.x, velocity.z).magnitude / Mathf.Max(0.25f, eggRadius) * Mathf.Rad2Deg * dt, 360f);
+            SetFeet(victim, next);
         }
 
         void BreakOut()
         {
             try {
                 var effect = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OmniExplosionVFX");
-                if (effect && victim) EffectManager.SpawnEffect(effect, new EffectData { origin = eggOrigin, scale = eggRadius }, NetworkServer.active);
+                if (effect && victim) EffectManager.SpawnEffect(effect, new EffectData { origin = transform.position, scale = eggRadius }, NetworkServer.active);
             } catch (Exception) { }
             owner?.GetComponent<YoshiDriver>()?.PlaySourceSound(0x44618); // egg break
             Destroy(gameObject);
@@ -525,10 +592,10 @@ namespace Yoshi
         void LateUpdate()
         {
             if (view == null) return;
-            // The egg sways more as it is about to hatch.
+            // The egg sways more as it is about to hatch; movement tilts and spins it.
             float left = Mathf.Max(0f, releaseAt - Time.time);
             float shake = left < 1.5f ? Mathf.Sin(Time.time * 40f) * 0.06f * (1.5f - left) : 0f;
-            var rotation = Quaternion.Euler(0f, 0f, shake * 57f);
+            var rotation = Quaternion.Euler(velocity.z * 1.5f, spin, -velocity.x * 1.5f + shake * 57f);
             float units = eggRadius / EggModelRadiusUnits;
             view.FaceCamera(transform.position, rotation, units);
             view.Models.Update(units, d => (transform.position, rotation));
