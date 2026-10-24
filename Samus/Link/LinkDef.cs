@@ -81,6 +81,7 @@ namespace Link
             bodyColor=new Color(0.3f,0.7f,0.3f),
             baseMaxHealth=100f,levelMaxHealth=30f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
             sortPosition=106f,
+            fighterKind=MeleeNative.FighterLink,assetsDir=()=>Samus.Plugin.AssetsDir,assetsReady=()=>Samus.Plugin.LinkReady,
             mainStateType=typeof(LinkMain),driverType=typeof(LinkDriver),
             skills=LinkSkills.Layout,skins=LinkSkins.Layout,
             displayFactory=LinkDisplay.Make,

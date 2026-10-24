@@ -82,6 +82,7 @@ namespace Yoshi
             bodyColor=new Color(0.35f,0.7f,0.35f),
             baseMaxHealth=100f,levelMaxHealth=30f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
             sortPosition=108f,
+            fighterKind=MeleeNative.FighterYoshi,assetsDir=()=>Samus.Plugin.AssetsDir,assetsReady=()=>Samus.Plugin.YoshiReady,
             mainStateType=typeof(YoshiMain),driverType=typeof(YoshiDriver),
             skills=YoshiSkills.Layout,skins=YoshiSkins.Layout,
             displayFactory=YoshiDisplay.Make,

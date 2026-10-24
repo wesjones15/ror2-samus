@@ -93,6 +93,7 @@ namespace Luigi
             bodyColor=new Color(0.3f,0.75f,0.35f),
             baseMaxHealth=100f,levelMaxHealth=30f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
             sortPosition=104f,
+            fighterKind=MeleeNative.FighterLuigi,assetsDir=()=>Samus.Plugin.AssetsDir,assetsReady=()=>Samus.Plugin.LuigiReady,
             mainStateType=typeof(LuigiMain),driverType=typeof(LuigiDriver),
             skills=LuigiSkills.Layout,skins=LuigiSkins.Layout,
             displayFactory=LuigiDisplay.Make,

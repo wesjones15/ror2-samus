@@ -86,6 +86,7 @@ namespace Pikachu
             bodyColor=new Color(0.97f,0.84f,0.24f),
             baseMaxHealth=90f,levelMaxHealth=27f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
             sortPosition=107f,
+            fighterKind=MeleeNative.FighterPikachu,assetsDir=()=>Samus.Plugin.AssetsDir,assetsReady=()=>Samus.Plugin.PikachuReady,
             mainStateType=typeof(PikachuMain),driverType=typeof(PikachuDriver),
             skills=PikachuSkills.Layout,skins=PikachuSkins.Layout,
             displayFactory=PikachuDisplay.Make,

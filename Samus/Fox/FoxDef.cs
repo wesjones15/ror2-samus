@@ -80,6 +80,7 @@ namespace Fox
             bodyColor=new Color(0.85f,0.6f,0.2f),
             baseMaxHealth=110f,levelMaxHealth=33f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
             sortPosition=103f,
+            fighterKind=MeleeNative.FighterFox,assetsDir=()=>Samus.Plugin.AssetsDir,assetsReady=()=>Samus.Plugin.FoxReady,
             mainStateType=typeof(FoxMain),driverType=typeof(FoxDriver),
             skills=FoxSkills.Layout,skins=FoxSkins.Layout,
             displayFactory=FoxDisplay.Make,

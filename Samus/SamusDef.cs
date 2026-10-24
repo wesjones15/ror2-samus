@@ -21,6 +21,7 @@ namespace Samus
             bodyColor=new Color(1f,0.48f,0.06f),
             baseMaxHealth=140f,levelMaxHealth=42f,baseArmor=Plugin.Armor.Value,baseJumpCount=2,
             sortPosition=102f,
+            fighterKind=MeleeNative.FighterSamus,assetsDir=()=>Samus.Plugin.AssetsDir,assetsReady=()=>Samus.Plugin.AssetsReady,
             mainStateType=typeof(SamusMain),driverType=typeof(SamusDriver),
             skills=Skills.Layout,skins=Skins.Layout,
             displayFactory=SamusDisplay.Make,
