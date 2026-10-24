@@ -148,7 +148,6 @@ namespace Yoshi
         const int Points = 16;
         const float TotalSeconds = ExtendSeconds + HoldSeconds + RetractSeconds;
         static readonly List<YoshiTongue> active = new List<YoshiTongue>();
-        static Shader shader;
         CharacterBody owner;
         Vector3 aim;
         float reach, age;
@@ -165,25 +164,41 @@ namespace Yoshi
             tongue.owner = owner;
             tongue.aim = aim.normalized;
             tongue.reach = Mathf.Clamp(reach, 1f, YoshiCombat.TongueReach);
-            if (!shader) shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color");
-            if (!shader) { Destroy(go); return; }
-            var renderer = go.AddComponent<LineRenderer>();
-            tongue.line = renderer;
-            tongue.material = new Material(shader) { color = new Color(0.92f, 0.27f, 0.36f, 1f) };
-            renderer.material = tongue.material;
-            renderer.useWorldSpace = true;
-            renderer.positionCount = Points;
-            float width = Mathf.Clamp(0.22f + tongue.reach * 0.006f, 0.22f, 0.55f);
-            renderer.startWidth = width;
-            renderer.endWidth = width * 0.42f;
-            renderer.numCapVertices = 6;
-            renderer.numCornerVertices = 2;
-            renderer.alignment = LineAlignment.View;
-            renderer.textureMode = LineTextureMode.Stretch;
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
-            var start = YoshiCombat.Mouth(owner);
-            for (int i = 0; i < Points; i++) renderer.SetPosition(i, start);
+            try {
+                // Shader.Find is hooked by RoR2 and throws for stripped shaders
+                // (Sprites/Default is not in its table). Use the game's own effect shader;
+                // see ModelView.Shaders.
+                var tint = new Color(0.92f, 0.27f, 0.36f, 1f);
+                var mat = Shaders.SeeThrough("Yoshi tongue", null, false, true, 1f);
+                bool seeThrough = mat != null;
+                if (!seeThrough) mat = new Material(Shaders.HgStandard());
+                if (seeThrough) mat.SetColor("_TintColor", tint);
+                else mat.color = tint;
+                var renderer = go.AddComponent<LineRenderer>();
+                tongue.line = renderer;
+                tongue.material = mat;
+                renderer.material = mat;
+                renderer.startColor = tint;
+                renderer.endColor = tint;
+                renderer.useWorldSpace = true;
+                renderer.positionCount = Points;
+                float width = Mathf.Clamp(0.22f + tongue.reach * 0.006f, 0.22f, 0.55f);
+                renderer.startWidth = width;
+                renderer.endWidth = width * 0.42f;
+                renderer.numCapVertices = 6;
+                renderer.numCornerVertices = 2;
+                renderer.alignment = LineAlignment.View;
+                renderer.textureMode = LineTextureMode.Stretch;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                var start = YoshiCombat.Mouth(owner);
+                for (int i = 0; i < Points; i++) renderer.SetPosition(i, start);
+            } catch (Exception e) {
+                CommonLog.Warn("Yoshi tongue: " + e.Message);
+                tongue.line = null;
+                if (tongue.material) { Destroy(tongue.material); tongue.material = null; }
+                Destroy(go);
+            }
         }
 
         /// Shorten the lash to the victim the cast caught, so the tip is on the enemy.
@@ -217,6 +232,7 @@ namespace Yoshi
 
         void LateUpdate()
         {
+            if (!line) { Destroy(gameObject); return; }
             if (!owner || !owner.healthComponent || !owner.healthComponent.alive) { Destroy(gameObject); return; }
             age += Time.deltaTime;
             if (age >= TotalSeconds) { Destroy(gameObject); return; }
