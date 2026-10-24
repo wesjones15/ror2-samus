@@ -74,11 +74,10 @@ namespace Pikachu
         }
     }
 
-    // Thunder (itpikachuthunder.c): four bolt segments fall from the cloud, each eight
-    // ticks after the one before, so they form one column; the leading tip reaches
-    // Pikachu on the tick the sim strikes him. Enemies in the column are hit once each.
-    // The cloud's height, the strike delay and the fall speed come from the sim's spawn
-    // event (disc tuning); only the segment count/delay (xD4/xD8) are constants here.
+    // Thunder (itpikachuthunder.c): a fixed 16 m column of four 4 m article-0 bolt
+    // segments above Pikachu. The sim still owns the falling hitbox timeline (four
+    // segments, one every xD8 ticks); the host no longer raycasts a world ceiling or
+    // stretches one quad. Enemies in the column are hit once each.
     internal sealed class ThunderBolt : MonoBehaviour
     {
         const int Segments = 4;      // ftPikachuAttributes.xD4
