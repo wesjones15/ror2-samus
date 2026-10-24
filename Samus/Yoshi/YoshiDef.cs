@@ -22,8 +22,8 @@ namespace Yoshi
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeYoshi2",nameToken="SSBM_YOSHI_SKILL_2",descriptionToken="SSBM_YOSHI_SKILL_DESC_2",
-                displayName="Egg Roll",description="RB: hold to curl into an egg and roll, steering with the move stick. The egg's armor absorbs hits and you take no health damage until it breaks; release RB to break out. It bowls enemies away and bounces off walls.",
-                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
+                displayName="Egg Roll",description="RB: hold to curl into an egg and roll for up to 10 seconds, steering with the move stick. The egg's armor absorbs hits and you take no health damage until it breaks; release RB to break out. It bowls enemies away and bounces off walls. 5 second cooldown.",
+                icon="EngiBodyPlaceSpiderMine",recharge=5f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeYoshi3",nameToken="SSBM_YOSHI_SKILL_3",descriptionToken="SSBM_YOSHI_SKILL_DESC_3",
                 displayName="Egg Throw",description="LB: hop and throw an egg that bursts on contact. The camera pitch sets the arc. No cooldown.",
