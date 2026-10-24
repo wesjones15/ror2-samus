@@ -60,18 +60,17 @@ namespace Samus
 
         protected override void BeforeStep(in MeleeNative.Pad pad)
         {
-            // Tell the sim which down-B this is: bomb or Morph Ball Roll.
-            MeleeNative.ssbm_sim_set_host_flags(sim, Skills.MorphRollSelected(body) ? Skills.HostMorphRoll : 0);
+            MeleeNative.ssbm_sim_set_host_flags(sim, Skills.BombSelected(body) ? Skills.HostMorphRoll : 0);
         }
 
         protected override void OnEventStarted(MeleeNative.Event e)
         {
-            if (e.move_id == 24 && Skills.MorphRollSelected(body)) morphArmor = MorphArmorFraction;
+            if (e.move_id == 24 && Skills.BombSelected(body)) morphArmor = MorphArmorFraction;
         }
 
         bool AbsorbMorphDamage(float healthFraction)
         {
-            if (!active || Recovering || state.move_id != 24 || !Skills.MorphRollSelected(body)) return false;
+            if (!active || Recovering || state.move_id != 24 || !Skills.BombSelected(body)) return false;
             // Once the armor is gone the roll is already breaking; nothing reaches health.
             if (morphArmor > 0f)
             {

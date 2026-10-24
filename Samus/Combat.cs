@@ -77,6 +77,9 @@ namespace Samus
                         })) {
                             seen.Add(hurt.healthComponent);                            owner.GetComponent<MeleeDriver>()?.HitSpark(hit.element,hit.damage,hurt.collider.ClosestPoint(point));
                             var driver=owner.GetComponent<SamusDriver>();
+                            // The Morph Ball's contact hitbox (0x8001) bounces Samus back off what it hits,
+                            // instead of ending the roll; an armor break is the only thing that knocks her out.
+                            if(hit.id==0x8001&&driver!=null&&driver.Simulation!=System.IntPtr.Zero)MeleeNative.ssbm_sim_bonk_roll(driver.Simulation);
                             uint effect=MeleeNative.ssbm_hit_feedback(driver?driver.Simulation:System.IntPtr.Zero,hit.element,(hit.flags>>8)&31,(hit.flags>>16)&7);
                             if(effect!=0)driver?.Effects?.Spawn(effect,MeleeParticles.At(hurt.collider.ClosestPoint(point),Quaternion.identity,scale));
                         }

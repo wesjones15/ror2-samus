@@ -244,6 +244,7 @@ static class Program
         RebirthRegressions(assets,in host);
         AimingRegressions(assets,in host);
         ScopePitchRegression(assets,in host);
+        MorphBallRegressions(assets,in host);
         DefenseRegressions(assets,in host);
         PikachuRegressions(assets,in host);
         ReplayRegressions(assets,in host);
@@ -509,6 +510,46 @@ static class Program
             } finally {MeleeNative.ssbm_view_free(view);MeleeNative.ssbm_sim_free(sim);}
         }
         Console.WriteLine("PASS: mobile Charge Shot pose/cannon, grounded travel and sprint storage at 30/60/144 FPS");
+    }
+    static void MorphBallRegressions(string assets,in MeleeNative.Host host)
+    {
+        foreach(int fps in new[]{30,60,144}) foreach(bool air in new[]{false,true}) {
+            var sim=MeleeNative.ssbm_sim_new(NativeLib.CString(assets),default);Check(sim!=IntPtr.Zero,MeleeNative.Error);
+            var view=MeleeNative.ssbm_view_new(NativeLib.CString(assets),MeleeNative.FighterSamus,0);Check(view!=IntPtr.Zero,MeleeNative.Error);
+            try {
+                var pad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(0,0,1),allowed=31};
+                MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                if(air)MeleeNative.ssbm_sim_anchor(sim,new MeleeNative.Vec3(0,1000,0),0);
+                MeleeNative.ssbm_sim_set_host_flags(sim,4);
+                int before=thunderSpawn;
+                pad.buttons=2048;pad.movement=new MeleeNative.Vec3(0,0,1);
+                for(int f=0;f<fps;f++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/fps);
+                Check(thunderSpawn==before+1,"Morph Ball must emit one startup bomb, ground or air");
+                Check(Math.Abs(MeleeNative.ssbm_sim_motion_frame(sim)-13f)<0.001f,"Morph Ball pose did not freeze");
+                Check(MeleeNative.ssbm_view_update(view,sim,1f/fps)==1,MeleeNative.Error);
+                var ptr=MeleeNative.ssbm_view_positions(view,out uint n);var first=new float[n*3];Marshal.Copy(ptr,first,0,first.Length);
+                pad.buttons|=1;MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/30);pad.buttons=2048;
+                for(int f=0;f<fps*11;f++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/fps);
+                MeleeNative.ssbm_sim_state(sim,out var held);Check(held.move_id==24,"held ball ended or landing cancelled it");
+                Check(Math.Abs(MeleeNative.ssbm_sim_motion_frame(sim)-13f)<0.001f,"jump/landing restarted the morph");
+                Check(thunderSpawn==before+1,"held ball dropped another bomb");
+                Check(MeleeNative.ssbm_view_update(view,sim,1f/fps)==1,MeleeNative.Error);
+                ptr=MeleeNative.ssbm_view_positions(view,out n);var second=new float[n*3];Marshal.Copy(ptr,second,0,second.Length);
+                bool rotated=false;for(int i=0;i<second.Length;i++)if(Math.Abs(first[i]-second[i])>0.1f)rotated=true;
+                Check(rotated,"held ball mesh never rotated");
+                if(air)Check(MeleeNative.ssbm_sim_break_roll(sim)==1,"ball armor break rejected");else pad.buttons=0;
+                MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/30);
+                MeleeNative.ssbm_sim_state(sim,out var ended);Check(ended.move_id==0,"release/armor break failed to restore normal form");
+                Check(MeleeNative.ssbm_view_update(view,sim,1f/fps)==1,MeleeNative.Error);
+                ptr=MeleeNative.ssbm_view_positions(view,out n);var normal=new float[n*3];Marshal.Copy(ptr,normal,0,normal.Length);
+                int ballVertices=0,normalVertices=0;for(int i=0;i<normal.Length;i+=3) {
+                    if(Math.Abs(second[i])+Math.Abs(second[i+1])+Math.Abs(second[i+2])>0.001f)ballVertices++;
+                    if(Math.Abs(normal[i])+Math.Abs(normal[i+1])+Math.Abs(normal[i+2])>0.001f)normalVertices++;
+                }
+                Check(normalVertices>ballVertices,"exit retained the folded alternate mesh");
+            } finally { MeleeNative.ssbm_view_free(view);MeleeNative.ssbm_sim_free(sim); }
+        }
+        Console.WriteLine("PASS: Morph Ball startup bomb, frozen rotating mesh, jumps/landings, release/armor break at 30/60/144 FPS");
     }
     static void AimingRegressions(string assets,in MeleeNative.Host host)
     {

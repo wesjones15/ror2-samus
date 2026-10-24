@@ -7,6 +7,14 @@ delete `BepInEx/plugins/MeleeSamus` before installing it (see CHANGELOG.md).
 
 ## Samus (development record)
 
+Samus LT now combines Bomb and Morph Ball Roll into **Morph Ball Bomb**: one bomb
+at startup (ground or air), then hold LT to roll in ball form with a spinning mesh
+and Yoshi's roll trail in the air as well. Release or depletion of the ball's
+25%-maximum-health armor restores normal form. Bomb damage is doubled and blast
+radius is 1.5x; recharge is 4 seconds with one stock. The separate roll alternate
+is removed; Shield remains available. Viewer and headless/native checks cover
+the change; not yet played in RoR2.
+
 Offline prototype for RoR2 DLC4 / Unity 2021.3.45f2, BepInEx 5. Uses libssbm for
 gameplay and disc presentation; ror2-common for the host. No R2API required.
 
