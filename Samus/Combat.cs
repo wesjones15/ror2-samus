@@ -144,7 +144,11 @@ namespace Samus
             if(!impacted) {
                 var next=origin+new Vector3(state.position.x,state.position.y,state.position.z)*(modelScale*speed);
                 var step=next-from;
-                if(AssistTarget(from,next,out var assistPoint))Impact(assistPoint);
+                if(particleKind==1) {
+                    if(step.sqrMagnitude>0&&MeleeSweep.Ranged(owner,from,state.radius*modelScale*HitboxScale,step.normalized,step.magnitude,out var chargeHit))Impact(chargeHit.point);
+                    else if(AssistTarget(from,next,out var assistPoint))Impact(assistPoint);
+                    else transform.position=next;
+                }
                 else if(step.sqrMagnitude>0&&Physics.SphereCast(from,state.radius*modelScale,step.normalized,out var hit,step.magnitude,WorldProbe.Mask|LayerIndex.entityPrecise.mask,QueryTriggerInteraction.Ignore)) {
                     var hurt=hit.collider.GetComponent<HurtBox>();
                     bool friendly=hurt&&hurt.healthComponent&&hurt.healthComponent.body&&hurt.healthComponent.body.teamComponent.teamIndex==owner.teamComponent.teamIndex;
@@ -173,16 +177,14 @@ namespace Samus
         float ImpactCoefficient=>particleKind==1&&fullCharge
             ?Mathf.Max(spawnCoefficient,FullChargeCoefficient)
             :state.damage/3f*DamageScale;
-        // A larger, enemy-only sweep for the Charge Shot: it detonates on a hurtbox the shot
-        // merely passes near, while walls and the floor still use the shot's own radius.
+        // Endpoint overlap fallback for close enemies already inside the sphere.
+        // The shared ranged sweep has first refusal, including nearer terrain.
         bool AssistTarget(Vector3 from,Vector3 next,out Vector3 point)
         {
             point=next;
             float scale=HitboxScale;
             if(particleKind!=1||scale<=1.01f)return false;
             float radius=state.radius*modelScale*scale;
-            var step=next-from;
-            if(step.sqrMagnitude>0&&Physics.SphereCast(from,radius,step.normalized,out var hit,step.magnitude,LayerIndex.entityPrecise.mask,QueryTriggerInteraction.Ignore)&&Enemy(hit.collider)){point=hit.point;return true;}
             int n=Physics.OverlapSphereNonAlloc(next,radius,assistHits,LayerIndex.entityPrecise.mask,QueryTriggerInteraction.Ignore);
             for(int i=0;i<n;i++)if(Enemy(assistHits[i])){point=assistHits[i].ClosestPoint(next);return true;}
             return false;

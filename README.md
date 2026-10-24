@@ -214,6 +214,10 @@ effect 5 / cue `0x3FF`) at his feet while charging on the ground. It replaces th
 empty-click puffs at the muzzle. Waves finish their 20-frame animation after
 release; emission timing and charge scaling are host-authored. Verified in the
 local asset viewer and build/boundary checks; not yet played in RoR2.
+The Scope's upper-body pose follows camera elevation up/down (up to 60 degrees
+of torso bend), including the held weapon and firing-hand attachment. Legs keep
+their existing stance/walk animation. This is a host adaptation, verified in
+the viewer and automated pose/boundary checks; RoR2 play remains unverified.
 
 Known limits: full TEV/animated texture and UV fidelity, other source transition blending,
 complete particle trail/mirror/alpha-compare semantics, and gameplay visual/audio

@@ -15,6 +15,41 @@ static class Program
     { result=new MeleeNative.Collision { position=new MeleeNative.Vec3(to.x,Math.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
     static void Event(IntPtr user,in MeleeNative.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++;if(e.kind==6)throws++;if(e.kind==2&&e.move_id==20){lastShot=e;shotCount++;} if(e.kind==2&&e.move_id==24){if(e.strength<1.5f){thunderSpawn++;lastThunder=e;}else thunderStrike++;} if(e.kind==2&&e.move_id==23&&e.strength>=2.5f)fireFoxImpacts++; }
     static void Check(bool ok,string what) { if(!ok) throw new Exception(what); }
+    static void ScopePitchRegression(string assets,in MeleeNative.Host host)
+    {
+        var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterLuigi);
+        if(sim==IntPtr.Zero) {Console.WriteLine("SKIP: Luigi assets absent for Scope pitch");return;}
+        var control=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterLuigi);
+        Check(control!=IntPtr.Zero,MeleeNative.Error);
+        try {
+            if(MeleeNative.ssbm_sim_scope(sim,1,0)!=1) {Console.WriteLine("SKIP: Scope assets absent");return;}
+            Check(MeleeNative.ssbm_sim_scope(control,1,0)==1,"control Scope unavailable");
+            var pad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(0,0,1),allowed=31,buttons=256};
+            var flat=pad;
+            for(int i=0;i<30;i++) {
+                MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                MeleeNative.ssbm_sim_step(control,in host,in flat,1.0/60);
+            }
+            MeleeNative.ssbm_sim_state(sim,out var state);Check(state.move_id==17,"Scope charge did not begin");
+            var hip=new float[16];var hand=new float[16];var next=new float[16];
+            foreach(float y in new[]{0.6f,-0.6f}) {
+                pad.aim=new MeleeNative.Vec3(0,y,0.8f);
+                MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                MeleeNative.ssbm_sim_step(control,in host,in flat,1.0/60);
+                Check(MeleeNative.ssbm_sim_common_bone(control,4,hip)==1,"Scope hip missing");
+                Check(MeleeNative.ssbm_sim_common_bone(control,49,hand)==1,"Scope hand missing");
+                Check(MeleeNative.ssbm_sim_common_bone(sim,4,next)==1,"Scope hip missing");
+                for(int i=0;i<16;i++) Check(Math.Abs(next[i]-hip[i])<0.001,"Scope aim moved hips/legs");
+                Check(MeleeNative.ssbm_sim_common_bone(sim,49,next)==1,"Scope hand missing");
+                Check(Math.Abs(next[13]-hand[13])>0.1,"Scope hand did not follow camera elevation");
+            }
+            pad.buttons=256|1;
+            for(int i=0;i<12;i++) MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+            MeleeNative.ssbm_sim_state(sim,out state);
+            Check(state.move_id==17&&state.grounded==0&&state.position.y>0,"Scope jump cancelled charge or failed to leave ground");
+            Console.WriteLine("PASS: Scope camera pitch moves the held-item bone while hips stay planted; jumping preserves charge");
+        } finally {MeleeNative.ssbm_sim_free(sim);MeleeNative.ssbm_sim_free(control);}
+    }
     // Multiplayer: another machine replays an owner's recorded calls on a shadow sim and ends each batch where
     // the owner is, in the same action, for every fighter; a corrupt log is refused.
     static void ReplayRegressions(string assets,in MeleeNative.Host host)
@@ -208,6 +243,7 @@ static class Program
         MobileChargeRegressions(assets,in host);
         RebirthRegressions(assets,in host);
         AimingRegressions(assets,in host);
+        ScopePitchRegression(assets,in host);
         DefenseRegressions(assets,in host);
         PikachuRegressions(assets,in host);
         ReplayRegressions(assets,in host);
