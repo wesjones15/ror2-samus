@@ -18,7 +18,7 @@ namespace Luigi
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             primaryAlt = new MeleeSkillInfo {
                 defName="MeleeLuigiScope",nameToken="SSBM_LUIGI_SCOPE",descriptionToken="SSBM_LUIGI_SCOPE_DESC",
-                displayName="Super Scope",description="RT, in place of the Fireball: tap for a burst of small shots; hold to charge, release to fire a bigger beam (up to ten levels, the biggest burning), along your crosshair. 48 shots of ammo; a charged shot costs more, and it refills slowly when you stop. Needs the items archive from your disc (extracted with the rest).",
+                displayName="Super Scope",description="Gives Luigi the Super Scope: tap to fire small shots, or hold to charge and release a bigger shot for more damage.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeLuigiCyclone",nameToken="SSBM_LUIGI_CYCLONE",descriptionToken="SSBM_LUIGI_CYCLONE_DESC",
@@ -36,13 +36,18 @@ namespace Luigi
                 defName="MeleeLuigi3",nameToken="SSBM_LUIGI_SKILL_3",descriptionToken="SSBM_LUIGI_SKILL_DESC_3",
                 displayName="Super Jump Punch",description="LB: rise with a punch. Right on top of Luigi it is a 25% fire hit (20% in the air); anything farther gets a weak coin hit that pays gold. It ends in a helpless fall with long landing lag.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
+            specialAlt = new MeleeSkillInfo {
+                defName="MeleeLuigiScopeSpecial",nameToken="SSBM_LUIGI_SCOPE",descriptionToken="SSBM_LUIGI_SCOPE_SPECIAL_DESC",
+                displayName="Super Scope",description="Gives Luigi the Super Scope: tap to fire small shots, or hold to charge and release a bigger shot for more damage.",
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeLuigi1",nameToken="SSBM_LUIGI_SKILL_1",descriptionToken="SSBM_LUIGI_SKILL_DESC_1",
                 displayName="A Attack",description="B: neutral A while stationary. LS + B selects camera-directed attacks; a flick charges a smash.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
-            // The Super Scope (native move 17) is the primary skill's.
-            slotForMove=m => m == 17 ? 0 : MeleeSkillSet.DefaultSlot(m),
+            // The Super Scope (native move 17) may be the primary slot's alternate or the
+            // special (LB) slot's alternate; the slot the loadout holds decides the charge.
+            slotForMove=(body,m) => m == 17 ? (LuigiSkills.SpecialAltSelected(body) ? 3 : 0) : MeleeSkillSet.DefaultSlot(m),
         };
 
         internal static readonly SkillSlot[] Slots = MeleeSkillSet.Slots;
@@ -51,8 +56,10 @@ namespace Luigi
         internal static void Set(MeleeSkillSet built) => set = built;
         internal static GenericSkill Get(CharacterBody body, int slot) => set.Get(body, slot);
         internal static bool ShieldSelected(CharacterBody body) => set.ShieldSelected(body);
+        /// The loadout holds the Super Scope in the special (LB) slot instead of the Super Jump Punch.
+        internal static bool SpecialAltSelected(CharacterBody body) => set != null && set.SpecialAltSelected(body);
         internal static NativeSkillDef Expected(CharacterBody body, int slot) => set.Expected(body, slot);
-        internal static int Slot(uint move) => set.Slot(move);
+        internal static int Slot(CharacterBody body, uint move) => set.Slot(body, move);
         internal static uint Allowed(CharacterBody body) => set.Allowed(body);
     }
 

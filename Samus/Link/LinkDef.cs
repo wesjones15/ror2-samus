@@ -46,7 +46,7 @@ namespace Link
         internal static GenericSkill Get(CharacterBody body, int slot) => set.Get(body, slot);
         internal static bool ShieldSelected(CharacterBody body) => set.ShieldSelected(body);
         internal static NativeSkillDef Expected(CharacterBody body, int slot) => set.Expected(body, slot);
-        internal static int Slot(uint move) => set.Slot(move);
+        internal static int Slot(CharacterBody body, uint move) => set.Slot(body, move);
         internal static uint Allowed(CharacterBody body) => set.Allowed(body);
     }
 

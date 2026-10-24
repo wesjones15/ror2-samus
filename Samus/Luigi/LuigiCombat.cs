@@ -19,7 +19,12 @@ namespace Luigi
             if (e.move_id == 20 && body.inputBank)
                 aim = MeleeAim.ProjectileDirection(body, origin, MeleeAim.CameraRay(body, body.inputBank));
             if (e.move_id == 20)
-                MeleeBouncingShot.Spawn(body, origin, aim, new MeleeBouncingShot.Config
+            {
+                // The fireball leaves the hand, not the feet. Spawned at the feet it starts inside
+                // the ground while Luigi is standing on it, and its first sweep ends it there, so
+                // only the airborne shots were ever seen.
+                var muzzle = origin + Vector3.up * 0.9f + aim * 0.4f;
+                MeleeBouncingShot.Spawn(body, muzzle, aim, new MeleeBouncingShot.Config
                 {
                     AssetsDir = Samus.Plugin.AssetsDir,
                     Fighter = MeleeNative.FighterLuigi,
@@ -33,6 +38,7 @@ namespace Luigi
                     DespawnPuff = 1001,  // fireball despawn puff
                     BounceSound = 0,
                 });
+            }
         }
 
         /// The Super Scope's shot: a beam of the charge level in `e.strength`, from the right hand along the crosshair.
@@ -64,7 +70,11 @@ namespace Luigi
         // and the Cyclone's last hit send an enemy flying, while the Cyclone's earlier hits keep it
         // where it is being pulled.
         static float ForceScale(uint moveId, float damage, uint element) =>
-            moveId == 21 ? 4f : moveId == 23 ? (element == 4 ? 1f : 6f) : moveId == 24 ? (damage >= 11f ? 5f : 0.3f) : 1f;
+            moveId == 21 ? 4f : moveId == 23 ? (element == 4 ? 1f : 6f) : moveId == 24 ? (damage >= 11f ? 9f : 2f) : 1f;
+
+        /// Host adaptation: the Cyclone's disc hits are contact damage; here each one also has to
+        /// read as a real hit, so they land harder.
+        static float DamageScale(uint moveId) => moveId == 24 ? 1.6f : 1f;
 
         // The Cyclone pulls everything near it toward Luigi while it spins (the source's hits keep
         // enemies close; here they are drawn in), bosses included.
@@ -146,7 +156,7 @@ namespace Luigi
                         var direction=forward.normalized*Mathf.Cos(angle*Mathf.Deg2Rad)+Vector3.up*Mathf.Sin(angle*Mathf.Deg2Rad);
                         var type=hit.element==1?DamageType.IgniteOnHit:DamageType.Generic;
                         if(NativeHit.Deal(owner,hurt.healthComponent,new NativeHitSpec {
-                            coefficient=hit.damage/3f,position=hurt.collider.ClosestPoint(point),force=direction*(hit.base_knockback+hit.growth)*5f*ForceScale(moveId,hit.damage,hit.element),
+                            coefficient=hit.damage/3f*DamageScale(moveId),position=hurt.collider.ClosestPoint(point),force=direction*(hit.base_knockback+hit.growth)*5f*ForceScale(moveId,hit.damage,hit.element),
                             procCoefficient=1f,damageType=type,color=DamageColorIndex.Default
                         })) {
                             seen.Add(hurt.healthComponent);                            owner.GetComponent<MeleeDriver>()?.HitSpark(hit.element,hit.damage,hurt.collider.ClosestPoint(point));

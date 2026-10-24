@@ -11,7 +11,9 @@ namespace Luigi
     [DefaultExecutionOrder(-200)]
     public sealed class LuigiDriver : MeleeDriver
     {
-        static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Samus.Plugin.AssetsDir,MeleeNative.FighterLuigi,model);
+        // Effects are shared assets, not part of a body: the missile's ignition flame is Fox's
+        // Fire Fox cue (model 2004) and lives in his bank, so resolve every cue across all banks.
+        static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.EffectAny(Samus.Plugin.AssetsDir,MeleeNative.FighterLuigi,model);
         MeleeFighterView view, entryPlatform, shieldView, scopeView; uint shieldModel;
         // The Super Scope: whether it is in hand, and the right-hand bone it is drawn on.
         bool scopeOn, scopeWarned;
@@ -161,7 +163,7 @@ namespace Luigi
         {
             if (!MeleeNative.HasScope || !IsOwner) return;
             var set = SkillSet;
-            bool want = set != null && set.PrimaryAltSelected(body);
+            bool want = set != null && (set.PrimaryAltSelected(body) || set.SpecialAltSelected(body));
             bool available = MeleeScopeBeam.Available(AssetsDir);
             scopeOn = MeleeNative.ssbm_sim_scope(sim, want && available ? 1u : 0u, 0f) == 1;
             if (want && !scopeOn && !scopeWarned)
@@ -174,9 +176,8 @@ namespace Luigi
         protected override void DrawHud()
         {
             if (!scopeOn || Arriving || MeleeNative.ssbm_sim_scope_state(sim, out var info) != 1) return;
-            string charge = info.stage == 1 ? "   charge " + (info.level * 100 / 9) + "%" : "";
-            // Host adaptation: the runtime scope has no ammo cap, so show an infinite magazine.
-            GUI.Box(new Rect(Screen.width / 2f - 130, Screen.height - 130, 260, 30), "Super Scope  ∞" + charge);
+            // The charge is announced by the disc's own cue; the box only shows the magazine.
+            GUI.Box(new Rect(Screen.width / 2f - 130, Screen.height - 130, 260, 30), "Super Scope  " + info.ammo + "/" + info.capacity);
         }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
@@ -193,6 +194,9 @@ namespace Luigi
         protected override void BeforeStep(in MeleeNative.Pad pad)
         {
             UpdateScope();
+            // Tell the sim which slot holds the Super Scope, so LB drives it instead of the
+            // Super Jump Punch when the loadout swapped them (libssbm::luigi::HOST_SCOPE_ON_SPECIAL).
+            MeleeNative.ssbm_sim_set_host_flags(sim, LuigiSkills.SpecialAltSelected(body) ? 1u : 0u);
             if (!pulling) return;
             if (state.move_id != 24) { pulling = false; return; }
             LuigiCombat.Pull(body);

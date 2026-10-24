@@ -24,7 +24,10 @@ namespace Samus
                 case 20: Shot.Spawn(body,origin,aim,1,(uint)Mathf.Clamp(Mathf.RoundToInt(e.strength*7)+1,1,8),e.strength,scale);break;
                 case 21: Shot.Spawn(body,origin,aim,2,0,0,scale);break;
                 case 22: Shot.Spawn(body,origin,aim,2,1,0,scale);break;
-                case 24: Shot.Spawn(body,origin,Vector3.zero,0,0,0,scale);break;
+                case 24:
+                    // The combined move emits its one bomb at entry; Shield has none.
+                    if(Skills.BombSelected(body)) Shot.Spawn(body,origin,Vector3.zero,0,0,0,scale);
+                    break;
             }
         }
         internal sealed class HitTracker
@@ -99,7 +102,8 @@ namespace Samus
     }
     internal sealed class Shot:MonoBehaviour
     {
-        const float FullChargeCoefficient=20f; // 2000% at full charge
+        const float FullChargeCoefficient=30f; // 3000% at full charge (host adaptation: the charge time must pay off)
+        const float ChargeShotMinCoefficient=8f; // 800% uncharged floor: much higher than the Scope's new minimum
         CharacterBody owner;Vector3 origin,velocity;float modelScale,speed=1f,age;bool impacted;bool spawnedInMapZone;float spawnCoefficient;readonly Collider[] assistHits=new Collider[16];
         System.IntPtr projectile;MeleeNative.ProjectileState state;
         readonly HashSet<HealthComponent> explosionVictims=new HashSet<HealthComponent>();
@@ -161,7 +165,7 @@ namespace Samus
                 } else transform.position=next;
             }
             if((state.flags&2)!=0){Destroy(gameObject);return;}
-            if(impacted&&particleKind==0&&state.damage>0)Combat.Area(owner,transform.position,state.radius*modelScale,state.damage/3f,1f,Vector3.up,explosionVictims,state.element);
+            if(impacted&&particleKind==0&&state.damage>0)Combat.Area(owner,transform.position,BlastRadius,ImpactCoefficient,1f,Vector3.up,explosionVictims,state.element);
             var particleTransform=MeleeParticles.At(transform.position,velocity.sqrMagnitude>0?Quaternion.LookRotation(velocity):Quaternion.identity,modelScale);
             particles?.Attach(particleKey,particleTransform);
             uint frame=(uint)state.frame;if(!impacted)SourceEffects(particleFrame,frame,particleTransform);particleFrame=frame;
@@ -171,11 +175,13 @@ namespace Samus
         const float MaxSeconds=20f,BelowStage=30f;
         bool Culled(Vector3 at)=>age>MaxSeconds||(!spawnedInMapZone&&WorldProbe.InMapZone(at))||(StageFloor.TryLowest(out float floor)&&at.y<floor-BelowStage);
         float HitboxScale=>particleKind==1?Plugin.ChargeShotHitboxScale.Value:1f;
-        float DamageScale=>particleKind==2?Plugin.MissileDamageScale.Value:1f;
+        // RoR2 tuning for the combined Morph Ball Bomb (source bomb data unchanged).
+        float BlastRadius=>state.radius*modelScale*(particleKind==0?1.5f:HitboxScale);
+        float DamageScale=>particleKind==0?2f:particleKind==2?Plugin.MissileDamageScale.Value:1f;
         // A fully charged shot is at least 2000% (coefficient 20). Use the coefficient
         // captured at spawn: the projectile's damage field changes on impact.
-        float ImpactCoefficient=>particleKind==1&&fullCharge
-            ?Mathf.Max(spawnCoefficient,FullChargeCoefficient)
+        float ImpactCoefficient=>particleKind==1
+            ?(fullCharge?Mathf.Max(spawnCoefficient,FullChargeCoefficient):Mathf.Max(state.damage/3f,ChargeShotMinCoefficient))
             :state.damage/3f*DamageScale;
         // Endpoint overlap fallback for close enemies already inside the sphere.
         // The shared ranged sweep has first refusal, including nearer terrain.
@@ -206,7 +212,7 @@ namespace Samus
             var force=velocity.sqrMagnitude>0?velocity.normalized:Vector3.up;
             uint cue=MeleeNative.ssbm_projectile_impact(projectile,driver?driver.Simulation:System.IntPtr.Zero);ReadState();
             if(cue!=0)driver?.Effects?.Spawn(cue,MeleeParticles.At(at,Quaternion.identity,modelScale));
-            Combat.Area(owner,at,state.radius*modelScale*HitboxScale,ImpactCoefficient,1f,force,explosionVictims,state.element);
+            Combat.Area(owner,at,BlastRadius,ImpactCoefficient,1f,force,explosionVictims,state.element);
             if((state.flags&2)==0){view.Dispose();view=new MeleeFighterView(Plugin.AssetsDir,MeleeNative.FighterSamus,particleKind,state.state);}
         }
         void LateUpdate(){if(view==null)return;view.ObjectPose(state.animation_frame);var rotation=velocity.sqrMagnitude>0.0001f?Quaternion.LookRotation(velocity):Quaternion.identity;view.FaceCamera(transform.position,rotation,modelScale);view.Models.Update(modelScale,d=>(transform.position,rotation));}
