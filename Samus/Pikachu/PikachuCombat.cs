@@ -120,6 +120,7 @@ namespace Pikachu
                 {
                     bolt.segments[i] = new MeleeFighterView(Samus.Plugin.AssetsDir, MeleeNative.FighterPikachu, 0, 0);
                     bolt.segments[i].Tint = new Color(1f, 0.92f, 0.3f, 1f);
+                    bolt.segments[i].ForceAdditive = true;
                 }
                 // The leading segment's hitbox (itpikachuthunder article 0, state 0).
                 var probe = MeleeNative.ssbm_projectile_new(NativeLib.CString(Samus.Plugin.AssetsDir), MeleeNative.FighterPikachu, 0, 0, 0, new MeleeNative.Vec3(0, 0, 1));
