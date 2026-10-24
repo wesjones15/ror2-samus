@@ -65,6 +65,7 @@ load logs an error; an initialized body that fails returns to Commando behavior.
 | Up-B / Screw Attack | LB | Special |
 | Fifth skill: down-B / Bomb | LT | Secondary (right mouse by default) |
 | Fifth skill alternate: Shield / Air Feint | Select in loadout; LT shields on ground, evades in air | Secondary |
+| Fifth skill alternate (Samus): Morph Ball Roll | Select in loadout; LT rolls the Morph Ball, bouncing off enemies and walls with 25% health armor | Secondary |
 | Jump | A; every jump has Commando's standard height | Jump |
 | Sprint / interrupt Charge Shot | LS click | Sprint |
 | Grab / aerial Z-air | X, except visible interact prompts | Interact, away from prompts |
@@ -83,7 +84,10 @@ sprinting. `Controls.HoldCharge` optionally changes firing to hold/release. Side
 uses missiles; a quick directional flick selects a super missile. Up special is
 Screw Attack; LT's default down-B drops a bomb. Select Shield / Air Feint in the
 fifth loadout row to replace LT's bomb with ground shielding and one air evade per
-airtime. Shield drains when held/hit, regenerates when released and stuns on
+airtime. Its other alternate, Morph Ball Roll, keeps the down-B morph animation but
+skips the bomb: hold LT to bowl the Morph Ball along, bouncing off enemies and walls.
+It deals light damage without knockback and carries 25% of maximum health as armor;
+release LT to break out. Shield drains when held/hit, regenerates when released and stuns on
 depletion. Its source models, player palette, scale, sounds and dodge hurt-state
 window are native-driven. An existing vanilla Interact prompt owns X until release.
 Flick direction + B, hold, then release for a smash. LB always remains up-B.

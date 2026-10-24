@@ -10,8 +10,11 @@ namespace Samus
     // supplies Samus presentation (view, audio, grapple, particles/effects,
     // shield, entry platform, charge HUD) and her skill/control layout.
     [DefaultExecutionOrder(-200)]
-    public sealed class SamusDriver : MeleeDriver
+    public sealed class SamusDriver : MeleeDriver, IMeleeBypassDefense
     {
+        // Morph Ball Roll armor: less than Yoshi's egg roll, and it never lets health damage through.
+        const float MorphArmorFraction=0.25f;
+        float morphArmor;
         static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Plugin.AssetsDir,MeleeNative.FighterSamus,model);
         static IMeleeObjectView ChargeView()=>new MeleeFighterView(Plugin.AssetsDir,MeleeNative.FighterSamus,1,0);
         MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
@@ -54,6 +57,34 @@ namespace Samus
         protected override bool GenericGrab => false;
         protected override bool IsRangedMove(uint moveId) => moveId >= 20 && moveId <= 22;
         protected override bool IsChargeMove(uint moveId) => moveId == 20;
+
+        protected override void BeforeStep(in MeleeNative.Pad pad)
+        {
+            // Tell the sim which down-B this is: bomb or Morph Ball Roll.
+            MeleeNative.ssbm_sim_set_host_flags(sim, Skills.MorphRollSelected(body) ? Skills.HostMorphRoll : 0);
+        }
+
+        protected override void OnEventStarted(MeleeNative.Event e)
+        {
+            if (e.move_id == 24 && Skills.MorphRollSelected(body)) morphArmor = MorphArmorFraction;
+        }
+
+        bool AbsorbMorphDamage(float healthFraction)
+        {
+            if (!active || Recovering || state.move_id != 24 || !Skills.MorphRollSelected(body)) return false;
+            // Once the armor is gone the roll is already breaking; nothing reaches health.
+            if (morphArmor > 0f)
+            {
+                morphArmor = Mathf.Max(0f, morphArmor - Mathf.Clamp01(healthFraction));
+                if (morphArmor <= 0f) MeleeNative.ssbm_sim_break_roll(sim);
+            }
+            return true;
+        }
+
+        public override bool BlockMeleeDamage(float healthFraction) =>
+            AbsorbMorphDamage(healthFraction) || base.BlockMeleeDamage(healthFraction);
+
+        public bool BlockBypassDamage(float healthFraction) => AbsorbMorphDamage(healthFraction);
 
         protected override void UpdateAudio() => audio?.Update();
         protected override void CreatePresentation()

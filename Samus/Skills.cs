@@ -24,6 +24,10 @@ namespace Samus
                 defName="MeleeShield",nameToken="SSBM_SHIELD",descriptionToken="SSBM_SHIELD_DESC",
                 displayName="Shield / Air Feint",description="LT: hold a shield on the ground or evade once in the air. Shield drains when held or hit; it regenerates while released and breaks when depleted.",
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
+            secondaryAlt2 = new MeleeSkillInfo {
+                defName="MeleeSamusMorphRoll",nameToken="SSBM_SAMUS_MORPHROLL",descriptionToken="SSBM_SAMUS_MORPHROLL_DESC",
+                displayName="Morph Ball Roll",description="LT: the down-B morph, but no bomb. Hold LT to roll in the Morph Ball, bouncing off enemies and walls; it deals light damage without knockback and has 25% health armor. Release LT to stop. Recharges in 5 s.",
+                icon="EngiBodyPlaceSpiderMine",recharge=5f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeSamus2",nameToken="SSBM_SKILL_2",descriptionToken="SSBM_SKILL_DESC_2",
                 displayName="Missile",description="RB: side-B fires a homing missile; a quick direction fires a super missile.",
@@ -45,6 +49,10 @@ namespace Samus
         internal static void Set(MeleeSkillSet built)=>set=built;
         internal static GenericSkill Get(CharacterBody body,int slot)=>set.Get(body,slot);
         internal static bool ShieldSelected(CharacterBody body)=>set.ShieldSelected(body);
+        /// The Morph Ball Roll alternate is in the secondary slot.
+        internal static bool MorphRollSelected(CharacterBody body)=>set.SecondaryAlt2Selected(body);
+        /// Sim host-flag bit: the current down-B is the Morph Ball Roll, not the bomb.
+        internal const uint HostMorphRoll=4;
         internal static NativeSkillDef Expected(CharacterBody body,int slot)=>set.Expected(body,slot);
         internal static int Slot(uint move)=>set.Slot(move);
         internal static uint Allowed(CharacterBody body)=>set.Allowed(body);
