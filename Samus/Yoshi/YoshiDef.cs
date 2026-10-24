@@ -14,7 +14,7 @@ namespace Yoshi
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeYoshi0",nameToken="SSBM_YOSHI_SKILL_0",descriptionToken="SSBM_YOSHI_SKILL_DESC_0",
-                displayName="Egg Lay",description="RT: lash the tongue 20 m along the camera aim and swallow the first enemy it touches, bosses too. He lays its egg behind you at once. It breaks out after a few more seconds (longest for bosses). 3 second cooldown.",
+                displayName="Egg Lay",description="RT: lash the tongue 20 m at the camera crosshair and swallow the first enemy it touches, bosses too. It stops at terrain. He lays its egg behind you at once. It breaks out after a few more seconds (longest for bosses). 3 second cooldown, only after the tongue catches an enemy.",
                 icon="CommandoBodyFirePistol",recharge=3f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeYoshiBomb",nameToken="SSBM_YOSHI_BOMB",descriptionToken="SSBM_YOSHI_BOMB_DESC",

@@ -27,9 +27,30 @@ namespace Yoshi
             var aim = new Vector3(e.direction.x, e.direction.y, e.direction.z).normalized;
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             var camera = body.inputBank ? MeleeAim.CameraRay(body, body.inputBank).direction : aim;
-            if (e.move_id == 20 && e.strength < 1.5f) Tongue(body, camera);
+            if (e.move_id == 20 && e.strength < 1.5f)
+            {
+                // Use the direction the lash was drawn along, so the frame-20 grab is the
+                // same line the player saw (and re-aimed, if the camera moved meanwhile).
+                var driver = body.GetComponent<YoshiDriver>();
+                var tongueAim = driver ? driver.TongueAim : Vector3.zero;
+                if (tongueAim.sqrMagnitude < 0.0001f) tongueAim = AimAtCrosshair(body, Mouth(body));
+                Tongue(body, tongueAim, e.move_id);
+            }
             else if (e.move_id == 23) ThrowEgg(body, camera, scale);
             else if (e.move_id == 24) Bomb(body, origin, scale);
+        }
+
+        /// Aim at what the camera crosshair is on, converging from the mouth to that point.
+        /// The shared fix for the Charge Shot and the Scope shot: the camera's parallel
+        /// forward ray starts above the mouth, so following it drops a low or close target
+        /// below the lash. `MeleeAim.ProjectileDirection` returns the mouth-to-crosshair
+        /// direction and falls back to camera forward for empty sky.
+        internal static Vector3 AimAtCrosshair(CharacterBody body, Vector3 mouth)
+        {
+            if (!body) return Vector3.forward;
+            if (!body.inputBank) return body.transform.forward;
+            var aim = MeleeAim.ProjectileDirection(body, mouth, MeleeAim.CameraRay(body, body.inputBank));
+            return aim.sqrMagnitude > 0.0001f ? aim.normalized : body.transform.forward;
         }
 
         /// Where the tongue leaves the body. The animated mouth bone (Yoshi joint 42)
@@ -48,35 +69,54 @@ namespace Yoshi
 
         // Egg Lay: the tongue swallows the first enemy in its reach. There is no boss
         // immunity: Mithrix is laid in an egg like anything else. A capsule overlap
-        // (rather than a sphere cast) sweeps the whole tongue and cannot be stopped
-        // early by the ground under a downward camera aim; walls still block it.
-        static void Tongue(CharacterBody body, Vector3 aim)
+        // (rather than a fat sphere cast) sweeps the whole tongue without the ground
+        // stopping it early; the lash's own extent is separately clamped to the first
+        // terrain the narrow centre probe meets, so it stops at a wall or floor instead
+        // of passing through it.
+        static void Tongue(CharacterBody body, Vector3 aim, uint moveId)
         {
+            var mouth = Mouth(body);
             if (aim.sqrMagnitude < 0.0001f) aim = body.transform.forward;
             aim = aim.normalized;
-            var mouth = Mouth(body);
-            var target = FindTarget(body, mouth, aim, out float distance);
+            float limit = TerrainReach(body, mouth, aim);
+            var target = FindTarget(body, mouth, aim, limit, out float distance);
             if (target == null) return;
             // The tongue was drawn to this distance at the start of the move; pin it to the
             // target in case the victim moved into or out of the original line.
             YoshiTongue.SetReach(body, distance + 0.35f);
-            if (YoshiFull.Begin(body, target)) body.GetComponent<YoshiDriver>()?.QueueConnect();
+            if (!YoshiFull.Begin(body, target)) return;
+            body.GetComponent<YoshiDriver>()?.QueueConnect();
+            // Egg Lay pays its cooldown only for a catch; the start deferred the spend.
+            NativeSkills.SpendDeferred(YoshiSkills.Built, body, moveId);
         }
 
-        /// Where the drawn tongue should stop: the nearest catchable enemy along the aim, or
-        /// the full reach when the lash is thrown into empty space.
-        internal static float ScanReach(CharacterBody body, Vector3 aim)
+        /// How far the lash can reach before it meets terrain. The narrow centre probe is
+        /// the shared large-shot rule (the lash's own thickness must not stop it on a floor
+        /// it passes over); the contact is where the drawn tongue and the grab both stop.
+        internal static float TerrainReach(CharacterBody body, Vector3 mouth, Vector3 aim)
+        {
+            if (aim.sqrMagnitude < 0.0001f) return 0f;
+            if (MeleeSweep.Terrain(body, mouth, aim.normalized, TongueReach, out var hit))
+                return Mathf.Clamp(hit.distance, 0f, TongueReach);
+            return TongueReach;
+        }
+
+        /// Where the drawn tongue should stop: the nearest catchable enemy along the aim,
+        /// the terrain in front of it, or the full reach in empty space.
+        internal static float ScanReach(CharacterBody body, Vector3 mouth, Vector3 aim)
         {
             if (aim.sqrMagnitude < 0.0001f) aim = body.transform.forward;
-            var target = FindTarget(body, Mouth(body), aim.normalized, out float distance);
-            return target ? Mathf.Min(distance + 0.35f, TongueReach) : TongueReach;
+            aim = aim.normalized;
+            float limit = TerrainReach(body, mouth, aim);
+            var target = FindTarget(body, mouth, aim, limit, out float distance);
+            return target ? Mathf.Min(distance + 0.35f, limit) : limit;
         }
 
-        static CharacterBody FindTarget(CharacterBody body, Vector3 mouth, Vector3 aim, out float distance)
+        static CharacterBody FindTarget(CharacterBody body, Vector3 mouth, Vector3 aim, float limit, out float distance)
         {
-            distance = TongueReach;
+            distance = limit;
             var hits = new Collider[128];
-            int n = Physics.OverlapCapsuleNonAlloc(mouth, mouth + aim * TongueReach, TongueRadius, hits,
+            int n = Physics.OverlapCapsuleNonAlloc(mouth, mouth + aim * limit, TongueRadius, hits,
                 LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Collide);
             CharacterBody best = null;
             float bestDistance = float.MaxValue;
@@ -90,7 +130,7 @@ namespace Yoshi
                 if (!hurt.healthComponent.alive || YoshiEgg.IsTrapped(target) || YoshiFull.IsHolding(target)) continue;
                 var point = hurt.collider ? hurt.collider.ClosestPoint(mouth) : hurt.transform.position;
                 float d = Vector3.Distance(mouth, point);
-                if (d > TongueReach || d >= bestDistance) continue;
+                if (d > limit || d >= bestDistance) continue;
                 // Do not eat through a wall. Terrain only: the victim's own hurtboxes are
                 // on the entity layer and are excluded from this mask.
                 if (Physics.Linecast(mouth, point, out var wall, WorldProbe.Mask, QueryTriggerInteraction.Ignore)
@@ -224,8 +264,11 @@ namespace Yoshi
             foreach (var tongue in active)
             {
                 if (!tongue || tongue.owner != owner) continue;
+                var mouth = YoshiCombat.Mouth(owner);
                 float amount = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(tongue.Amount()));
-                tip = YoshiCombat.Mouth(owner) + tongue.aim * (tongue.reach * amount);
+                float length = Mathf.Min(tongue.reach,
+                    YoshiCombat.TerrainReach(owner, mouth, tongue.aim)) * amount;
+                tip = mouth + tongue.aim * length;
                 return true;
             }
             tip = default;
@@ -246,8 +289,11 @@ namespace Yoshi
             age += Time.deltaTime;
             if (age >= TotalSeconds) { Destroy(gameObject); return; }
             float amount = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Amount()));
-            float length = reach * amount;
             var origin = YoshiCombat.Mouth(owner);
+            // Stop the lash at terrain even as the mouth lowers through the clip: what is
+            // drawn never goes under the floor or through a wall.
+            float length = Mathf.Min(reach,
+                YoshiCombat.TerrainReach(owner, origin, aim)) * amount;
             // A little gravity sag keeps it from reading as a laser; cap it so a 20 m
             // lash does not bow metres downward.
             float sag = Mathf.Min(0.04f * length, 0.25f);

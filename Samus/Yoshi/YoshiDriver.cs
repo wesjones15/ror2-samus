@@ -50,6 +50,14 @@ namespace Yoshi
         }
         protected override bool IsChargeMove(uint moveId) => false;
 
+        /// Egg Lay's charge is spent when the tongue actually swallows something, not when
+        /// the lash is thrown: a miss leaves the stock and cooldown untouched.
+        protected override bool SpendsOnStart(uint moveId) => moveId != 20;
+
+        /// The lash's direction, fixed when Egg Lay starts so the drawn tongue and the
+        /// frame-20 grab use the same line even if the camera moves meanwhile.
+        internal Vector3 TongueAim { get; private set; }
+
         /// While full, Egg Lay is masked (the egg is laid automatically) and sprint is off.
         protected override uint FilterButtons(uint buttons)
         {
@@ -113,14 +121,15 @@ namespace Yoshi
 
         // Egg Lay draws its tongue from the first frame of the clip, so it is already out
         // when the sim's frame-20 grab event runs. It stretches to the first enemy in the
-        // camera line (or the full 20 m when the lash is thrown into empty space).
+        // camera line, or stops at terrain, or reaches the full 20 m into empty space.
         protected override void OnEventStarted(MeleeNative.Event e)
         {
             // 21 is the egg roll: a fresh armor pool for this roll.
             if (e.move_id == 21) { rollArmor = RollArmorFraction; return; }
             if (e.move_id != 20) return;
-            var aim = body.inputBank ? MeleeAim.CameraRay(body, body.inputBank).direction : body.transform.forward;
-            YoshiTongue.Show(body, aim, YoshiCombat.ScanReach(body, aim));
+            var mouth = Mouth();
+            TongueAim = YoshiCombat.AimAtCrosshair(body, mouth);
+            YoshiTongue.Show(body, TongueAim, YoshiCombat.ScanReach(body, mouth, TongueAim));
         }
 
         protected override void UpdateAudio() => audio?.Update();

@@ -219,6 +219,16 @@ of torso bend), including the held weapon and firing-hand attachment. Legs keep
 their existing stance/walk animation. This is a host adaptation, verified in
 the viewer and automated pose/boundary checks; RoR2 play remains unverified.
 
+Yoshi's Egg Lay tongue converges on the camera crosshair instead of following the
+camera's parallel forward ray (the shared `MeleeAim.ProjectileDirection` fix used by
+Samus's Charge Shot and Luigi's Scope), so a mouth below the camera no longer fires
+under a close target. The lash stops at the first terrain it meets (a narrow centre
+probe, so its own thickness does not eat it on a floor it passes over), and the drawn
+tongue is clamped to the same contact. Egg Lay's 3 s cooldown now starts only when the
+tongue swallows an enemy: a miss or a lash stopped by terrain costs no stock or
+cooldown. Shared camera/sweep and damage-permission checks pass and the plugin builds;
+not yet played in RoR2.
+
 Known limits: full TEV/animated texture and UV fidelity, other source transition blending,
 complete particle trail/mirror/alpha-compare semantics, and gameplay visual/audio
 validation remain unfinished. Attack speed, all item-specific effects,
