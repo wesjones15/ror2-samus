@@ -554,7 +554,8 @@ namespace Yoshi
             if (over) { BreakOut(); return; }
             if (victimModel) GameSettings.HideRenderers(victimModel, true);
             float dt = Time.fixedDeltaTime;
-            velocity.y += Physics.gravity.y * dt;
+            // Always pull the egg down, even if the host's Physics.gravity is flipped.
+            velocity.y -= Mathf.Abs(Physics.gravity.y) * dt;
             velocity.y = Mathf.Max(velocity.y, -25f);
             var from = transform.position;
             var next = from + velocity * dt;
