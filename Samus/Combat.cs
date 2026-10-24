@@ -99,7 +99,7 @@ namespace Samus
     }
     internal sealed class Shot:MonoBehaviour
     {
-        CharacterBody owner;Vector3 origin,velocity;float modelScale,speed=1f,age;bool impacted;readonly Collider[] assistHits=new Collider[16];
+        CharacterBody owner;Vector3 origin,velocity;float modelScale,speed=1f,age;bool impacted;bool spawnedInMapZone;readonly Collider[] assistHits=new Collider[16];
         System.IntPtr projectile;MeleeNative.ProjectileState state;
         readonly HashSet<HealthComponent> explosionVictims=new HashSet<HealthComponent>();
         HealthComponent target;SamusDriver driver;MeleeFighterView view;MeleeParticles particles;ulong particleKey;uint particleKind,particleState,particleFrame;bool fullCharge;readonly uint[] effectCues=new uint[32];
@@ -107,6 +107,9 @@ namespace Samus
         {
             var go=new GameObject("Samus disc article");go.transform.position=point;
             var shot=go.AddComponent<Shot>();shot.owner=owner;shot.origin=point;shot.modelScale=scale;shot.fullCharge=charge>=1;
+            // A map zone that already contains the muzzle must not cull the shot on its
+            // first step; only a shot that flies into one away from its launch point is.
+            shot.spawnedInMapZone=WorldProbe.InMapZone(point);
             // Host adaptation: the Charge Shot and the missiles fly this many times as fast as the source's (the bomb is
             // placed, not flown). Only the distance covered is scaled; their size, damage and timing are the disc's.
             shot.speed=article==1||article==2?Mathf.Max(1f,Plugin.ProjectileSpeed.Value):1f;
@@ -160,7 +163,7 @@ namespace Samus
         // The only cull a flying shot has (it has no range cap): it has flown long enough, left the stage's bounds
         // (a map zone that returns bodies) or fallen far below the stage's lowest ground.
         const float MaxSeconds=20f,BelowStage=30f;
-        bool Culled(Vector3 at)=>age>MaxSeconds||WorldProbe.InMapZone(at)||(StageFloor.TryLowest(out float floor)&&at.y<floor-BelowStage);
+        bool Culled(Vector3 at)=>age>MaxSeconds||(!spawnedInMapZone&&WorldProbe.InMapZone(at))||(StageFloor.TryLowest(out float floor)&&at.y<floor-BelowStage);
         float HitboxScale=>particleKind==1?Plugin.ChargeShotHitboxScale.Value:1f;
         float DamageScale=>particleKind==2?Plugin.MissileDamageScale.Value:1f;
         // A larger, enemy-only sweep for the Charge Shot: it detonates on a hurtbox the shot
