@@ -25,6 +25,7 @@ namespace Pikachu
         // Quick Attack is camera/stick-vector travel; damage every enemy its path crosses.
         Vector3 quickPrev;
         bool quickActive;
+        bool quickQueued;
         readonly HashSet<HealthComponent> quickHits = new HashSet<HealthComponent>();
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
@@ -227,6 +228,14 @@ namespace Pikachu
             MeleeNative.ssbm_sim_set_host_flags(sim,
                 PikachuSkills.EggLaySelected(body) ? HostEggLay : 0u);
             if (connectQueued) { connectQueued = false; MeleeNative.ssbm_sim_connect(sim); }
+            // Holding/pressing LB through a Quick Attack queues the next stored charge, so a press
+            // made during the move is not lost to the end recovery.
+            if (state.move_id == QuickAttack && (p.buttons & MeleeControls.UpB) != 0) quickQueued = true;
+            if (state.move_id == 0 && quickQueued)
+            {
+                quickQueued = false;
+                if (PikachuSkills.QuickReady(body)) this.pad.QueuePress(MeleeControls.UpB);
+            }
         }
 
         protected override MeleeSkillSet SkillSet => PikachuSkills.Built;

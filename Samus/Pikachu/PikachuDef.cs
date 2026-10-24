@@ -51,6 +51,9 @@ namespace Pikachu
         internal static bool ShieldSelected(CharacterBody body) => set.ShieldSelected(body);
         /// The RT slot's loadout holds Yoshi's Egg Lay instead of Thunder Jolt.
         internal static bool EggLaySelected(CharacterBody body) => set != null && set.PrimaryAltSelected(body);
+        // A stored Quick Attack charge is available (stock, not cooldown).
+        internal static bool QuickReady(CharacterBody body)
+            => set != null && NativeSkills.Ready(set.Get(body, 3), set.Expected(body, 3));
         internal static NativeSkillDef Expected(CharacterBody body, int slot) => set.Expected(body, slot);
         internal static int Slot(CharacterBody body, uint move) => set.Slot(body, move);
         internal static uint Allowed(CharacterBody body) => set.Allowed(body);
