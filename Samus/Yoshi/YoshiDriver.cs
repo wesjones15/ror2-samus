@@ -102,6 +102,7 @@ namespace Yoshi
         CharacterBody IEggLayer.Body => body;
         float IEggLayer.UnitScale => scale;
         MeleeSkillSet IEggLayer.SkillSet => YoshiSkills.Built;
+        Vector3 IEggLayer.LayForward => body.transform.forward;
         Vector3 IEggLayer.Mouth() => Mouth();
         void IEggLayer.QueueConnect() => QueueConnect();
         void IEggLayer.PlaySourceSound(uint sound) => PlaySourceSound(sound);

@@ -16,6 +16,9 @@ namespace Yoshi
         CharacterBody Body { get; }
         float UnitScale { get; }
         MeleeSkillSet SkillSet { get; }
+        /// Horizontal forward used to fan the laid eggs behind the fighter. Pikachu
+        /// returns the camera aim, so "behind" follows where he is aiming.
+        Vector3 LayForward { get; }
         Vector3 Mouth();
         void QueueConnect();
         void PlaySourceSound(uint sound);
@@ -107,14 +110,14 @@ namespace Yoshi
             int count = 0;
             for (int i = 0; i < n && count < max; i++)
             {
-                var hurt = tongueHits[i] ? tongueHits[i].GetComponent<HurtBox>() : null;
-                if (!hurt || !hurt.healthComponent) continue;
-                var target = hurt.healthComponent.body;
+                var health = tongueHits[i] ? tongueHits[i].GetComponentInParent<HealthComponent>() : null;
+                if (!health) continue;
+                var target = health.body;
                 if (!target || target == body || !target.teamComponent
                     || target.teamComponent.teamIndex == body.teamComponent.teamIndex) continue;
-                if (!hurt.healthComponent.alive || YoshiEgg.IsTrapped(target) || YoshiFull.IsHolding(target)) continue;
+                if (!health.alive || YoshiEgg.IsTrapped(target) || YoshiFull.IsHolding(target)) continue;
                 if (caught != null && !caught.Add(target)) continue;
-                var point = hurt.collider ? hurt.collider.ClosestPoint(mouth) : hurt.transform.position;
+                var point = tongueHits[i] ? tongueHits[i].ClosestPoint(mouth) : health.transform.position;
                 float d = Vector3.Distance(mouth, point);
                 if (d > limit) continue;
                 // Do not eat through a wall. Terrain only: the victim's own body and
@@ -521,7 +524,11 @@ namespace Yoshi
             YoshiCombat.LayerOf(owner)?.QueueConnect();
             YoshiCombat.LayerOf(owner)?.PlaySourceSound(SwallowSound);
             int ring = slot / 3, side = slot % 3;
-            var behind = owner.footPosition - owner.transform.forward * (owner.radius + 1.0f + ring * 0.9f)
+            var forward = YoshiCombat.LayerOf(owner)?.LayForward ?? owner.transform.forward;
+            forward = Vector3.ProjectOnPlane(forward, Vector3.up);
+            if (forward.sqrMagnitude < 0.0001f) forward = owner.transform.forward;
+            forward.Normalize();
+            var behind = owner.footPosition - forward * (owner.radius + 1.0f + ring * 0.9f)
                 + owner.transform.right * ((side - 1) * 0.9f);
             behind = WorldProbe.PushOutOfWalls(behind + Vector3.up * 0.5f, 0.6f, 0.5f, null, 0, 8) - Vector3.up * 0.5f;
             if (MeleeSweep.TerrainOnly(owner, behind + Vector3.up * 1.5f, MeleeSweep.TerrainRadius,

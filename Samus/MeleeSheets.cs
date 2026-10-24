@@ -38,7 +38,7 @@ namespace Samus
         public static ControlSheet LinkSheet(CharacterBody body) => MeleeSheet.Build("Hero of Hyrule", Link.LinkSkills.Layout, body: body);
         public static ControlSheet PikachuSheet(CharacterBody body) => MeleeSheet.Build(
             "The Electric Mouse Pokemon", Pikachu.PikachuSkills.Layout, body: body,
-            footer: "Quick Attack homes on your lock-on, in two zips: turn the stick or press LB again for the second. The RT alternate is Yoshi's Egg Lay: Pikachu tenses with his Thunder start, pitches his upper body and lashes the tongue.");
+            footer: "Quick Attack zips along your camera/stick in two zips, with two charges that each recharge in 1 s; turn the stick or press LB again for the second. The RT alternate is Yoshi's Egg Lay: Pikachu holds the upright Thunder cast pose, pitches his upper body and lashes the tongue.");
         public static ControlSheet YoshiSheet(CharacterBody body) => MeleeSheet.Build("Mario's Dog", Yoshi.YoshiSkills.Layout, body: body);
         public static ControlSheet DonkeySheet(CharacterBody body) => MeleeSheet.Build("King of the Jungle", Donkey.DonkeySkills.Layout, body: body);
     }

@@ -92,10 +92,12 @@ namespace Pikachu
         Vector3 feet;
         float scale, bottomStart, strikeY, speed, damage, radius;
         int strikeTick, tick;
+        bool blocked;
         ulong cloudKey;
         readonly MeleeFighterView[] segments = new MeleeFighterView[Segments];
         readonly HashSet<HealthComponent> victims = new HashSet<HealthComponent>();
         Collider[] candidates = new Collider[32];
+        static readonly Collider[] thunderHits = new Collider[128];
 
         internal static void Spawn(PikachuDriver driver, CharacterBody owner, Vector3 feet, MeleeNative.Event e, float scale)
         {
@@ -115,22 +117,28 @@ namespace Pikachu
             // ceiling and no stretching. The source's four pieces are the visual too.
             bolt.bottomStart = bolt.strikeY + length * (Segments - 1);
             bolt.speed = (bolt.bottomStart - bolt.strikeY) / bolt.strikeTick;
+            // Overhead terrain blocks the storm: no cloud, bolt or strike.
+            bolt.blocked = Physics.Raycast(feet + Vector3.up * 1.2f, Vector3.up, out _,
+                16f * scale, WorldProbe.Mask, QueryTriggerInteraction.Ignore);
             try
             {
-                for (int i = 0; i < Segments; i++)
+                if (!bolt.blocked)
                 {
-                    bolt.segments[i] = new MeleeFighterView(Samus.Plugin.AssetsDir, MeleeNative.FighterPikachu, 0, 0);
-                    bolt.segments[i].Tint = new Color(1f, 0.92f, 0.3f, 1f);
-                    bolt.segments[i].ForceAdditive = true;
-                    bolt.segments[i].BlackToGlow = new Color(1f, 0.78f, 0.12f, 1f);
-                }
-                // ftPk_SpecialLw_SpawnEffect: efSync 0x4C3 creates common generator 0x24C
-                // at xD0 + xCC above Pikachu -- the storm cloud over the fixed column.
-                if (driver.Particles != null)
-                {
-                    bolt.cloudKey = 0xC10D0000_00000000ul | (uint)bolt.GetInstanceID();
-                    var cloud = feet + Vector3.up * (SegmentLength * Segments * scale);
-                    driver.Particles.Spawn(0x24C, MeleeParticles.At(cloud, Quaternion.identity, scale), bolt.cloudKey);
+                    for (int i = 0; i < Segments; i++)
+                    {
+                        bolt.segments[i] = new MeleeFighterView(Samus.Plugin.AssetsDir, MeleeNative.FighterPikachu, 0, 0);
+                        bolt.segments[i].Tint = new Color(1f, 0.92f, 0.3f, 1f);
+                        bolt.segments[i].ForceAdditive = true;
+                        bolt.segments[i].BlackToGlow = new Color(1f, 0.78f, 0.12f, 1f);
+                    }
+                    // ftPk_SpecialLw_SpawnEffect: efSync 0x4C3 creates common generator 0x24C
+                    // at xD0 + xCC above Pikachu -- the storm cloud over the fixed column.
+                    if (driver.Particles != null)
+                    {
+                        bolt.cloudKey = 0xC10D0000_00000000ul | (uint)bolt.GetInstanceID();
+                        var cloud = feet + Vector3.up * (SegmentLength * Segments * scale);
+                        driver.Particles.Spawn(0x24C, MeleeParticles.At(cloud, Quaternion.identity, scale), bolt.cloudKey);
+                    }
                 }
                 // The leading segment's hitbox (itpikachuthunder article 0, state 0).
                 var probe = MeleeNative.ssbm_projectile_new(NativeLib.CString(Samus.Plugin.AssetsDir), MeleeNative.FighterPikachu, 0, 0, 0, new MeleeNative.Vec3(0, 0, 1));
@@ -147,10 +155,35 @@ namespace Pikachu
         /// The strike tick: the camera shake of ftPk_SpecialLw_80127608 (Camera_RequestQuake small).
         internal static void Strike(PikachuDriver driver, CharacterBody owner, float scale)
         {
-            var at = owner ? owner.corePosition : Vector3.zero;
+            if (!owner) return;
+            // An overhead surface blocks the whole strike, not just the bolt visual.
+            if (Physics.Raycast(owner.footPosition + Vector3.up * 1.2f, Vector3.up, out _,
+                16f * scale, WorldProbe.Mask, QueryTriggerInteraction.Ignore)) return;
+            var at = owner.corePosition;
             // ftPk_SpecialLwLoop0: efAsync_Spawn(1216, FtPart_TopN) when the bolt lands.
             driver?.PlayEffect(1216, at + Vector3.up * 1.2f, Quaternion.identity);
             ShakeEmitter.CreateSimpleShakeEmitter(at, new Wave { amplitude = 0.2f, frequency = 14f, cycleOffset = 0 }, 0.25f, 25f, true);
+            // Massive electric burst around Pikachu with outward knockback. HealthComponent
+            // (not only HurtBox) catches slimes and other simple bodies.
+            var seen = new HashSet<HealthComponent>();
+            int n = Physics.OverlapSphereNonAlloc(at, 10f, thunderHits,
+                LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < n; i++)
+            {
+                var health = thunderHits[i] ? thunderHits[i].GetComponentInParent<HealthComponent>() : null;
+                if (!health || !health.alive || !health.body || !health.body.teamComponent) continue;
+                if (health.body.teamComponent.teamIndex == owner.teamComponent.teamIndex) continue;
+                if (!seen.Add(health)) continue;
+                var away = health.transform.position - at;
+                var dir = away.sqrMagnitude > 0.01f ? away.normalized : Vector3.up;
+                NativeHit.Deal(owner, health, new NativeHitSpec
+                {
+                    coefficient = 30f, position = health.transform.position,
+                    force = (dir + Vector3.up * 0.5f) * 4000f, procCoefficient = 1f,
+                    damageType = DamageType.Generic, color = DamageColorIndex.Default,
+                    staggerDuration = Samus.Plugin.StaggerDuration.Value, staggerBosses = true,
+                });
+            }
         }
 
         float BottomOf(int segment)
@@ -165,7 +198,7 @@ namespace Pikachu
             if (!owner || !owner.healthComponent || !owner.healthComponent.alive) { Destroy(gameObject); return; }
             tick++;
             if (tick > strikeTick + SegmentDelay * (Segments - 1) + LingerTicks) { Destroy(gameObject); return; }
-            if (!MeleeNet.Acts(owner)) return;
+            if (blocked || !MeleeNet.Acts(owner)) return;
             float length = SegmentLength * scale;
             for (int i = 0; i < Segments; i++)
             {
@@ -200,7 +233,7 @@ namespace Pikachu
 
         void LateUpdate()
         {
-            if (!owner) return;
+            if (!owner || blocked) return;
             float length = SegmentLength * scale;
             for (int i = 0; i < Segments; i++)
             {

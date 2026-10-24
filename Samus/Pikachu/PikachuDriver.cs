@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RoR2;
 using Ror2Common;
 using UnityEngine;
@@ -21,10 +22,10 @@ namespace Pikachu
         static IMeleeObjectView EffectView(uint model) => MeleeFighterView.EffectAny(Samus.Plugin.AssetsDir, MeleeNative.FighterPikachu, model);
         MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
         MeleeAudio audio;
-        // The same lock-on Olimar's RT and Mario's LT use: the enemy nearest where the
-        // camera points, preferring ones in front, kept until the move ends.
-        readonly EnemyLock enemyLock = new EnemyLock();
-        bool locked;
+        // Quick Attack is camera/stick-vector travel; damage every enemy its path crosses.
+        Vector3 quickPrev;
+        bool quickActive;
+        readonly HashSet<HealthComponent> quickHits = new HashSet<HealthComponent>();
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
         protected override MeleeEffects EffectsForSparks => Effects;
@@ -99,6 +100,18 @@ namespace Pikachu
         CharacterBody IEggLayer.Body => body;
         float IEggLayer.UnitScale => scale;
         MeleeSkillSet IEggLayer.SkillSet => PikachuSkills.Built;
+        Vector3 IEggLayer.LayForward
+        {
+            get
+            {
+                var aim = body && body.inputBank
+                    ? MeleeAim.CameraRay(body, body.inputBank).direction
+                    : body ? body.transform.forward : Vector3.forward;
+                aim = Vector3.ProjectOnPlane(aim, Vector3.up);
+                // Eggs fan behind the aim, opposite the tongue's forward lash.
+                return aim.sqrMagnitude > 0.0001f ? -aim.normalized : -body.transform.forward;
+            }
+        }
         Vector3 IEggLayer.Mouth() => Mouth();
         void IEggLayer.QueueConnect() => QueueConnect();
         void IEggLayer.PlaySourceSound(uint sound) => PlaySourceSound(sound);
@@ -143,8 +156,44 @@ namespace Pikachu
         }
         protected override void StepPresentation(float dt)
         {
+            if (state.move_id == QuickAttack)
+            {
+                if (!quickActive)
+                {
+                    quickActive = true;
+                    quickHits.Clear();
+                    quickPrev = body.footPosition;
+                }
+                QuickSweep(quickPrev, body.footPosition);
+                quickPrev = body.footPosition;
+            }
+            else quickActive = false;
             Present(() => Effects?.Step(sim, dt));
             Present(() => Particles?.Step(dt));
+        }
+        readonly Collider[] quickContacts = new Collider[32];
+        void QuickSweep(Vector3 from, Vector3 to)
+        {
+            var step = to - from;
+            if (step.sqrMagnitude < 1e-5f) return;
+            int n = Physics.OverlapCapsuleNonAlloc(from, to, 0.9f, quickContacts,
+                LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Collide);
+            if (n == 0) return;
+            var dir = step.normalized;
+            for (int i = 0; i < n; i++)
+            {
+                var health = quickContacts[i] ? quickContacts[i].GetComponentInParent<HealthComponent>() : null;
+                if (!health || !health.alive || !health.body || !health.body.teamComponent) continue;
+                if (health.body.teamComponent.teamIndex == body.teamComponent.teamIndex) continue;
+                if (!quickHits.Add(health)) continue;
+                NativeHit.Deal(body, health, new NativeHitSpec
+                {
+                    coefficient = 3f, position = health.transform.position,
+                    force = dir * 400f + Vector3.up * 120f, procCoefficient = 1f,
+                    damageType = DamageType.Generic, color = DamageColorIndex.Default,
+                    staggerDuration = Samus.Plugin.StaggerDuration.Value, staggerBosses = true,
+                });
+            }
         }
         protected override void DrawPresentation(Vector3 at, Quaternion rotation)
         {
@@ -171,8 +220,6 @@ namespace Pikachu
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
 
-        // Quick Attack steers to the enemy the lock-on picks, chosen when LB is pressed and
-        // kept while the move runs; the sim spends its two source zips getting there.
         protected override void BeforeStep(in MeleeNative.Pad p)
         {
             // The RT slot's loadout can hold Yoshi's Egg Lay; the sim needs to know before
@@ -180,21 +227,6 @@ namespace Pikachu
             MeleeNative.ssbm_sim_set_host_flags(sim,
                 PikachuSkills.EggLaySelected(body) ? HostEggLay : 0u);
             if (connectQueued) { connectQueued = false; MeleeNative.ssbm_sim_connect(sim); }
-            if (!MeleeNative.HasStagedSpecials) return;
-            bool quick = (p.buttons & MeleeControls.UpB) != 0 || state.move_id == QuickAttack;
-            if (!quick)
-            {
-                if (locked) { MeleeNative.ssbm_sim_lock_target(sim, default, 0); locked = false; }
-                enemyLock.Update(body, false, false, Vector2.right);
-                return;
-            }
-            enemyLock.Range = Samus.Plugin.LockRange.Value;
-            var target = enemyLock.Update(body, true, false, Vector2.right);
-            if (!target) { if (locked) { MeleeNative.ssbm_sim_lock_target(sim, default, 0); locked = false; } return; }
-            // The sim places Pikachu by his feet; aim his centre at the enemy's.
-            var feetToCore = body.corePosition - body.footPosition;
-            MeleeNative.ssbm_sim_lock_target(sim, ToSim(target.corePosition - feetToCore), 1);
-            locked = true;
         }
 
         protected override MeleeSkillSet SkillSet => PikachuSkills.Built;

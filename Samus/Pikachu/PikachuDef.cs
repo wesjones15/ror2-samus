@@ -34,8 +34,8 @@ namespace Pikachu
                 icon="LoaderBodyChargeFist",recharge=1.5f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleePikachu3",nameToken="SSBM_PIKACHU_SKILL_3",descriptionToken="SSBM_PIKACHU_SKILL_DESC_3",
-                displayName="Quick Attack",description="LB: zip to your lock-on (the enemy nearest your crosshair) in two zips, or along your stick and camera. Zip again by turning your stick or pressing LB.",
-                icon="MercBodyAssaulter",recharge=3f,stock=1,combat=true },
+                displayName="Quick Attack",description="LB: zip along your camera/stick direction in two zips. Damages enemies passed through. 2 charges, 1 second recharge each. Zip again by turning your stick or pressing LB.",
+                icon="MercBodyAssaulter",recharge=1f,stock=2,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleePikachu1",nameToken="SSBM_PIKACHU_SKILL_1",descriptionToken="SSBM_PIKACHU_SKILL_DESC_1",
                 displayName="A Attack",description="B: neutral A while stationary. LS + B selects camera-directed attacks; a flick charges a smash.",
@@ -81,7 +81,7 @@ namespace Pikachu
             nameToken="SSBM_PIKACHU_NAME",subtitleToken="SSBM_PIKACHU_SUBTITLE",descriptionToken="SSBM_PIKACHU_DESCRIPTION",
             outroToken="SSBM_PIKACHU_OUTRO",failToken="SSBM_PIKACHU_FAIL",
             nameStr="Pikachu",subtitleStr="The Electric Mouse Pokemon",
-            descriptionStr="Pikachu brings his Melee loadout to Petrichor V.\n\nRT: Thunder Jolt, with Yoshi's Egg Lay as its alternate. B: contextual A. RB: Skull Bash. LB: Quick Attack, homing on your lock-on. LT: Thunder, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
+            descriptionStr="Pikachu brings his Melee loadout to Petrichor V.\n\nRT: Thunder Jolt, with Yoshi's Egg Lay as its alternate. B: contextual A. RB: Skull Bash. LB: Quick Attack, camera-vector zips with two charges and pass-through damage. LT: Thunder, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
             outroStr="..and so he left, shocked and satisfied.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.97f,0.84f,0.24f),
             baseMaxHealth=90f,levelMaxHealth=27f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
