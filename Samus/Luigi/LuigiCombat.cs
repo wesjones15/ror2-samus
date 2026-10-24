@@ -50,8 +50,8 @@ namespace Luigi
             if (effects != null && aim.sqrMagnitude > 0.0001f)
             {
                 var rotation = Quaternion.LookRotation(aim);
-                // fn_800D84D4's 0x430 generator produces no drawable common sprites. 0x42F's white
-                // burst (common effect model 32) is the drawable stand-in, paired with the smoke puff.
+                // The drawable normal scope smoke (0x405) plus the white 0x42F burst at the muzzle.
+                // 0x430's generator 0x140 child trail generators are still not drawn by our renderer.
                 effects.Spawn(0x42Fu, MeleeParticles.At(muzzle, rotation, scale) * Matrix4x4.Scale(Vector3.one * 2.5f));
                 effects.Spawn(0x405u, MeleeParticles.At(muzzle, rotation, scale));
             }

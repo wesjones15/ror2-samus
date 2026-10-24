@@ -113,10 +113,22 @@ namespace Luigi
             scopeView.ObjectPose(0f);
             scopeView.Models.Update(scale, d => (pos, rot));
         }
-        // Host visual: the source's Start state has no effect, but in the game the planted stance kicks up a
-        // ground smoke/dust cloud at the holder's feet while the charge builds. Puff the disc's ground dust
-        // there (0x3EF is the multi-particle dust, 0x3F4 the larger puff), growing with the level. The beam's
-        // ball itself is only drawn by the shot.
+        bool ScopeMuzzle(out Vector3 muzzle, out Quaternion rotation)
+        {
+            muzzle = Vector3.zero; rotation = Quaternion.identity;
+            if (MeleeNative.ssbm_sim_common_bone(sim, 49, scopeMatrix) != 1) return false;
+            var m = new Matrix4x4();
+            for (int n = 0; n < 16; n++) m[n] = scopeMatrix[n];
+            m *= Matrix4x4.Scale(new Vector3(-1, 1, 1));
+            var f = m.GetColumn(2); var u = m.GetColumn(1);
+            rotation = Quaternion.LookRotation(new Vector3(f.x, f.y, f.z), new Vector3(u.x, u.y, u.z));
+            muzzle = new Vector3(scopeMatrix[12], scopeMatrix[13], scopeMatrix[14]) * scale
+                + rotation * (Vector3.up * 5.7f * scale);
+            return true;
+        }
+        // Host visual: the source's Start state has no effect, but the Super Scope's own smoke puff
+        // (efSync 0x405) builds at the muzzle while charging, as in the reference shots. The beam's ball
+        // itself is only drawn by the shot.
         void UpdateScopeSmoke()
         {
             bool charging = false; uint level = 0;
@@ -134,15 +146,18 @@ namespace Luigi
                 return;
             }
             if (Time.time < scopeSmokeAt) return;
-            scopeSmokeAt = Time.time + (0.13f - 0.006f * level);
-            // Keep the puffs above the ground, and pass the view scale (not the puff size) to At:
-            // At divides the world position by it, so any other value moves the smoke away from the feet.
-            var foot = body.footPosition + Vector3.up * (0.25f + 0.03f * level);
+            scopeSmokeAt = Time.time + (0.1f - 0.003f * level);
+            if (!ScopeMuzzle(out var muzzle, out var rotation)) return;
+            int puffs = 6 + (int)(level / 2); // 6 at level 0 to 10 at level 9
+            float radius = 0.08f + 0.015f * level;
             float angle = Time.time * 5f;
-            var drift = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * (0.3f + 0.03f * level);
-            Effects?.Spawn(0x405u, MeleeParticles.At(foot + drift, Quaternion.identity, scale));
-            Effects?.Spawn(0x405u, MeleeParticles.At(foot - drift, Quaternion.identity, scale));
-            if (level >= 5) Effects?.Spawn(0x405u, MeleeParticles.At(foot, Quaternion.identity, scale));
+            for (int i = 0; i < puffs; i++)
+            {
+                float a = angle + i * Mathf.PI * 2f / puffs;
+                var at = muzzle + rotation * (new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * radius);
+                // efSync 0x405: the scope's own smoke puff; dense at the muzzle to match the cloud.
+                Effects?.Spawn(0x405u, MeleeParticles.At(at, rotation, scale));
+            }
         }
         // Gives the sim the scope while the loadout holds it (and the items archive was extracted), every step.
         void UpdateScope()
