@@ -14,7 +14,7 @@ namespace Samus
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeSamus0",nameToken="SSBM_SKILL_0",descriptionToken="SSBM_SKILL_DESC_0",
-                displayName="Charge Shot",description="Walk while charging. Tap again to fire; sprint, jump or X grab to store. Airborne neutral special fires stored charge immediately.",
+                displayName="Charge Shot",description="Walk while charging. Tap again to fire; sprint, jump or X grab to store. Airborne neutral special fires stored charge immediately. A full charge hits for at least 2000% damage.",
                 icon="MageBodyFireFirebolt",recharge=0.75f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeSamusBomb",nameToken="SSBM_BOMB",descriptionToken="SSBM_BOMB_DESC",

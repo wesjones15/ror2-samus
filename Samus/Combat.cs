@@ -99,7 +99,8 @@ namespace Samus
     }
     internal sealed class Shot:MonoBehaviour
     {
-        CharacterBody owner;Vector3 origin,velocity;float modelScale,speed=1f,age;bool impacted;bool spawnedInMapZone;readonly Collider[] assistHits=new Collider[16];
+        const float FullChargeCoefficient=20f; // 2000% at full charge
+        CharacterBody owner;Vector3 origin,velocity;float modelScale,speed=1f,age;bool impacted;bool spawnedInMapZone;float spawnCoefficient;readonly Collider[] assistHits=new Collider[16];
         System.IntPtr projectile;MeleeNative.ProjectileState state;
         readonly HashSet<HealthComponent> explosionVictims=new HashSet<HealthComponent>();
         HealthComponent target;SamusDriver driver;MeleeFighterView view;MeleeParticles particles;ulong particleKey;uint particleKind,particleState,particleFrame;bool fullCharge;readonly uint[] effectCues=new uint[32];
@@ -121,6 +122,7 @@ namespace Samus
                 if(article==2)MeleeNative.ssbm_projectile_lifetime(shot.projectile,0); // Culled by Culled(), not by Melee's off-screen cutoff.
                 shot.view=new MeleeFighterView(Plugin.AssetsDir,MeleeNative.FighterSamus,article,state);
                 shot.ReadState();
+                shot.spawnCoefficient=shot.state.damage/3f;
             }
             catch(System.Exception e) { Plugin.Log.LogError("Samus article presentation failed: "+e.Message);Object.Destroy(go);return; }
             if(article==2&&state==0){var lockOn=new EnemyLock { Range=Mathf.Max(45f,Plugin.MissileRange.Value) };shot.target=lockOn.Update(owner,true,false,Vector2.zero)?.healthComponent;}
@@ -166,6 +168,11 @@ namespace Samus
         bool Culled(Vector3 at)=>age>MaxSeconds||(!spawnedInMapZone&&WorldProbe.InMapZone(at))||(StageFloor.TryLowest(out float floor)&&at.y<floor-BelowStage);
         float HitboxScale=>particleKind==1?Plugin.ChargeShotHitboxScale.Value:1f;
         float DamageScale=>particleKind==2?Plugin.MissileDamageScale.Value:1f;
+        // A fully charged shot is at least 2000% (coefficient 20). Use the coefficient
+        // captured at spawn: the projectile's damage field changes on impact.
+        float ImpactCoefficient=>particleKind==1&&fullCharge
+            ?Mathf.Max(spawnCoefficient,FullChargeCoefficient)
+            :state.damage/3f*DamageScale;
         // A larger, enemy-only sweep for the Charge Shot: it detonates on a hurtbox the shot
         // merely passes near, while walls and the floor still use the shot's own radius.
         bool AssistTarget(Vector3 from,Vector3 next,out Vector3 point)
@@ -197,7 +204,7 @@ namespace Samus
             var force=velocity.sqrMagnitude>0?velocity.normalized:Vector3.up;
             uint cue=MeleeNative.ssbm_projectile_impact(projectile,driver?driver.Simulation:System.IntPtr.Zero);ReadState();
             if(cue!=0)driver?.Effects?.Spawn(cue,MeleeParticles.At(at,Quaternion.identity,modelScale));
-            Combat.Area(owner,at,state.radius*modelScale*HitboxScale,state.damage/3f*DamageScale,1f,force,explosionVictims,state.element);
+            Combat.Area(owner,at,state.radius*modelScale*HitboxScale,ImpactCoefficient,1f,force,explosionVictims,state.element);
             if((state.flags&2)==0){view.Dispose();view=new MeleeFighterView(Plugin.AssetsDir,MeleeNative.FighterSamus,particleKind,state.state);}
         }
         void LateUpdate(){if(view==null)return;view.ObjectPose(state.animation_frame);var rotation=velocity.sqrMagnitude>0.0001f?Quaternion.LookRotation(velocity):Quaternion.identity;view.FaceCamera(transform.position,rotation,modelScale);view.Models.Update(modelScale,d=>(transform.position,rotation));}
