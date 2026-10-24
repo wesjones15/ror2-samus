@@ -14,27 +14,27 @@ namespace Link
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeLink0",nameToken="SSBM_LINK_SKILL_0",descriptionToken="SSBM_LINK_SKILL_DESC_0",
-                displayName="Hero's Bow",description="RT: hold to draw, release to fire. A longer draw flies farther and hits harder.",
+                displayName="Hero's Bow",description="Hold to draw, release to fire.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeLinkBomb",nameToken="SSBM_LINK_BOMB",descriptionToken="SSBM_LINK_BOMB_DESC",
-                displayName="Bomb",description="LT: pull a bomb; B throws it, LT drops it. It explodes on contact or after its fuse.",
+                displayName="Bomb",description="Pull a bomb, then throw it; it explodes on contact.",
                 icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
             secondaryAlt = new MeleeSkillInfo {
                 defName="MeleeLinkShield",nameToken="SSBM_LINK_SHIELD",descriptionToken="SSBM_LINK_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="LT: hold to shield on the ground; in the air, evade once.",
+                displayName="Shield / Air Feint",description="Hold to shield on the ground; evade in the air.",
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeLink2",nameToken="SSBM_LINK_SKILL_2",descriptionToken="SSBM_LINK_SKILL_DESC_2",
-                displayName="Boomerang",description="RB: throw a boomerang that returns, hitting both ways. Can't throw again until caught.",
+                displayName="Boomerang",description="Throw a boomerang that returns, hitting both ways.",
                 icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeLink3",nameToken="SSBM_LINK_SKILL_3",descriptionToken="SSBM_LINK_SKILL_DESC_3",
-                displayName="Spin Attack",description="LB: rise with a spinning slash. Recharges.",
+                displayName="Spin Attack",description="Rise with a spinning slash.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeLink1",nameToken="SSBM_LINK_SKILL_1",descriptionToken="SSBM_LINK_SKILL_DESC_1",
-                displayName="A Attack",description="B: neutral A. LS + B aims attacks; flick to charge a smash.",
+                displayName="A Attack",description="Neutral jab; flick to charge a smash.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };

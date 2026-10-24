@@ -14,27 +14,27 @@ namespace Yoshi
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeYoshi0",nameToken="SSBM_YOSHI_SKILL_0",descriptionToken="SSBM_YOSHI_SKILL_DESC_0",
-                displayName="Egg Lay",description="RT: lash the tongue to swallow enemies and lay eggs behind you. Recharges when it catches.",
+                displayName="Egg Lay",description="Lash the tongue to swallow enemies and lay eggs behind you.",
                 icon="CommandoBodyFirePistol",recharge=3f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeYoshiBomb",nameToken="SSBM_YOSHI_BOMB",descriptionToken="SSBM_YOSHI_BOMB_DESC",
-                displayName="Yoshi Bomb",description="LT: hop and slam down; in the air, slam immediately. Recharges.",
+                displayName="Yoshi Bomb",description="Hop and slam down; in the air, slam immediately.",
                 icon="EngiBodyPlaceSpiderMine",recharge=3f,stock=1,combat=true },
             secondaryAlt = new MeleeSkillInfo {
                 defName="MeleeYoshiShield",nameToken="SSBM_YOSHI_SHIELD",descriptionToken="SSBM_YOSHI_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="LT: hold to shield on the ground; in the air, evade once.",
+                displayName="Shield / Air Feint",description="Hold to shield on the ground; evade in the air.",
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             extra = new MeleeSkillInfo {
                 defName="MeleeYoshi1",nameToken="SSBM_YOSHI_SKILL_1",descriptionToken="SSBM_YOSHI_SKILL_DESC_1",
-                displayName="A Attack",description="B: neutral A. LS + B aims attacks; flick to charge a smash.",
+                displayName="A Attack",description="Neutral jab; flick to charge a smash.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeYoshi2",nameToken="SSBM_YOSHI_SKILL_2",descriptionToken="SSBM_YOSHI_SKILL_DESC_2",
-                displayName="Egg Roll",description="RB: hold to roll as an egg, steering. The egg absorbs hits; release to stop. Recharges.",
+                displayName="Egg Roll",description="Hold to roll as an egg, steering.",
                 icon="EngiBodyPlaceSpiderMine",recharge=5f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeYoshi3",nameToken="SSBM_YOSHI_SKILL_3",descriptionToken="SSBM_YOSHI_SKILL_DESC_3",
-                displayName="Egg Throw",description="LB: hop and throw an egg that bursts on contact. Recharges.",
+                displayName="Egg Throw",description="Hop and throw an egg that bursts on contact.",
                 icon="LoaderBodyChargeFist",recharge=2f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };

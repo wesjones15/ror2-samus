@@ -14,27 +14,27 @@ namespace Fox
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeFox0",nameToken="SSBM_FOX_SKILL_0",descriptionToken="SSBM_FOX_SKILL_DESC_0",
-                displayName="Blaster",description="RT: fire along the crosshair; hold for steady fire.",
+                displayName="Blaster",description="Fire along the crosshair; hold for steady fire.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeFoxReflector",nameToken="SSBM_FOX_REFLECTOR",descriptionToken="SSBM_FOX_REFLECTOR_DESC",
-                displayName="Reflector",description="LT: hold a shine that knocks enemies back and reflects projectiles. Jump cancels it.",
+                displayName="Reflector",description="Hold a shine that knocks enemies back and reflects projectiles.",
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=true },
             secondaryAlt = new MeleeSkillInfo {
                 defName="MeleeFoxShield",nameToken="SSBM_FOX_SHIELD",descriptionToken="SSBM_FOX_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="LT: hold to shield on the ground; in the air, evade once.",
+                displayName="Shield / Air Feint",description="Hold to shield on the ground; evade in the air.",
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeFox2",nameToken="SSBM_FOX_SKILL_2",descriptionToken="SSBM_FOX_SKILL_DESC_2",
-                displayName="Fox Illusion",description="RB: dash through enemies. Hold to keep dashing; release to stop. Two charges.",
+                displayName="Fox Illusion",description="Dash through enemies; hold to keep dashing.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeFox3",nameToken="SSBM_FOX_SKILL_3",descriptionToken="SSBM_FOX_SKILL_DESC_3",
-                displayName="Fire Fox",description="LB: charge, then launch with a fiery impact. Hold to fly farther; release to land.",
+                displayName="Fire Fox",description="Charge, then launch with a fiery impact.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeFox1",nameToken="SSBM_FOX_SKILL_1",descriptionToken="SSBM_FOX_SKILL_DESC_1",
-                displayName="A Attack",description="B: neutral A. LS + B aims attacks; flick to charge a smash.",
+                displayName="A Attack",description="Neutral jab; flick to charge a smash.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };

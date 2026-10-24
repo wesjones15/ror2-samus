@@ -14,31 +14,31 @@ namespace Pikachu
         {
             primary = new MeleeSkillInfo {
                 defName="MeleePikachu0",nameToken="SSBM_PIKACHU_SKILL_0",descriptionToken="SSBM_PIKACHU_SKILL_DESC_0",
-                displayName="Thunder Jolt",description="RT: fire a bouncing electric orb.",
+                displayName="Thunder Jolt",description="Fire a bouncing electric orb.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             primaryAlt = new MeleeSkillInfo {
                 defName="MeleePikachuEggLay",nameToken="SSBM_PIKACHU_EGGLAY",descriptionToken="SSBM_PIKACHU_EGGLAY_DESC",
-                displayName="Egg Lay (Yoshi)",description="RT: lash Yoshi's tongue to swallow enemies and lay eggs behind you. Recharges when it catches.",
+                displayName="Egg Lay (Yoshi)",description="Lash Yoshi's tongue to swallow enemies and lay eggs behind you.",
                 icon="CommandoBodyFirePistol",recharge=3f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleePikachu2",nameToken="SSBM_PIKACHU_SKILL_2",descriptionToken="SSBM_PIKACHU_SKILL_DESC_2",
-                displayName="Thunder",description="LT: call lightning onto yourself, then shock the area.",
+                displayName="Thunder",description="Call lightning onto yourself, then shock the area.",
                 icon="CallAirstrikeAlt",recharge=5f,stock=1,combat=true },
             secondaryAlt = new MeleeSkillInfo {
                 defName="MeleePikachuShield",nameToken="SSBM_PIKACHU_SHIELD",descriptionToken="SSBM_PIKACHU_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="LT: hold to shield on the ground; in the air, evade once.",
+                displayName="Shield / Air Feint",description="Hold to shield on the ground; evade in the air.",
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleePikachuSkullBash",nameToken="SSBM_PIKACHU_SKULLBASH",descriptionToken="SSBM_PIKACHU_SKULLBASH_DESC",
-                displayName="Skull Bash",description="RB: hold to charge, release to lunge. Stops on impact.",
+                displayName="Skull Bash",description="Hold to charge, release to lunge.",
                 icon="LoaderBodyChargeFist",recharge=1.5f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleePikachu3",nameToken="SSBM_PIKACHU_SKILL_3",descriptionToken="SSBM_PIKACHU_SKILL_DESC_3",
-                displayName="Quick Attack",description="LB: zip twice in a chosen direction, damaging enemies passed. Two charges.",
+                displayName="Quick Attack",description="Zip twice in a chosen direction, damaging enemies you pass.",
                 icon="MercBodyAssaulter",recharge=1f,stock=2,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleePikachu1",nameToken="SSBM_PIKACHU_SKILL_1",descriptionToken="SSBM_PIKACHU_SKILL_DESC_1",
-                displayName="A Attack",description="B: neutral A. LS + B aims attacks; flick to charge a smash.",
+                displayName="A Attack",description="Neutral jab; flick to charge a smash.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };

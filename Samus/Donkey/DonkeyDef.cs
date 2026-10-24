@@ -14,27 +14,27 @@ namespace Donkey
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeDonkey0",nameToken="SSBM_DONKEY_SKILL_0",descriptionToken="SSBM_DONKEY_SKILL_DESC_0",
-                displayName="Giant Punch",description="RT: hold to wind up, release to punch. Shield cancels and keeps the charge.",
+                displayName="Giant Punch",description="Hold to wind up, release to punch.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeDonkeySlap",nameToken="SSBM_DONKEY_SLAP",descriptionToken="SSBM_DONKEY_SLAP_DESC",
-                displayName="Hand Slap",description="LT: hold to slap the ground, sending shockwaves that hold enemies.",
+                displayName="Hand Slap",description="Hold to slap the ground, sending shockwaves that hold enemies.",
                 icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
             secondaryAlt = new MeleeSkillInfo {
                 defName="MeleeDonkeyShield",nameToken="SSBM_DONKEY_SHIELD",descriptionToken="SSBM_DONKEY_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="LT: hold to shield on the ground; in the air, evade once.",
+                displayName="Shield / Air Feint",description="Hold to shield on the ground; evade in the air.",
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeDonkey2",nameToken="SSBM_DONKEY_SKILL_2",descriptionToken="SSBM_DONKEY_SKILL_DESC_2",
-                displayName="Headbutt",description="RB: headbutt; on the ground it buries, in the air it spikes.",
+                displayName="Headbutt",description="Headbutt; on the ground it buries, in the air it spikes.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeDonkey3",nameToken="SSBM_DONKEY_SKILL_3",descriptionToken="SSBM_DONKEY_SKILL_DESC_3",
-                displayName="Spinning Kong",description="LB: spin upward, steering with the stick.",
+                displayName="Spinning Kong",description="Spin upward, steering with the stick.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeDonkey1",nameToken="SSBM_DONKEY_SKILL_1",descriptionToken="SSBM_DONKEY_SKILL_DESC_1",
-                displayName="A Attack",description="B: neutral A. LS + B aims attacks; flick to charge a smash.",
+                displayName="A Attack",description="Neutral jab; flick to charge a smash.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };

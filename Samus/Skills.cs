@@ -14,27 +14,27 @@ namespace Samus
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeSamus0",nameToken="SSBM_SKILL_0",descriptionToken="SSBM_SKILL_DESC_0",
-                displayName="Charge Shot",description="RT: hold to charge, release to fire. Tap to store a charge; sprint, jump or grab to keep it.",
+                displayName="Charge Shot",description="Hold to charge, release to fire.",
                 icon="MageBodyFireFirebolt",recharge=0.75f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeSamusBomb",nameToken="SSBM_BOMB",descriptionToken="SSBM_BOMB_DESC",
-                displayName="Morph Ball Bomb",description="LT: drop a bomb, then hold to roll as Morph Ball. The ball absorbs hits; release to stand. Recharges.",
+                displayName="Morph Ball Bomb",description="Drop a bomb, then roll as Morph Ball.",
                 icon="EngiBodyPlaceSpiderMine",recharge=4f,stock=1,combat=true },
             secondaryAlt = new MeleeSkillInfo {
                 defName="MeleeShield",nameToken="SSBM_SHIELD",descriptionToken="SSBM_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="LT: hold to shield on the ground; in the air, evade once.",
+                displayName="Shield / Air Feint",description="Hold to shield on the ground; evade in the air.",
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeSamus2",nameToken="SSBM_SKILL_2",descriptionToken="SSBM_SKILL_DESC_2",
-                displayName="Missile",description="RB: fire a homing missile. Flick a direction for a super missile. Two charges.",
+                displayName="Missile",description="Fire a homing missile; flick a direction for a super missile.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeSamus3",nameToken="SSBM_SKILL_3",descriptionToken="SSBM_SKILL_DESC_3",
-                displayName="Screw Attack",description="LB: rise in a spinning attack, then fall helpless. Recharges.",
+                displayName="Screw Attack",description="Rise in a spinning attack.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeSamus1",nameToken="SSBM_SKILL_1",descriptionToken="SSBM_SKILL_DESC_1",
-                displayName="Power Suit",description="B: neutral A. LS + B aims attacks; flick to charge a smash.",
+                displayName="Power Suit",description="Neutral jab; flick to charge a smash.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };

@@ -14,27 +14,27 @@ namespace Captain
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeCaptain0",nameToken="SSBM_CAPTAIN_SKILL_0",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_0",
-                displayName="Falcon Punch",description="RT: wind up, then release a flaming punch. Turn the camera to reverse it.",
+                displayName="Falcon Punch",description="Wind up, then release a flaming punch.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeCaptainKick",nameToken="SSBM_CAPTAIN_KICK",descriptionToken="SSBM_CAPTAIN_KICK_DESC",
-                displayName="Falcon Kick",description="LT: a forward flaming kick; in the air it dives.",
+                displayName="Falcon Kick",description="A forward flaming kick; in the air it dives.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
             secondaryAlt = new MeleeSkillInfo {
                 defName="MeleeCaptainShield",nameToken="SSBM_CAPTAIN_SHIELD",descriptionToken="SSBM_CAPTAIN_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="LT: hold to shield on the ground; in the air, evade once.",
+                displayName="Shield / Air Feint",description="Hold to shield on the ground; evade in the air.",
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeCaptain2",nameToken="SSBM_CAPTAIN_SKILL_2",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_2",
-                displayName="Raptor Boost",description="RB: lunge; hitting an enemy turns it into an uppercut, or a spike in the air.",
+                displayName="Raptor Boost",description="Lunge; hitting an enemy turns it into an uppercut, or a spike in the air.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeCaptain3",nameToken="SSBM_CAPTAIN_SKILL_3",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_3",
-                displayName="Falcon Dive",description="LB: leap and grab; on hit, burn and launch the target, then rebound.",
+                displayName="Falcon Dive",description="Leap and grab; on hit, burn and launch the target, then rebound.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeCaptain1",nameToken="SSBM_CAPTAIN_SKILL_1",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_1",
-                displayName="A Attack",description="B: neutral A. LS + B aims attacks; flick to charge a smash.",
+                displayName="A Attack",description="Neutral jab; flick to charge a smash.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };
