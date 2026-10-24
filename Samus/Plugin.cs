@@ -32,6 +32,7 @@ namespace Samus
         internal static ConfigEntry<bool> LogEffects;
         internal static ConfigEntry<bool> Diagnostics;
         internal static ConfigEntry<float> ScopeRefill,ScopeRange;
+        internal static ConfigEntry<bool> ScopeChargeLoop,ScopeChargeGlow;
         string nativePath,configuredDisc,pluginDirectory;
         bool nativeStarted,destroyed;
         void Awake()
@@ -59,6 +60,8 @@ namespace Samus
             MeleeDiag.On=Diagnostics.Value;
             ScopeRefill=Config.Bind("Luigi","ScopeAmmoPerSecond",6f,new ConfigDescription("Super Scope: shots of ammo the 48-shot magazine refills a second after a moment idle (host adaptation; the source never refills). 0 never refills.",new AcceptableValueRange<float>(0f,100f)));
             ScopeRange=Config.Bind("Luigi","ScopeRangeScale",3f,new ConfigDescription("Super Scope: how many times as fast and as far as the source's the beam flies, because an open world is bigger than a stage.",new AcceptableValueRange<float>(1f,10f)));
+            ScopeChargeLoop=Config.Bind("Luigi","ScopeChargeLoop",true,"Super Scope: keep the charge audible while the trigger is held by repeating the disc's own charge cue (SFX 0xFD, 0.25 s; ItemScopeStart's only sound command). Melee plays it once; repeating it is a host adaptation. Off is the source's single chirp.");
+            ScopeChargeGlow=Config.Bind("Luigi","ScopeChargeGlow",true,"Super Scope: draw the disc's beam model at the muzzle as a charge orb that grows with the level while the trigger is held. Host visual; the source has no held charge effect.");
             // Melee multiplayer: the messages that carry a fighter to the other players (MeleeNet).
             MeleeNet.Register();
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");

@@ -12,9 +12,13 @@ namespace Luigi
     public sealed class LuigiDriver : MeleeDriver
     {
         static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Samus.Plugin.AssetsDir,MeleeNative.FighterLuigi,model);
-        MeleeFighterView view, entryPlatform, shieldView, scopeView; uint shieldModel;
+        MeleeFighterView view, entryPlatform, shieldView, scopeView, scopeChargeView; uint shieldModel;
         // The Super Scope: whether it is in hand, and the right-hand bone it is drawn on.
         bool scopeOn, scopeWarned;
+        // The held charge's audible cue and muzzle orb (host adaptations; see Plugin's Luigi config).
+        bool scopeCueOn;
+        float scopeCueAt;
+        const float ScopeCueSeconds = 0.3f;
         readonly float[] scopeMatrix = new float[16];
         MeleeAudio audio;
         internal MeleeParticles Particles { get; private set; }
@@ -50,6 +54,7 @@ namespace Luigi
         {
             shieldView?.Dispose(); shieldView = null;
             scopeView?.Dispose(); scopeView = null;
+            scopeChargeView?.Dispose(); scopeChargeView = null;
             view?.Dispose(); view = null;
             entryPlatform?.Dispose(); entryPlatform = null;
             audio?.Dispose(); audio = null;
@@ -93,9 +98,20 @@ namespace Luigi
             Present(() => Effects?.Draw());
         }
         // The Super Scope rides the right hand (the same bone Fox's Blaster does) while it is being used.
+        // While the trigger is held, a host adaptation draws the beam's first-level model as a charge orb at the
+        // muzzle, growing with the level; the source has no held charge effect.
         void DrawScope()
         {
-            if (state.move_id != 17 || !MeleeNative.HasScope || MeleeNative.ssbm_sim_common_bone(sim, 49, scopeMatrix) != 1) { scopeView?.Models.HideAll(); return; }
+            bool charging = false; uint level = 0;
+            if (state.move_id == 17 && MeleeNative.HasScope && MeleeNative.ssbm_sim_scope_state(sim, out var info) == 1)
+            {
+                charging = info.stage == 1;
+                level = info.level;
+            }
+            if (state.move_id != 17 || !MeleeNative.HasScope || MeleeNative.ssbm_sim_common_bone(sim, 49, scopeMatrix) != 1)
+            {
+                scopeView?.Models.HideAll(); scopeChargeView?.Models.HideAll(); return;
+            }
             if (scopeView == null) scopeView = MeleeFighterView.Item(AssetsDir, 0x15, 0);
             var m = new Matrix4x4();
             for (int n = 0; n < 16; n++) m[n] = scopeMatrix[n];
@@ -105,6 +121,15 @@ namespace Luigi
             var pos = new Vector3(scopeMatrix[12], scopeMatrix[13], scopeMatrix[14]) * scale;
             scopeView.ObjectPose(0f);
             scopeView.Models.Update(scale, d => (pos, rot));
+
+            if (!charging || !Samus.Plugin.ScopeChargeGlow.Value) { scopeChargeView?.Models.HideAll(); return; }
+            if (scopeChargeView == null) scopeChargeView = MeleeFighterView.Item(AssetsDir, 0x26, 0);
+            // itSScopeAttributes.x34 (ItCo.dat): the muzzle 5.7 units up the scope's barrel, in its own space.
+            var muzzle = pos + rot * (Vector3.up * 5.7f * scale);
+            float size = scale * (0.35f + 0.09f * level);
+            scopeChargeView.ObjectPose(0f);
+            scopeChargeView.FaceCamera(muzzle, rot, size);
+            scopeChargeView.Models.Update(size, d => (muzzle, rot));
         }
         // Gives the sim the scope while the loadout holds it (and the items archive was extracted), every step.
         void UpdateScope()
@@ -119,6 +144,25 @@ namespace Luigi
                 scopeWarned = true;
                 CommonLog.Warn("Luigi: the Super Scope is selected but not available (" + (available ? MeleeNative.Error : "ItCo.dat is not extracted yet: set Paths.Disc to your Melee disc and restart") + "); RT is the Fireball.");
             }
+            UpdateScopeChargeCue();
+        }
+        // ItemScopeStart's one sound command (SFX 0xFD, 0.25 s) is the source's whole charge cue. The host
+        // repeats that same cue while the trigger is held (Plugin's ScopeChargeLoop), so the hold is audible
+        // instead of stopping after the 15-frame Start clip.
+        void UpdateScopeChargeCue()
+        {
+            if (!scopeOn || !Samus.Plugin.ScopeChargeLoop.Value
+                || MeleeNative.ssbm_sim_scope_state(sim, out var info) != 1 || info.stage != 1)
+            { scopeCueOn = false; return; }
+            if (!scopeCueOn)
+            {
+                scopeCueOn = true;
+                scopeCueAt = Time.time + ScopeCueSeconds; // the Start clip's own cue covers this first stretch
+                return;
+            }
+            if (Time.time < scopeCueAt) return;
+            if (MeleeNative.ssbm_sim_play_sound(sim, 0xFDu) != 1) scopeCueOn = false;
+            scopeCueAt = Time.time + ScopeCueSeconds;
         }
         protected override void DrawHud()
         {
