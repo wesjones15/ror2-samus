@@ -44,7 +44,7 @@ the five-skill layout RT / LT / RB / LB / B; the skin unlocks follow stages 1, 2
   stops on what it hits.
 - *Thunder* drops a cloud and four bolt segments on Pikachu; the bolt shocks the column, and the strike (17%) electrifies the
   area around him. The host draws four fixed 4 m article-0 segments in a 16 m column above him, with the source draw
-  tinted yellow and the 1216 crackle at the strike; it no longer raycasts against the world ceiling or stretches one quad, and it is forced additive so the black texture border becomes part of the yellow glow.
+  tinted yellow and the 1216 crackle at the strike; it no longer raycasts against the world ceiling or stretches one quad, and it is forced additive with a distance-faded yellow halo where the black texture border was.
 
 **All fighters**
 - Shared systems: per-fighter skill layouts and button remapping, fighter-selected select-screen intros, the GAME! banner
