@@ -26,6 +26,8 @@ namespace Pikachu
         Vector3 quickPrev;
         bool quickActive;
         bool quickQueued;
+        int quickCharges = 2;
+        float quickRechargeTime;
         readonly HashSet<HealthComponent> quickHits = new HashSet<HealthComponent>();
         internal MeleeParticles Particles { get; private set; }
         internal MeleeEffects Effects { get; private set; }
@@ -48,7 +50,15 @@ namespace Pikachu
         protected override bool HoldCharge => false;
         protected override bool AssetsReady => Samus.Plugin.PikachuReady;
         protected override bool AssetsBusy => Samus.Plugin.AssetsBusy;
-        protected override uint AllowedButtons => PikachuSkills.Allowed(body);
+        protected override uint AllowedButtons
+        {
+            get
+            {
+                uint allowed = PikachuSkills.Allowed(body);
+                if (quickCharges > 0 && PikachuSkills.QuickOwned(body)) allowed |= 1u << 3;
+                return allowed;
+            }
+        }
         protected override bool ShieldSelected => PikachuSkills.ShieldSelected(body);
         protected override MeleeControlLayout Layout => MeleeControlLayout.Samus;
         protected override bool IsRangedMove(uint moveId) => moveId == ThunderShock;
@@ -70,6 +80,12 @@ namespace Pikachu
         /// YoshiTongue catches continuously while it is out.
         protected override void OnEventStarted(MeleeNative.Event e)
         {
+            if (e.move_id == QuickAttack)
+            {
+                if (quickCharges > 0) quickCharges--;
+                quickRechargeTime = 0f;
+                return;
+            }
             if (e.move_id != ThunderShock || !PikachuSkills.EggLaySelected(body)) return;
             var mouth = Mouth();
             YoshiTongue.Show(body, YoshiCombat.CrosshairPoint(body, mouth));
@@ -157,6 +173,16 @@ namespace Pikachu
         }
         protected override void StepPresentation(float dt)
         {
+            if (quickCharges < 2)
+            {
+                quickRechargeTime += dt;
+                while (quickRechargeTime >= 1f && quickCharges < 2)
+                {
+                    quickRechargeTime -= 1f;
+                    quickCharges++;
+                }
+            }
+            else quickRechargeTime = 0f;
             if (state.move_id == QuickAttack)
             {
                 if (!quickActive)
@@ -234,7 +260,7 @@ namespace Pikachu
             if (state.move_id == 0 && quickQueued)
             {
                 quickQueued = false;
-                if (PikachuSkills.QuickReady(body)) this.pad.QueuePress(MeleeControls.UpB);
+                if (quickCharges > 0 && PikachuSkills.QuickOwned(body)) this.pad.QueuePress(MeleeControls.UpB);
             }
         }
 
