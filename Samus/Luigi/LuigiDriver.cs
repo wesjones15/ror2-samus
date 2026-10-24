@@ -15,10 +15,8 @@ namespace Luigi
         MeleeFighterView view, entryPlatform, shieldView, scopeView, scopeChargeView; uint shieldModel;
         // The Super Scope: whether it is in hand, and the right-hand bone it is drawn on.
         bool scopeOn, scopeWarned;
-        // The held charge's audible cue and muzzle orb (host adaptations; see Plugin's Luigi config).
-        bool scopeCueOn;
-        float scopeCueAt;
-        const float ScopeCueSeconds = 0.3f;
+        // The held charge's muzzle orb (host adaptation; see Plugin's Luigi config). The charge cue is
+        // sim-side (SFX 0xFE once, after the 15-frame Start clip's cocking chirp).
         readonly float[] scopeMatrix = new float[16];
         MeleeAudio audio;
         internal MeleeParticles Particles { get; private set; }
@@ -144,25 +142,6 @@ namespace Luigi
                 scopeWarned = true;
                 CommonLog.Warn("Luigi: the Super Scope is selected but not available (" + (available ? MeleeNative.Error : "ItCo.dat is not extracted yet: set Paths.Disc to your Melee disc and restart") + "); RT is the Fireball.");
             }
-            UpdateScopeChargeCue();
-        }
-        // ItemScopeStart's one sound command (SFX 0xFD, 0.25 s) is the source's whole charge cue. The host
-        // repeats that same cue while the trigger is held (Plugin's ScopeChargeLoop), so the hold is audible
-        // instead of stopping after the 15-frame Start clip.
-        void UpdateScopeChargeCue()
-        {
-            if (!scopeOn || !Samus.Plugin.ScopeChargeLoop.Value
-                || MeleeNative.ssbm_sim_scope_state(sim, out var info) != 1 || info.stage != 1)
-            { scopeCueOn = false; return; }
-            if (!scopeCueOn)
-            {
-                scopeCueOn = true;
-                scopeCueAt = Time.time + ScopeCueSeconds; // the Start clip's own cue covers this first stretch
-                return;
-            }
-            if (Time.time < scopeCueAt) return;
-            if (MeleeNative.ssbm_sim_play_sound(sim, 0xFDu) != 1) scopeCueOn = false;
-            scopeCueAt = Time.time + ScopeCueSeconds;
         }
         protected override void DrawHud()
         {
