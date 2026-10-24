@@ -132,8 +132,13 @@ namespace Luigi
         // the beam's ball itself is only drawn by the shot.
         void UpdateScopeSmoke()
         {
-            bool charging = scopeOn && Samus.Plugin.ScopeChargeSmoke.Value
-                && MeleeNative.ssbm_sim_scope_state(sim, out var info) == 1 && info.stage == 1;
+            bool charging = false; uint level = 0;
+            if (scopeOn && Samus.Plugin.ScopeChargeSmoke.Value
+                && MeleeNative.ssbm_sim_scope_state(sim, out var info) == 1)
+            {
+                charging = info.stage == 1;
+                level = info.level;
+            }
             if (!charging) { scopeSmokeStarted = false; return; }
             if (!scopeSmokeStarted)
             {
@@ -144,7 +149,7 @@ namespace Luigi
             if (Time.time < scopeSmokeAt) return;
             scopeSmokeAt = Time.time + 0.09f;
             if (!ScopeMuzzle(out var muzzle, out var rotation)) return;
-            float size = scale * (0.6f + 0.06f * info.level);
+            float size = scale * (0.6f + 0.06f * level);
             Effects?.Spawn(0x405u, MeleeParticles.At(muzzle, rotation, size));
         }
         // Gives the sim the scope while the loadout holds it (and the items archive was extracted), every step.
