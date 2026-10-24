@@ -12,11 +12,13 @@ namespace Luigi
     public sealed class LuigiDriver : MeleeDriver
     {
         static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Samus.Plugin.AssetsDir,MeleeNative.FighterLuigi,model);
-        MeleeFighterView view, entryPlatform, shieldView, scopeView, scopeChargeView; uint shieldModel;
+        MeleeFighterView view, entryPlatform, shieldView, scopeView; uint shieldModel;
         // The Super Scope: whether it is in hand, and the right-hand bone it is drawn on.
         bool scopeOn, scopeWarned;
-        // The held charge's muzzle orb (host adaptation; see Plugin's Luigi config). The charge cue is
-        // sim-side (SFX 0xFE once, after the 15-frame Start clip's cocking chirp).
+        // The held charge puffs the disc's smoke (host visual; see Plugin's Luigi config); the charge cue
+        // itself is sim-side (SFX 0xFE once, after the 15-frame Start clip's cocking chirp).
+        bool scopeSmokeStarted;
+        float scopeSmokeAt;
         readonly float[] scopeMatrix = new float[16];
         MeleeAudio audio;
         internal MeleeParticles Particles { get; private set; }
@@ -52,7 +54,6 @@ namespace Luigi
         {
             shieldView?.Dispose(); shieldView = null;
             scopeView?.Dispose(); scopeView = null;
-            scopeChargeView?.Dispose(); scopeChargeView = null;
             view?.Dispose(); view = null;
             entryPlatform?.Dispose(); entryPlatform = null;
             audio?.Dispose(); audio = null;
@@ -96,19 +97,11 @@ namespace Luigi
             Present(() => Effects?.Draw());
         }
         // The Super Scope rides the right hand (the same bone Fox's Blaster does) while it is being used.
-        // While the trigger is held, a host adaptation draws the beam's first-level model as a charge orb at the
-        // muzzle, growing with the level; the source has no held charge effect.
         void DrawScope()
         {
-            bool charging = false; uint level = 0;
-            if (state.move_id == 17 && MeleeNative.HasScope && MeleeNative.ssbm_sim_scope_state(sim, out var info) == 1)
-            {
-                charging = info.stage == 1;
-                level = info.level;
-            }
             if (state.move_id != 17 || !MeleeNative.HasScope || MeleeNative.ssbm_sim_common_bone(sim, 49, scopeMatrix) != 1)
             {
-                scopeView?.Models.HideAll(); scopeChargeView?.Models.HideAll(); return;
+                scopeView?.Models.HideAll(); return;
             }
             if (scopeView == null) scopeView = MeleeFighterView.Item(AssetsDir, 0x15, 0);
             var m = new Matrix4x4();
@@ -119,15 +112,40 @@ namespace Luigi
             var pos = new Vector3(scopeMatrix[12], scopeMatrix[13], scopeMatrix[14]) * scale;
             scopeView.ObjectPose(0f);
             scopeView.Models.Update(scale, d => (pos, rot));
-
-            if (!charging || !Samus.Plugin.ScopeChargeGlow.Value) { scopeChargeView?.Models.HideAll(); return; }
-            if (scopeChargeView == null) scopeChargeView = MeleeFighterView.Item(AssetsDir, 0x26, 0);
-            // itSScopeAttributes.x34 (ItCo.dat): the muzzle 5.7 units up the scope's barrel, in its own space.
-            var muzzle = pos + rot * (Vector3.up * 5.7f * scale);
-            float size = scale * (0.35f + 0.09f * level);
-            scopeChargeView.ObjectPose(0f);
-            scopeChargeView.FaceCamera(muzzle, rot, size);
-            scopeChargeView.Models.Update(size, d => (muzzle, rot));
+        }
+        // The muzzle in world space: itSScopeAttributes.x34 (ItCo.dat) is 5.7 units up the barrel.
+        bool ScopeMuzzle(out Vector3 muzzle, out Quaternion rotation)
+        {
+            muzzle = Vector3.zero; rotation = Quaternion.identity;
+            if (MeleeNative.ssbm_sim_common_bone(sim, 49, scopeMatrix) != 1) return false;
+            var m = new Matrix4x4();
+            for (int n = 0; n < 16; n++) m[n] = scopeMatrix[n];
+            m *= Matrix4x4.Scale(new Vector3(-1, 1, 1));
+            var f = m.GetColumn(2); var u = m.GetColumn(1);
+            rotation = Quaternion.LookRotation(new Vector3(f.x, f.y, f.z), new Vector3(u.x, u.y, u.z));
+            muzzle = new Vector3(scopeMatrix[12], scopeMatrix[13], scopeMatrix[14]) * scale
+                + rotation * (Vector3.up * 5.7f * scale);
+            return true;
+        }
+        // Host visual: the source's Start state has no effect, but the scope's own smoke puff (efSync 0x405,
+        // the empty-click puff) reads as the charge building. Puff it from the muzzle, growing with the level;
+        // the beam's ball itself is only drawn by the shot.
+        void UpdateScopeSmoke()
+        {
+            bool charging = scopeOn && Samus.Plugin.ScopeChargeSmoke.Value
+                && MeleeNative.ssbm_sim_scope_state(sim, out var info) == 1 && info.stage == 1;
+            if (!charging) { scopeSmokeStarted = false; return; }
+            if (!scopeSmokeStarted)
+            {
+                scopeSmokeStarted = true;
+                scopeSmokeAt = Time.time + 0.2f; // the Start clip's cocking chirp and pose first
+                return;
+            }
+            if (Time.time < scopeSmokeAt) return;
+            scopeSmokeAt = Time.time + 0.09f;
+            if (!ScopeMuzzle(out var muzzle, out var rotation)) return;
+            float size = scale * (0.6f + 0.06f * info.level);
+            Effects?.Spawn(0x405u, MeleeParticles.At(muzzle, rotation, size));
         }
         // Gives the sim the scope while the loadout holds it (and the items archive was extracted), every step.
         void UpdateScope()
@@ -142,6 +160,7 @@ namespace Luigi
                 scopeWarned = true;
                 CommonLog.Warn("Luigi: the Super Scope is selected but not available (" + (available ? MeleeNative.Error : "ItCo.dat is not extracted yet: set Paths.Disc to your Melee disc and restart") + "); RT is the Fireball.");
             }
+            UpdateScopeSmoke();
         }
         protected override void DrawHud()
         {
