@@ -644,7 +644,7 @@ static class Program
         try {
             MeleeNative.ssbm_projectile_lifetime(straight,0);
             MeleeNative.ssbm_projectile_straight(straight,200f);
-            for(int f=0;f<19;f++)MeleeNative.ssbm_projectile_step(straight,1.0/60,default,0);
+            for(int f=0;f<36;f++)MeleeNative.ssbm_projectile_step(straight,1.0/60,default,0);
             MeleeNative.ssbm_projectile_state(straight,out var level);
             Check(Math.Abs(level.position.y)<0.001f,"Thunder Shock arced before 20 m: y "+level.position.y);
             for(int f=0;f<3;f++)MeleeNative.ssbm_projectile_step(straight,1.0/60,default,0);
