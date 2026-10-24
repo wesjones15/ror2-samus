@@ -620,10 +620,14 @@ namespace Yoshi
             var from = transform.position;
             var next = from + velocity * dt;
             bool grounded = false;
-            // Ground: the model's origin is the bottom of the egg.
+            // Ground: the model's origin is the bottom of the egg. Terrain only: the
+            // WorldProbe mask includes EnemyBody, and a small trapped victim's capsule
+            // sits above the egg, so an unfiltered probe reads its head as the floor and
+            // the clamp lifts the egg every tick. A large victim's capsule contains the
+            // probe, which is why only small eggs climbed.
             var probe = next + Vector3.up * (eggRadius + 0.2f);
-            if (Physics.Raycast(probe, Vector3.down, out var floor, eggRadius * 2f + 0.6f,
-                WorldProbe.Mask, QueryTriggerInteraction.Ignore))
+            if (MeleeSweep.TerrainOnly(owner, probe, MeleeSweep.TerrainRadius, Vector3.down,
+                eggRadius * 2f + 0.6f, out var floor))
             {
                 float baseY = floor.point.y;
                 if (next.y <= baseY + 0.02f)
@@ -639,8 +643,8 @@ namespace Yoshi
             if (flat.sqrMagnitude > 0.000001f)
             {
                 var dir = flat.normalized;
-                if (Physics.SphereCast(from + Vector3.up * eggRadius, eggRadius * 0.75f, dir,
-                    out var wall, flat.magnitude + 0.05f, WorldProbe.Mask, QueryTriggerInteraction.Ignore))
+                if (MeleeSweep.TerrainOnly(owner, from + Vector3.up * eggRadius, eggRadius * 0.75f,
+                    dir, flat.magnitude + 0.05f, out var wall))
                 {
                     var normal = new Vector3(wall.normal.x, 0f, wall.normal.z);
                     if (normal.sqrMagnitude > 0.01f)
