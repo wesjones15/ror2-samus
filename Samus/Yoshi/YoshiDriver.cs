@@ -139,7 +139,7 @@ namespace Yoshi
         protected override void UpdateAudio() => audio?.Update();
         protected override void CreatePresentation()
         {
-            view = new MeleeFighterView(AssetsDir, MeleeNative.FighterYoshi, Math.Min(body.skinIndex, 5));
+            view = MeleeFighterView.ForBody(body, AssetsDir, MeleeNative.FighterYoshi, Math.Min(body.skinIndex, 5));
             audio = new MeleeAudio(sim);
             Particles = new MeleeParticles(AssetsDir, scale);
             Effects = new MeleeEffects(Particles, scale, EffectView, null, Samus.Plugin.LogEffects.Value);

@@ -118,7 +118,7 @@ namespace Pikachu
         void IEggLayer.PlayEffect(uint id, Vector3 world, Quaternion rotation) => PlayEffect(id, world, rotation);
         protected override void CreatePresentation()
         {
-            view = new MeleeFighterView(AssetsDir, MeleeNative.FighterPikachu, Math.Min(body.skinIndex, 4));
+            view = MeleeFighterView.ForBody(body, AssetsDir, MeleeNative.FighterPikachu, Math.Min(body.skinIndex, 4));
             audio = new MeleeAudio(sim);
             Particles = new MeleeParticles(AssetsDir, scale);
             // The source 0x4BD aura's child generator 7002 is a 27.5-unit additive sprite,

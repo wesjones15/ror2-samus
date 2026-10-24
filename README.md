@@ -5,6 +5,16 @@ Luigi, Pikachu, Captain Falcon, Link, Yoshi and Donkey Kong. The player guide is
 repository, and the notes below are the development record, written when Samus was the only fighter. Samus 0.2.x users must
 delete `BepInEx/plugins/MeleeSamus` before installing it (see CHANGELOG.md).
 
+## Goobo Jr. clones
+
+Every Melee survivor registers an AI master, so Goobo Jr. (and an Artifact of Vengeance umbra) can spawn a clone of any of
+the eight. The AI master only walks; `MeleeBrain` in ror2-common drives the fighter's own controls. It is deliberately
+aggressive: it aims at the AI's current enemy, sprints and hops after it, closes to A reach, alternates the B A-attack
+with the next ready skill, holds charge moves through a short wind-up and releases them, and on taking a hit cancels into
+a shield (if the loadout has one) or a sideways hop. A clone is drawn in RoR2's gummy clone material by default
+(`Visuals.GummyClones`). `MeleeDriver.CreateBrain` is the per-fighter override seam for a move that needs a condition the
+slot and sim state cannot express; no fighter needs one yet. Not yet played in game.
+
 ## Samus (development record)
 
 Samus LT now combines Bomb and Morph Ball Roll into **Morph Ball Bomb**: one bomb

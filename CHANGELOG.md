@@ -1,3 +1,13 @@
+# Unreleased
+
+- **Goobo Jr. clones for every Melee fighter.** Each survivor now registers an AI master, so Goobo Jr. and the like can
+  spawn a clone of Samus, Fox, Luigi, Captain Falcon, Link, Pikachu, Yoshi or Donkey Kong. One shared `MeleeBrain` drives
+  all of them: it faces and aims at the AI's enemy, sprints and hops after it, alternates the spammable B A-attack with a
+  ready skill in reach, holds charge moves through a short wind-up (including Samus's second press to fire a stored
+  Charge Shot), and cancels into a shield or a sideways hop when a hit lands. The clone is drawn in RoR2's gummy clone
+  material; `Visuals.GummyClones` turns that off. The AI masters re-decide at 20 Hz instead of 4 Hz. Not yet played in
+  game.
+
 # 0.3.0 one Melee plugin with eight fighters
 
 A single **Melee** plugin with eight survivors. Install `Samus.dll` and `ssbm.dll` (native ABI 5) from one ZIP.

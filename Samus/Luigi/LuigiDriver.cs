@@ -46,7 +46,7 @@ namespace Luigi
         protected override void UpdateAudio() => audio?.Update();
         protected override void CreatePresentation()
         {
-            view = new MeleeFighterView(AssetsDir, MeleeNative.FighterLuigi, Math.Min(body.skinIndex, 4));
+            view = MeleeFighterView.ForBody(body, AssetsDir, MeleeNative.FighterLuigi, Math.Min(body.skinIndex, 4));
             audio = new MeleeAudio(sim);
             Particles = new MeleeParticles(AssetsDir, scale);
             Effects = new MeleeEffects(Particles, scale, EffectView, null, Samus.Plugin.LogEffects.Value);

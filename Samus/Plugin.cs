@@ -25,6 +25,7 @@ namespace Samus
         internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
         internal static ConfigEntry<bool> RimLight;
+        internal static ConfigEntry<bool> GummyClones;
         internal static ConfigEntry<float> FighterBrightness;
         internal static ConfigEntry<float> MissileRange,MissileDamageScale,ChargeShotHitboxScale,ProjectileSpeed;
         internal static ConfigEntry<float> StaggerDuration;
@@ -54,6 +55,8 @@ namespace Samus
             StaggerDuration=Config.Bind("Combat","StaggerDuration",0.25f,new ConfigDescription("Seconds a melee A attack stuns a non-boss enemy. Refreshed per hit so continued attacks lock trash; bosses/elites are exempt. 0 disables.",new AcceptableValueRange<float>(0f,2f)));
             RimLight=Config.Bind("Visuals","RimLight",true,"Draw the glow edge the source gives some moves (Captain Falcon's forward smash, Luigi's fireball) using RoR2's Fresnel emission. Turn off if models look wrong with it.");
             MeleeFighterView.RimLight=RimLight.Value;
+            GummyClones=Config.Bind("Visuals","GummyClones",true,"Draw a Melee fighter no player controls (Goobo Jr.'s clone) in RoR2's gummy clone material.");
+            MeleeFighterView.GummyClones=GummyClones.Value;
             FighterBrightness=Config.Bind("Visuals","FighterBrightness",1.5f,new ConfigDescription("How much brighter than the source's material colour the fighters are drawn. Melee's models carry a diffuse colour of 0.70 and its stage lighting makes up for it; RoR2's lighting does not, so they looked dark. 1 is the source's colour; raise it if they still look dark, lower it if they look washed out.",new AcceptableValueRange<float>(0.5f,3f)));
             MeleeFighterView.FighterBrightness=FighterBrightness.Value;
             Diagnostics=Config.Bind("Debug","Diagnostics",true,"Log each Melee move start (slot, charge, authority, whether it may deal damage), each hitbox batch and each hit dealt, as [MeleeDiag] lines in the BepInEx log. For finding why a move deals no damage. Cheap, but turn it off once everything works.");

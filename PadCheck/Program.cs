@@ -60,6 +60,15 @@ class Program{
         body.interaction.prompt=new UnityEngine.Object();pad.Read(body,input);Check((pad.Take(31).buttons&128)!=0&&!body.interaction.enabled,"native hold lost ownership on entering prompt");
         pad.ReleaseInteraction();Check(body.interaction.enabled,"cleanup left interaction disabled");
         Check(Math.Abs(Ror2Common.MeleeControls.JumpHeight(15,-30)-3.75f)<1e-6,"Commando height conversion");
-        Console.WriteLine("PASS: five skill bindings, B A attack / LT shield, X grapple and vanilla interaction ownership, capture B/RT axes, jump, edge suppression, UI focus and camera aim");
+        // A Goobo clone is not a local user: its brain's Press is the controls for the step,
+        // and the AI input bank must not overwrite them.
+        var cloneBody=new RoR2.CharacterBody();var clonePad=new Ror2Common.MeleePad { Brained=true };
+        clonePad.Read(cloneBody,input);
+        clonePad.Press(new UnityEngine.Vector3(0,0,1),new UnityEngine.Vector3(1,0,0),Ror2Common.MeleeControls.Attack);
+        var cloneStep=clonePad.Take(31);
+        Check(cloneStep.buttons==2&&cloneStep.movement.z==1&&cloneStep.aim.x==1,"a brain's buttons, movement and aim must reach the sim");
+        clonePad.Press(UnityEngine.Vector3.zero,new UnityEngine.Vector3(1,0,0),0);
+        Check(clonePad.Take(31).buttons==0,"a brain must be able to release its buttons");
+        Console.WriteLine("PASS: five skill bindings, B A attack / LT shield, X grapple and vanilla interaction ownership, capture B/RT axes, jump, edge suppression, UI focus, camera aim and a brain-controlled clone pad");
     }
 }
