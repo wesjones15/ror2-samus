@@ -33,8 +33,8 @@ the five-skill layout RT / LT / RB / LB / B; the skin unlocks follow stages 1, 2
   (`EfPkData` generator 7000), not the air-jolt trail model; the old bounce/impact puffs could leave permanent sparks.
   It flies level for 20 m before arcing down, and each surface contact now gets the source's air-jolt arc as a short blue flash.
   The 27.5-unit blue aura uses a centred radial glow instead of its corner-centred texture, so the edges fade.
-- *Egg Lay* is the RT alternate: Pikachu tenses with his Thunder-start animation, pitches his upper body
-  with the camera, and lashes Yoshi's tongue from his mouth. Caught enemies are laid in Yoshi eggs behind
+- *Egg Lay* is the RT alternate: Pikachu holds the upright Thunder cast pose (`SpecialLwStart` frame 15), pitches his
+  upper body with the camera, and lashes Yoshi's tongue from his mouth. Caught enemies are laid in Yoshi eggs behind
   him, with Yoshi's Egg Lay swallow/lay/break sounds (no voice). The 3 s cooldown is spent only on a catch.
 - *Quick Attack* homes on the same lock-on Olimar and Mario use (the nearest enemy to the camera, preferring ones in front, up
   to `Combat.LockRangeMetres`, 25 m) and arrives in the source's two zips whatever the distance. Without a target it
@@ -43,7 +43,8 @@ the five-skill layout RT / LT / RB / LB / B; the skin unlocks follow stages 1, 2
 - *Skull Bash* charges while B is held (up to 90 frames), lunges with damage and distance that grow with the charge, and
   stops on what it hits.
 - *Thunder* drops a cloud and four bolt segments on Pikachu; the bolt shocks the column, and the strike (17%) electrifies the
-  area around him.
+  area around him. The host draws four fixed 4 m article-0 segments in a 16 m column above him, with the source draw
+  tinted yellow and the 1216 crackle at the strike; it no longer raycasts against the world ceiling or stretches one quad.
 
 **All fighters**
 - Shared systems: per-fighter skill layouts and button remapping, fighter-selected select-screen intros, the GAME! banner

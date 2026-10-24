@@ -108,21 +108,20 @@ namespace Pikachu
             bolt.feet = feet;
             bolt.scale = scale;
             // Event direction = (cloud height, ticks to strike, fall speed) in Melee units.
-            float height = e.direction.x * scale;
             bolt.strikeTick = Mathf.Max(1, Mathf.RoundToInt(e.direction.y));
             float length = SegmentLength * scale;
             bolt.strikeY = feet.y + 0.7f;
-            float ceiling = height;
-            if (Physics.Raycast(feet + Vector3.up * 1.8f, Vector3.up, out var roof, height, WorldProbe.Mask, QueryTriggerInteraction.Ignore))
-                ceiling = roof.distance + 1.8f - 0.15f;
-            // Quad top sits at the cloud; its tip is one segment lower. A low ceiling
-            // shortens the fall but never the strike delay.
-            bolt.bottomStart = Mathf.Max(bolt.strikeY + 1f, feet.y + Mathf.Min(height, ceiling) - length);
+            // Fixed 16 m column above Pikachu: four 4 m article-0 segments, no world
+            // ceiling and no stretching. The source's four pieces are the visual too.
+            bolt.bottomStart = bolt.strikeY + length * (Segments - 1);
             bolt.speed = (bolt.bottomStart - bolt.strikeY) / bolt.strikeTick;
             try
             {
                 for (int i = 0; i < Segments; i++)
+                {
                     bolt.segments[i] = new MeleeFighterView(Samus.Plugin.AssetsDir, MeleeNative.FighterPikachu, 0, 0);
+                    bolt.segments[i].Tint = new Color(1f, 0.92f, 0.3f, 1f);
+                }
                 // The leading segment's hitbox (itpikachuthunder article 0, state 0).
                 var probe = MeleeNative.ssbm_projectile_new(NativeLib.CString(Samus.Plugin.AssetsDir), MeleeNative.FighterPikachu, 0, 0, 0, new MeleeNative.Vec3(0, 0, 1));
                 if (probe != IntPtr.Zero)
@@ -139,6 +138,8 @@ namespace Pikachu
         internal static void Strike(PikachuDriver driver, CharacterBody owner, float scale)
         {
             var at = owner ? owner.corePosition : Vector3.zero;
+            // ftPk_SpecialLwLoop0: efAsync_Spawn(1216, FtPart_TopN) when the bolt lands.
+            driver?.PlayEffect(1216, at + Vector3.up * 1.2f, Quaternion.identity);
             ShakeEmitter.CreateSimpleShakeEmitter(at, new Wave { amplitude = 0.2f, frequency = 14f, cycleOffset = 0 }, 0.25f, 25f, true);
         }
 
@@ -195,18 +196,16 @@ namespace Pikachu
             {
                 var view = segments[i];
                 if (view == null) continue;
-                float bottom = BottomOf(i);
-                bool lingering = tick > strikeTick + SegmentDelay * i + LingerTicks - 4;
-                if (float.IsNaN(bottom) || lingering) { view.Models.HideAll(); continue; }
+                bool lingering = tick > strikeTick + LingerTicks - 4;
+                if (lingering) { view.Models.HideAll(); continue; }
                 try
                 {
-                    var centre = new Vector3(feet.x, bottom + length * 0.5f, feet.z);
-                    // The quad hangs from its top edge in the article's local space.
-                    var at = centre + Vector3.up * length * 0.5f;
-                    // The bolt's own animation runs from the tick this segment is released.
-                    view.ObjectPose(Mathf.Max(0f, tick - SegmentDelay * i));
-                    view.FaceCamera(at, Quaternion.identity, scale);
-                    view.Models.Update(scale, d => (at, Quaternion.identity));
+                    // Fixed stack: segment 0 is the top piece, segment 3 reaches Pikachu.
+                    float top = feet.y + length * Segments - i * length;
+                    var centre = new Vector3(feet.x, top - length * 0.5f, feet.z);
+                    view.ObjectPose(Mathf.Max(0f, tick - strikeTick + i * SegmentDelay));
+                    view.FaceCamera(centre, Quaternion.identity, scale);
+                    view.Models.Update(scale, d => (centre, Quaternion.identity));
                 }
                 catch (Exception ex) { CommonLog.Error("Pikachu Thunder bolt draw: " + ex.Message); view.Dispose(); segments[i] = null; }
             }
