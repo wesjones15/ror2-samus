@@ -36,14 +36,18 @@ namespace Luigi
         }
 
         /// The Super Scope's shot: a beam of the charge level in `e.strength`, from the right hand along the crosshair.
-        internal static void Scope(CharacterBody body, MeleeNative.Event e, float scale)
+        internal static void Scope(CharacterBody body, MeleeNative.Event e, float scale, MeleeEffects effects)
         {
             if (!MeleeNet.Acts(body) || !MeleeScopeBeam.Available(Samus.Plugin.AssetsDir)) return;
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             var aim = new Vector3(e.direction.x, e.direction.y, e.direction.z).normalized;
             if (body.inputBank)
                 aim = MeleeAim.ProjectileDirection(body, origin, MeleeAim.CameraRay(body, body.inputBank));
-            MeleeScopeBeam.Spawn(body, origin + aim * 0.6f, aim, (uint)Mathf.Clamp(Mathf.RoundToInt(e.strength), 0, 9),
+            var muzzle = origin + aim * 0.6f;
+            // ftCo_ItemScopeFire.c fn_800D84D4: efSync 0x430, the muzzle flash, at the shot's origin.
+            if (effects != null && aim.sqrMagnitude > 0.0001f)
+                effects.Spawn(0x430, MeleeParticles.At(muzzle, Quaternion.LookRotation(aim), scale));
+            MeleeScopeBeam.Spawn(body, muzzle, aim, (uint)Mathf.Clamp(Mathf.RoundToInt(e.strength), 0, 9),
                 new MeleeScopeBeam.Config { AssetsDir = Samus.Plugin.AssetsDir, Scale = scale, RangeScale = Samus.Plugin.ScopeRange.Value });
         }
 

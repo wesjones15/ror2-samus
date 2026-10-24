@@ -157,7 +157,7 @@ namespace Luigi
         bool pulling;
         protected override void OnEventHit(MeleeNative.Event e)
         {
-            if (e.move_id == 17) { LuigiCombat.Scope(body, e, scale); return; }
+            if (e.move_id == 17) { LuigiCombat.Scope(body, e, scale, Effects); return; }
             if (e.move_id == 24) pulling = e.strength < 1.5f;
             LuigiCombat.Attack(this, body, e, scale);
         }
