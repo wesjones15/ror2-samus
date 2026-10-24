@@ -46,7 +46,7 @@ the five-skill layout RT / LT / RB / LB / B; the skin unlocks follow stages 1, 2
 - *Egg Lay* is the RT alternate: Pikachu holds the upright Thunder cast pose (`SpecialLwStart` frame 15), pitches his
   upper body with the camera, and lashes Yoshi's tongue from his mouth. Caught enemies are laid in Yoshi eggs behind
   him, with Yoshi's Egg Lay swallow/lay/break sounds (no voice). Eggs fan behind Pikachu's aim; the tongue now eats slimes and other HealthComponent bodies, not only HurtBoxes. The 3 s cooldown is spent only on a catch.
-- *Quick Attack* zips along the camera/stick direction in its two source zips, with no enemy lock-on. It has 2 charges, each recharging in 1 s, and damages enemies it passes through. A second zip needs a turn of at least 38 degrees or another LB press. Zips never rubber-band: Pikachu keeps the ground he covers.
+- *Quick Attack* zips along the camera/stick direction in its two source zips, with no enemy lock-on. It has 2 charges, each recharging in 1 s, and damages enemies it passes through. A second zip needs a turn of at least 38 degrees or another LB press; holding or pressing LB through a Quick queues the next stored charge, so both can be spent without waiting for the recharge. Zips never rubber-band: Pikachu keeps the ground he covers.
 - *Skull Bash* charges while B is held (up to 90 frames), lunges with damage and distance that grow with the charge, and
   stops on what it hits.
 - *Thunder* drops a cloud and four bolt segments on Pikachu; the bolt shocks the column, and the strike puts out a 10 m electric burst with heavy damage and outward knockback. An overhead surface blocks the cloud, bolt and burst entirely. The host draws four fixed 4 m article-0 segments in a 16 m column above him, with the source draw
