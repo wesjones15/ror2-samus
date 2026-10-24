@@ -59,7 +59,7 @@ namespace Samus
             Diagnostics=Config.Bind("Debug","Diagnostics",true,"Log each Melee move start (slot, charge, authority, whether it may deal damage), each hitbox batch and each hit dealt, as [MeleeDiag] lines in the BepInEx log. For finding why a move deals no damage. Cheap, but turn it off once everything works.");
             MeleeDiag.On=Diagnostics.Value;
             ScopeRange=Config.Bind("Luigi","ScopeRangeScale",3f,new ConfigDescription("Super Scope: how many times as fast and as far as the source's the beam flies, because an open world is bigger than a stage.",new AcceptableValueRange<float>(1f,10f)));
-            ScopeChargeSmoke=Config.Bind("Luigi","ScopeChargeSmoke",true,"Super Scope: puff the disc's smoke (efSync 0x405) above the holder's feet while the trigger is held, growing with the charge. Host visual: the decomp's Start state has no effect at all; this reproduces the planted-stance smoke rather than putting a ball at the muzzle.");
+            ScopeChargeSmoke=Config.Bind("Luigi","ScopeChargeSmoke",true,"Super Scope: repeat the disc's animated ground smoke and wind streaks (EfCoData model 5, cue 0x3FF) at the feet while charging on the ground. Host visual timing; smoke grows slightly with charge and finishes its animation after release.");
             // Melee multiplayer: the messages that carry a fighter to the other players (MeleeNet).
             MeleeNet.Register();
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");

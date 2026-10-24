@@ -209,6 +209,12 @@ presentation rises. Source entry colour program 0x75 is connected to the common
 renderer's overlay input, alongside local-joint
 blending for directional fall/air-fall/helpless poses.
 
+Luigi's `ScopeChargeSmoke` uses the disc's animated ground-smoke model (common
+effect 5 / cue `0x3FF`) at his feet while charging on the ground. It replaces the
+empty-click puffs at the muzzle. Waves finish their 20-frame animation after
+release; emission timing and charge scaling are host-authored. Verified in the
+local asset viewer and build/boundary checks; not yet played in RoR2.
+
 Known limits: full TEV/animated texture and UV fidelity, other source transition blending,
 complete particle trail/mirror/alpha-compare semantics, and gameplay visual/audio
 validation remain unfinished. Attack speed, all item-specific effects,

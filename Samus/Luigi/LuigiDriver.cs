@@ -126,16 +126,16 @@ namespace Luigi
                 + rotation * (Vector3.up * 5.7f * scale);
             return true;
         }
-        // Host visual: the source's Start state has no effect, but the Super Scope's own smoke puff
-        // (efSync 0x405) builds at the muzzle while charging, as in the reference shots. The beam's ball
-        // itself is only drawn by the shot.
+        // Host charge presentation: efasync.c 0x3FF -> EfCoData model 5 is animated
+        // ground smoke with trailing wind streaks. 0x405 is only the empty-click puff.
+        // Reuse the shared model-effect lifecycle and its disc texture animation.
         void UpdateScopeSmoke()
         {
             bool charging = false; uint level = 0;
             if (scopeOn && Samus.Plugin.ScopeChargeSmoke.Value
                 && MeleeNative.ssbm_sim_scope_state(sim, out var info) == 1)
             {
-                charging = info.stage == 1;
+                charging = info.stage == 1 && state.grounded != 0;
                 level = info.level;
             }
             if (!charging) { scopeSmokeStarted = false; return; }
@@ -146,18 +146,15 @@ namespace Luigi
                 return;
             }
             if (Time.time < scopeSmokeAt) return;
-            scopeSmokeAt = Time.time + (0.1f - 0.003f * level);
-            if (!ScopeMuzzle(out var muzzle, out var rotation)) return;
-            int puffs = 6 + (int)(level / 2); // 6 at level 0 to 10 at level 9
-            float radius = 0.08f + 0.015f * level;
-            float angle = Time.time * 5f;
-            for (int i = 0; i < puffs; i++)
-            {
-                float a = angle + i * Mathf.PI * 2f / puffs;
-                var at = muzzle + rotation * (new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * radius);
-                // efSync 0x405: the scope's own smoke puff; dense at the muzzle to match the cloud.
-                Effects?.Spawn(0x405u, MeleeParticles.At(at, rotation, scale));
-            }
+            // Each source model lasts 20 frames. Overlap at most two waves, letting
+            // released charges finish naturally instead of accumulating puff rings.
+            scopeSmokeAt = Time.time + 12f / 60f;
+            var facing = new Vector3(state.facing.x, 0, state.facing.z);
+            var rotation = facing.sqrMagnitude > 0 ? Quaternion.LookRotation(facing) : Quaternion.identity;
+            var feet = ToWorld(state.position) + Vector3.up * (0.2f * scale);
+            float size = 0.65f + 0.025f * Math.Min(level, 9u);
+            Effects?.Spawn(0x3FFu, MeleeParticles.At(feet, rotation, scale)
+                * Matrix4x4.Scale(Vector3.one * size));
         }
         // Gives the sim the scope while the loadout holds it (and the items archive was extracted), every step.
         void UpdateScope()
