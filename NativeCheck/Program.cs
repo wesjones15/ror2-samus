@@ -507,6 +507,18 @@ static class Program
                 MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/30);
                 MeleeNative.ssbm_sim_state(sim,out var running);
                 Check(running.move_id==0&&running.shot_charge==stored&&running.position.x>moving.position.x,"sprint failed to store charge and continue motion");
+                // Jumping while charging keeps the hold airborne (the split anim).
+                var jumpSim=MeleeNative.ssbm_sim_new(NativeLib.CString(assets),default);Check(jumpSim!=IntPtr.Zero,MeleeNative.Error);
+                try {
+                    var jpad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(1,0,0),allowed=31};
+                    MeleeNative.ssbm_sim_step(jumpSim,in host,in jpad,1.0/60);
+                    jpad.buttons=256; // neutral-B charges
+                    for(int f=0;f<fps;f++)MeleeNative.ssbm_sim_step(jumpSim,in host,in jpad,1.0/fps);
+                    jpad.buttons=256|1; // + jump
+                    MeleeNative.ssbm_sim_step(jumpSim,in host,in jpad,1.0/30);
+                    MeleeNative.ssbm_sim_state(jumpSim,out var jumping);
+                    Check(jumping.move_id==20&&jumping.phase==4&&jumping.grounded==0&&jumping.shot_charge>0,"jump cancelled or grounded the Charge Shot at "+fps+" FPS");
+                } finally {MeleeNative.ssbm_sim_free(jumpSim);}
             } finally {MeleeNative.ssbm_view_free(view);MeleeNative.ssbm_sim_free(sim);}
         }
         Console.WriteLine("PASS: mobile Charge Shot pose/cannon, grounded travel and sprint storage at 30/60/144 FPS");
