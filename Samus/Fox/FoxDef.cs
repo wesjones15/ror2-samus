@@ -26,11 +26,11 @@ namespace Fox
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeFox2",nameToken="SSBM_FOX_SKILL_2",descriptionToken="SSBM_FOX_SKILL_DESC_2",
-                displayName="Fox Illusion",description="RB: dash forward in a blue streak, hitting everything in your path.",
+                displayName="Fox Illusion",description="RB: dash in the stick's direction, passing through enemies for 500% damage. Hold RB to keep dashing for up to 6 seconds; release to stop.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeFox3",nameToken="SSBM_FOX_SKILL_3",descriptionToken="SSBM_FOX_SKILL_DESC_3",
-                displayName="Fire Fox",description="LB: charge a fireball in place, then launch toward the camera, hitting hard and ending in a fiery impact that burns and blasts nearby enemies.",
+                displayName="Fire Fox",description="LB: charge a fireball in place, then launch toward the camera, hitting hard and ending in a fiery impact that burns and blasts nearby enemies. Hold LB to keep flying for up to 6 seconds; release to land the impact.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeFox1",nameToken="SSBM_FOX_SKILL_1",descriptionToken="SSBM_FOX_SKILL_DESC_1",

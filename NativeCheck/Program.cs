@@ -440,7 +440,13 @@ static class Program
             try{Check(MeleeNative.ssbm_view_pose(view,NativeLib.CString("DownBoundU"),12)==1,"death fall pose unavailable: "+MeleeNative.Error);}
             finally{MeleeNative.ssbm_view_free(view);}
         }finally{MeleeNative.ssbm_sim_free(sim);}
-        Console.WriteLine("PASS: extracted Melee GAME voice and grounded death fall pose through C#");
+        var impact=MeleeNative.ssbm_sim_new(NativeLib.CString(assets),default);Check(impact!=IntPtr.Zero,MeleeNative.Error);
+        try {
+            Check(MeleeNative.ssbm_sim_play_sound(impact,0x74)==1,"common item-explosion cue missing: "+MeleeNative.Error);
+            var pcm=new float[32000*2];Check(MeleeNative.ssbm_sim_audio(impact,pcm,32000)==32000,MeleeNative.Error);
+            Check(Array.Exists(pcm,x=>Math.Abs(x)>0.0001f),"impact cue decoded silence");
+        } finally {MeleeNative.ssbm_sim_free(impact);}
+        Console.WriteLine("PASS: extracted Melee GAME voice, common impact cue and grounded death fall pose through C#");
     }
     static void MobileChargeRegressions(string assets,in MeleeNative.Host host)
     {
