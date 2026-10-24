@@ -28,10 +28,14 @@ namespace Yoshi
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             var camera = body.inputBank ? MeleeAim.CameraRay(body, body.inputBank).direction : aim;
             if (e.move_id == 20 && e.strength < 1.5f)
-                // The lash and the grab both read the live crosshair: the player may still
-                // be panning through the tongue's startup. Once it catches, it locks to the
-                // victim so the reel cannot drag it around with the camera.
-                Tongue(body, e.move_id);
+            {
+                // The drawn tongue catches continuously while it is out (see YoshiTongue);
+                // this source grab is a last-chance scan if the view failed to spawn. Tell
+                // the sim at the source grab, not at the first catch: the tongue clip keeps
+                // its 40-tick length and the lay queue does not stretch it.
+                YoshiTongue.Catch(body, e.move_id);
+                if (YoshiTongue.HasCaught(body)) body.GetComponent<YoshiDriver>()?.QueueConnect();
+            }
             else if (e.move_id == 23) ThrowEgg(body, camera, scale);
             else if (e.move_id == 24) Bomb(body, origin, scale);
         }
@@ -66,33 +70,45 @@ namespace Yoshi
         internal static Vector3 MouthFallback(CharacterBody body)
             => body.corePosition + Vector3.up * Mathf.Max(0.25f, body.radius * 0.35f);
 
-        // Egg Lay: the tongue swallows the first enemy in its reach. There is no boss
-        // immunity: Mithrix is laid in an egg like anything else. A capsule overlap
-        // (rather than a fat sphere cast) sweeps the whole tongue without the ground
-        // stopping it early; the lash's own extent is separately clamped to the first
-        // terrain the narrow centre probe meets, so it stops at a wall or floor instead
-        // of passing through it.
-        static void Tongue(CharacterBody body, uint moveId)
+        // Egg Lay: the tongue swallows every enemy it touches while it is out, up to
+        // MaxEggLayFoes. There is no boss immunity: Mithrix is laid in an egg like anything
+        // else. A capsule overlap (rather than a fat sphere cast) sweeps the whole tongue;
+        // the lash's own extent is separately clamped to the first terrain the narrow centre
+        // probe meets, so it stops at a wall or floor instead of passing through it.
+        internal const int MaxEggLayFoes = 6;
+        static readonly Collider[] tongueHits = new Collider[128];
+
+        /// Begin an egg for every catchable enemy inside the tongue's capsule, up to `max`
+        /// new ones. Enemies already in `caught`, held, or in an egg are skipped, and a
+        /// victim behind terrain is not eaten through it. Returns how many were caught.
+        internal static int CatchAlong(CharacterBody body, Vector3 mouth, Vector3 aim, float limit,
+            HashSet<CharacterBody> caught, int max)
         {
-            var mouth = Mouth(body);
-            // Live crosshair, not a point frozen at the move start: a player still panning
-            // would otherwise see the lash below the reticle for the tongue's whole startup.
-            var target = CrosshairPoint(body, mouth);
-            var delta = target - mouth;
-            float want = delta.magnitude;
-            if (want < 0.001f) return;
-            var aim = delta / want;
-            float limit = Mathf.Min(want, TerrainReach(body, mouth, aim));
-            var caught = FindTarget(body, mouth, aim, limit, out float distance);
-            if (caught == null) return;
-            if (!YoshiFull.Begin(body, caught)) return;
-            body.GetComponent<YoshiDriver>()?.QueueConnect();
-            // Lock the lash to the caught victim so the reel cannot follow the camera.
-            float locked = Mathf.Min(distance + 0.35f, limit);
-            YoshiTongue.SetReach(body, locked);
-            YoshiTongue.LockTo(body, mouth + aim * locked);
-            // Egg Lay pays its cooldown only for a catch; the start deferred the spend.
-            NativeSkills.SpendDeferred(YoshiSkills.Built, body, moveId);
+            if (max <= 0 || limit <= 0.01f || aim.sqrMagnitude < 0.0001f) return 0;
+            aim = aim.normalized;
+            int n = Physics.OverlapCapsuleNonAlloc(mouth, mouth + aim * limit, TongueRadius, tongueHits,
+                LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Collide);
+            int count = 0;
+            for (int i = 0; i < n && count < max; i++)
+            {
+                var hurt = tongueHits[i] ? tongueHits[i].GetComponent<HurtBox>() : null;
+                if (!hurt || !hurt.healthComponent) continue;
+                var target = hurt.healthComponent.body;
+                if (!target || target == body || !target.teamComponent
+                    || target.teamComponent.teamIndex == body.teamComponent.teamIndex) continue;
+                if (!hurt.healthComponent.alive || YoshiEgg.IsTrapped(target) || YoshiFull.IsHolding(target)) continue;
+                if (caught != null && !caught.Add(target)) continue;
+                var point = hurt.collider ? hurt.collider.ClosestPoint(mouth) : hurt.transform.position;
+                float d = Vector3.Distance(mouth, point);
+                if (d > limit) continue;
+                // Do not eat through a wall. Terrain only: the victim's own body and
+                // hurtboxes sit on layers WorldProbe.Mask can include, so a plain linecast
+                // from the mouth could mistake them for the wall.
+                if (d > 0.01f && MeleeSweep.TerrainOnly(body, mouth, MeleeSweep.TerrainRadius,
+                    (point - mouth).normalized, d, out var wall) && wall.distance < d - 0.05f) continue;
+                if (YoshiFull.Begin(body, target)) count++;
+            }
+            return count;
         }
 
         /// How far the lash can reach before it meets terrain. The narrow centre probe is
@@ -104,49 +120,6 @@ namespace Yoshi
             if (MeleeSweep.Terrain(body, mouth, aim.normalized, TongueReach, out var hit))
                 return Mathf.Clamp(hit.distance, 0f, TongueReach);
             return TongueReach;
-        }
-
-        /// Where the drawn tongue should stop: the nearest catchable enemy along the live
-        /// mouth-to-target line, the terrain in front of it, or the crosshair point itself.
-        internal static float ScanReach(CharacterBody body, Vector3 mouth, Vector3 target)
-        {
-            var delta = target - mouth;
-            float want = delta.magnitude;
-            if (want < 0.001f) return 0f;
-            var aim = delta / want;
-            float limit = Mathf.Min(want, TerrainReach(body, mouth, aim));
-            var caught = FindTarget(body, mouth, aim, limit, out float distance);
-            return caught ? Mathf.Min(distance + 0.35f, limit) : limit;
-        }
-
-        static CharacterBody FindTarget(CharacterBody body, Vector3 mouth, Vector3 aim, float limit, out float distance)
-        {
-            distance = limit;
-            var hits = new Collider[128];
-            int n = Physics.OverlapCapsuleNonAlloc(mouth, mouth + aim * limit, TongueRadius, hits,
-                LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Collide);
-            CharacterBody best = null;
-            float bestDistance = float.MaxValue;
-            for (int i = 0; i < n; i++)
-            {
-                var hurt = hits[i] ? hits[i].GetComponent<HurtBox>() : null;
-                if (!hurt || !hurt.healthComponent) continue;
-                var target = hurt.healthComponent.body;
-                if (!target || target == body || !target.teamComponent
-                    || target.teamComponent.teamIndex == body.teamComponent.teamIndex) continue;
-                if (!hurt.healthComponent.alive || YoshiEgg.IsTrapped(target) || YoshiFull.IsHolding(target)) continue;
-                var point = hurt.collider ? hurt.collider.ClosestPoint(mouth) : hurt.transform.position;
-                float d = Vector3.Distance(mouth, point);
-                if (d > limit || d >= bestDistance) continue;
-                // Do not eat through a wall. Terrain only: the victim's own hurtboxes are
-                // on the entity layer and are excluded from this mask.
-                if (Physics.Linecast(mouth, point, out var wall, WorldProbe.Mask, QueryTriggerInteraction.Ignore)
-                    && Vector3.Distance(mouth, wall.point) < d - 0.05f) continue;
-                best = target;
-                bestDistance = d;
-            }
-            if (best) distance = bestDistance;
-            return best;
         }
 
         // Egg Throw: the camera pitch sets the arc, as the reticle did, and the egg
@@ -193,37 +166,54 @@ namespace Yoshi
 
     // The drawn Egg Lay tongue. The disc's tongue is a grab capsule with no model of its
     // own in the fighter's costume archive, so the host draws the lash: a tapered,
-    // camera-facing ribbon from the mouth to the reach (or to the victim it caught) that
-    // shoots out, holds a moment and retracts. Its length is the same reach the capture
-    // uses, so what is drawn is what bites.
+    // camera-facing ribbon from the mouth to the live crosshair that shoots out, holds a
+    // moment and retracts. It catches every enemy it touches while out (up to six), and its
+    // length is the same reach the capture uses, so what is drawn is what bites.
     internal sealed class YoshiTongue : MonoBehaviour
     {
         // The SpecialN clip runs 40 ticks: the tongue is fully out at its frame-20 grab and
-        // back by the end of the clip.
+        // back by the end of the clip. This window is fixed: multi-catch and the lay queue
+        // never extend it, and the queue runs after the lash has retracted.
         const float ExtendSeconds = 0.18f, HoldSeconds = 0.22f, RetractSeconds = 0.25f;
         const int Points = 16;
+        const uint EggLayMove = 20;
         const float TotalSeconds = ExtendSeconds + HoldSeconds + RetractSeconds;
         static readonly List<YoshiTongue> active = new List<YoshiTongue>();
         CharacterBody owner;
-        /// The crosshair point the lash is aimed at while the mouth moves through the clip.
+        /// The live crosshair point the lash is aimed at while the mouth moves through the clip.
         Vector3 target;
-        /// Once the tongue catches, the target is the victim's tip and no longer follows
-        /// the camera; otherwise the reel would drag the victim around with the crosshair.
-        bool locked;
-        float reach, age;
+        /// Foes this sweep has caught, so one is never counted twice and the cap holds.
+        readonly HashSet<CharacterBody> caught = new HashSet<CharacterBody>();
+        bool spent;
+        float age;
         LineRenderer line;
         Material material;
 
-        internal static void Show(CharacterBody owner, Vector3 target, float reach)
+        internal static YoshiTongue Find(CharacterBody owner)
+        {
+            foreach (var tongue in active) if (tongue && tongue.owner == owner) return tongue;
+            return null;
+        }
+
+        /// Whether this sweep has caught anyone yet; the source grab asks this to start the
+        /// sim's SpecialN2 at its own timing rather than at the first catch.
+        internal static bool HasCaught(CharacterBody owner)
+        {
+            var tongue = Find(owner);
+            return tongue != null && tongue.caught.Count > 0;
+        }
+
+        internal static void Show(CharacterBody owner, Vector3 target)
         {
             if (!owner) return;
+            // One lash per out window: a repeated start event must not restart its clock.
+            if (Find(owner) != null) return;
             for (int i = active.Count - 1; i >= 0; i--)
                 if (!active[i] || active[i].owner == owner) { if (active[i]) Destroy(active[i].gameObject); active.RemoveAt(i); }
             var go = new GameObject("Yoshi tongue");
             var tongue = go.AddComponent<YoshiTongue>();
             tongue.owner = owner;
             tongue.target = target;
-            tongue.reach = Mathf.Clamp(reach, 1f, YoshiCombat.TongueReach);
             try {
                 // Shader.Find is hooked by RoR2 and throws for stripped shaders
                 // (Sprites/Default is not in its table). Use the game's own effect shader;
@@ -242,7 +232,7 @@ namespace Yoshi
                 renderer.endColor = tint;
                 renderer.useWorldSpace = true;
                 renderer.positionCount = Points;
-                float width = Mathf.Clamp(0.22f + tongue.reach * 0.006f, 0.22f, 0.55f);
+                float width = Mathf.Clamp(0.22f + YoshiCombat.TongueReach * 0.006f, 0.22f, 0.55f);
                 renderer.startWidth = width;
                 renderer.endWidth = width * 0.42f;
                 renderer.numCapVertices = 6;
@@ -261,22 +251,60 @@ namespace Yoshi
             }
         }
 
-        /// Shorten the lash to the victim the cast caught, so the tip is on the enemy.
-        internal static void SetReach(CharacterBody owner, float reach)
+        /// The source grab event (or a view that failed to spawn) asks the tongue to catch
+        /// once more; `LateUpdate` also scans every frame while the lash is out, so panning
+        /// sweeps new foes into it.
+        internal static void Catch(CharacterBody owner, uint moveId)
         {
-            foreach (var tongue in active)
-                if (tongue && tongue.owner == owner)
-                    tongue.reach = Mathf.Clamp(reach, 1f, YoshiCombat.TongueReach);
+            var tongue = Find(owner);
+            if (tongue != null) { tongue.CatchNow(moveId); return; }
+            if (!owner || !MeleeNet.Acts(owner)) return;
+            var mouth = YoshiCombat.Mouth(owner);
+            var target = YoshiCombat.CrosshairPoint(owner, mouth);
+            var delta = target - mouth;
+            float want = delta.magnitude;
+            if (want < 0.001f) return;
+            var aim = delta / want;
+            float length = Mathf.Min(want, YoshiCombat.TerrainReach(owner, mouth, aim));
+            var seen = new HashSet<CharacterBody>();
+            int n = YoshiCombat.CatchAlong(owner, mouth, aim, length, seen, YoshiCombat.MaxEggLayFoes);
+            if (n <= 0) return;
+            owner.GetComponent<YoshiDriver>()?.QueueConnect();
+            NativeSkills.SpendDeferred(YoshiSkills.Built, owner, moveId);
         }
 
-        /// Stop following the camera and hold the lash on the caught victim's tip.
-        internal static void LockTo(CharacterBody owner, Vector3 point)
+        void CatchNow(uint moveId)
         {
-            foreach (var tongue in active)
-                if (tongue && tongue.owner == owner) { tongue.target = point; tongue.locked = true; }
+            if (!owner) return;
+            var mouth = YoshiCombat.Mouth(owner);
+            var target = YoshiCombat.CrosshairPoint(owner, mouth);
+            var delta = target - mouth;
+            float want = delta.magnitude;
+            if (want < 0.001f) return;
+            var aim = delta / want;
+            float amount = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Amount()));
+            float length = Mathf.Min(Mathf.Min(YoshiCombat.TongueReach, want),
+                YoshiCombat.TerrainReach(owner, mouth, aim)) * amount;
+            CatchCore(mouth, aim, length, moveId);
         }
 
-        /// The current tip in world space; the reel keeps the caught enemy there.
+        void CatchCore(Vector3 mouth, Vector3 aim, float length, uint moveId)
+        {
+            if (!owner || !MeleeNet.Acts(owner) || length < 0.35f
+                || caught.Count >= YoshiCombat.MaxEggLayFoes) return;
+            int n = YoshiCombat.CatchAlong(owner, mouth, aim, length, caught,
+                YoshiCombat.MaxEggLayFoes - caught.Count);
+            if (n <= 0) return;
+            // The sim's SpecialN2 is started by the source grab (Attack) once this sweep
+            // has caught someone, so the tongue clip keeps its 40-tick length. The lay
+            // queue's Release connects again only as a late-catch fallback.
+            // Egg Lay pays its cooldown only for a catch; the start deferred the spend.
+            if (spent) return;
+            spent = true;
+            NativeSkills.SpendDeferred(YoshiSkills.Built, owner, moveId);
+        }
+
+        /// The current tip in world space; the reel keeps a caught enemy there.
         internal static bool TryTip(CharacterBody owner, out Vector3 tip)
         {
             foreach (var tongue in active)
@@ -288,7 +316,7 @@ namespace Yoshi
                 if (want < 0.0001f) { tip = mouth; return true; }
                 var aim = delta / want;
                 float amount = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(tongue.Amount()));
-                float length = Mathf.Min(Mathf.Min(tongue.reach, want),
+                float length = Mathf.Min(Mathf.Min(YoshiCombat.TongueReach, want),
                     YoshiCombat.TerrainReach(owner, mouth, aim)) * amount;
                 tip = mouth + aim * length;
                 return true;
@@ -312,19 +340,17 @@ namespace Yoshi
             if (age >= TotalSeconds) { Destroy(gameObject); return; }
             float amount = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Amount()));
             var origin = YoshiCombat.Mouth(owner);
-            // Before a catch the lash reads the live crosshair every frame: panning during
-            // the startup no longer leaves it on the point from the button press.
-            if (!locked) target = YoshiCombat.CrosshairPoint(owner, origin);
+            // The lash reads the live crosshair every frame and never locks, so a player can
+            // sweep it across new foes while it is out; the reel follows the same tip.
+            target = YoshiCombat.CrosshairPoint(owner, origin);
             var delta = target - origin;
             float want = delta.magnitude;
             if (want < 0.0001f) { line.enabled = false; return; }
             var aim = delta / want;
-            // Before a catch the lash follows the live target up to the full reach; the
-            // start-of-move scan is only a width hint. After a catch its reach is the
-            // victim's tip.
-            float cap = locked ? reach : YoshiCombat.TongueReach;
-            float length = Mathf.Min(Mathf.Min(cap, want),
+            float length = Mathf.Min(Mathf.Min(YoshiCombat.TongueReach, want),
                 YoshiCombat.TerrainReach(owner, origin, aim)) * amount;
+            // Catch every enemy the lash currently touches (up to the sweep's cap).
+            CatchCore(origin, aim, length, EggLayMove);
             // A little gravity sag keeps it from reading as a laser; cap it so a 20 m
             // lash does not bow metres downward.
             float sag = Mathf.Min(0.04f * length, 0.25f);
@@ -347,16 +373,14 @@ namespace Yoshi
         }
     }
 
-    // A swallowed enemy, inside Yoshi until he lays the egg. The reel drags the visible body
-    // to the tongue tip and shrinks it to nothing; then Yoshi carries it (Melee's own
-    // WaitItem / HeavyWalk1 / HeavyWalk2 clips are his heavy-item gait) at a slow walk.
-    // A second Egg Lay press (or a timeout) lays the egg behind him with SpecialN2.
+    // A swallowed enemy, inside Yoshi until its turn in the lay queue. The reel drags the
+    // visible body to the tongue tip and shrinks it to nothing; then Yoshi carries it
+    // (Melee's WaitItem / HeavyWalk1 / HeavyWalk2 are his heavy-item gait) at a slow walk.
+    // One victim at a time then plays SpecialN2 and lays its egg; the rest queue behind it.
     internal sealed class YoshiFull : MonoBehaviour
     {
         const float ReelSeconds = 0.45f;
         const float HoldSeconds = 20f;
-        /// How long Yoshi carries the swallowed enemy before laying the egg by himself.
-        const float AutoLaySeconds = 0f;
         const float LayingSeconds = 0.5f;
         const uint SwallowSound = 0xdd;      // SpecialN2 frame 0: the swallow cue
         const uint LaySound = 0x4460c;       // SpecialN2 frame 25: the source's lay cue
@@ -369,24 +393,31 @@ namespace Yoshi
         }
         internal static bool IsCarrying(CharacterBody body)
         {
-            var full = For(body);
-            return full && full.carrying;
+            foreach (var full in live) if (full && full.owner == body && full.carrying) return true;
+            return false;
         }
         internal static bool IsLaying(CharacterBody body)
         {
-            var full = For(body);
-            return full && full.laying;
+            foreach (var full in live) if (full && full.owner == body && full.laying) return true;
+            return false;
         }
-        internal static YoshiFull For(CharacterBody body)
-            => body ? body.GetComponent<YoshiFull>() : null;
+        static int Count(CharacterBody body)
+        {
+            int n = 0;
+            foreach (var full in live) if (full && full.owner == body) n++;
+            return n;
+        }
 
         internal static bool Begin(CharacterBody owner, CharacterBody victim)
         {
-            if (!MeleeNet.Acts(owner) || !victim || For(owner) || IsHolding(victim)) return false;
+            if (!MeleeNet.Acts(owner) || !victim || IsHolding(victim)
+                || Count(owner) >= YoshiCombat.MaxEggLayFoes) return false;
             if (!EnemyHold.Hold(victim, HoldSeconds)) return false;
+            int slot = Count(owner);
             var full = owner.gameObject.AddComponent<YoshiFull>();
             full.owner = owner;
             full.victim = victim;
+            full.slot = slot;
             if (victim.modelLocator && victim.modelLocator.modelTransform) {
                 full.victimModel = victim.modelLocator.modelTransform;
                 full.originalScale = full.victimModel.localScale;
@@ -395,7 +426,9 @@ namespace Yoshi
         }
 
         CharacterBody owner, victim;
-        float age, carriedAt;
+        /// Where this victim's egg goes in the fan behind Yoshi (0..MaxEggLayFoes-1).
+        int slot;
+        float age;
         bool carrying, laying, laid, pendingLay;
         float layAge;
         Vector3 layPoint;
@@ -436,9 +469,9 @@ namespace Yoshi
                 return;
             }
             if (carrying) {
-                // Keep the belly hold alive; he lays the egg on his own after the carry.
+                // Keep the belly hold alive until this victim's turn in the lay queue.
                 EnemyHold.Hold(victim, 5f);
-                if (Time.time - carriedAt >= AutoLaySeconds) Release();
+                if (!LayBusy(owner)) Release();
                 return;
             }
             // Reel: the victim hangs on the tongue tip and shrinks into the mouth.
@@ -452,15 +485,13 @@ namespace Yoshi
             if (victimModel) victimModel.localScale = originalScale * (1f - amount);
             if (t >= 1f) {
                 carrying = true;
-                carriedAt = Time.time;
                 if (victimModel) GameSettings.HideRenderers(victimModel, true);
-                owner.GetComponent<YoshiDriver>()?.PlaySourceSound(SwallowSound);
-                if (AutoLaySeconds <= 0f) Release();
             }
         }
 
-        /// Lay the egg behind Yoshi. `FixedUpdate` calls this after the carry window; the
-        /// source swallow/lay clip then runs and the egg appears on its frame 25.
+        /// One victim at a time lays: the swap-in pose is the source's SpecialN2, with its
+        /// swallow cue at the start, the egg and lay cue on frame 25, and the next victim
+        /// queued behind it. Each `YoshiFull` is one victim in that queue.
         internal void Release()
         {
             if (!carrying || laying || !owner || !victim) return;
@@ -469,12 +500,26 @@ namespace Yoshi
             pendingLay = true;
             layAge = 0f;
             if (victimModel) victimModel.localScale = originalScale;
-            var behind = owner.footPosition - owner.transform.forward * (owner.radius + 1.0f);
+            // Start the sim's SpecialN2 with this victim's lay, so its swallow/lay animation
+            // and cues belong to the egg actually being laid, not to the first catch.
+            owner.GetComponent<YoshiDriver>()?.QueueConnect();
+            owner.GetComponent<YoshiDriver>()?.PlaySourceSound(SwallowSound);
+            int ring = slot / 3, side = slot % 3;
+            var behind = owner.footPosition - owner.transform.forward * (owner.radius + 1.0f + ring * 0.9f)
+                + owner.transform.right * ((side - 1) * 0.9f);
             behind = WorldProbe.PushOutOfWalls(behind + Vector3.up * 0.5f, 0.6f, 0.5f, null, 0, 8) - Vector3.up * 0.5f;
-            if (WorldProbe.Ground(behind + Vector3.up * 1.5f, 3f, out var floor))
+            if (MeleeSweep.TerrainOnly(owner, behind + Vector3.up * 1.5f, MeleeSweep.TerrainRadius,
+                Vector3.down, 3f, out var floor))
                 behind = floor.point + Vector3.up * 0.03f;
             layPoint = behind;
             SetFeet(victim, behind);
+        }
+
+        static bool LayBusy(CharacterBody owner)
+        {
+            foreach (var full in live)
+                if (full && full.owner == owner && full.laying) return true;
+            return false;
         }
 
         /// The carry/lay pose for the driver. The reel itself uses the sim's SpecialN2.
@@ -500,6 +545,20 @@ namespace Yoshi
             return true;
         }
 
+        /// The active lay wins the pose; otherwise the first victim still being carried
+        /// supplies the heavy-carry gait. Multiple victims queue behind the one laying.
+        internal static bool TryPoseAny(CharacterBody owner, float dt, in MeleeNative.State state,
+            out string clip, out float frame)
+        {
+            foreach (var full in live)
+                if (full && full.owner == owner && full.laying
+                    && full.TryPose(dt, in state, out clip, out frame)) return true;
+            foreach (var full in live)
+                if (full && full.owner == owner && full.TryPose(dt, in state, out clip, out frame)) return true;
+            clip = null; frame = 0f;
+            return false;
+        }
+
         static void SetCore(CharacterBody body, Vector3 core)
         {
             if (!body) return;
@@ -520,13 +579,13 @@ namespace Yoshi
     }
 
     // An enemy laid in an egg (Egg Lay). EnemyHold keeps it helpless where it stands until
-    // it breaks out: a few seconds for most, longer for the large and longest for bosses.
-    // It can still be hit meanwhile. The egg is sized to the victim, but not to scale: a
-    // large enemy's egg tops out near 2.4 m, a boss's is bigger than that and still well
-    // short of the boss itself.
+    // it breaks out: 5 s for most, 7 s for the large and 10 s for bosses. It can still be
+    // hit meanwhile. The egg is sized to the victim, but not to scale: a large enemy's egg
+    // tops out near 2.4 m, a boss's is bigger than that and still well short of the boss
+    // itself. On break-out the victim is put back on clear ground, never under the floor.
     internal sealed class YoshiEgg : MonoBehaviour, IOnIncomingDamageServerReceiver
     {
-        const float NormalSeconds = 4f, LargeSeconds = 6f, BossSeconds = 9f;
+        const float NormalSeconds = 5f, LargeSeconds = 7f, BossSeconds = 10f;
         const float LargeRadius = 1.6f;
         // Costume model DObj 35's half-width in Melee units (the egg that replaces Yoshi
         // in the roll); the laid egg uses the same mesh through the variant view.
@@ -689,9 +748,19 @@ namespace Yoshi
 
         void BreakOut()
         {
+            // The egg's origin is its bottom. Put the victim back on clear ground before the
+            // hold ends, so a pushed or sloped egg cannot leave it under the floor.
+            var at = transform.position;
+            if (MeleeSweep.TerrainOnly(owner, at + Vector3.up * (eggRadius + 1.5f),
+                MeleeSweep.TerrainRadius, Vector3.down, eggRadius + 3f, out var floor))
+                at = floor.point + Vector3.up * 0.05f;
+            if (victim) {
+                SetFeet(victim, at);
+                if (victim.characterMotor) victim.characterMotor.velocity = Vector3.zero;
+            }
             try {
                 var effect = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OmniExplosionVFX");
-                if (effect && victim) EffectManager.SpawnEffect(effect, new EffectData { origin = transform.position, scale = eggRadius }, NetworkServer.active);
+                if (effect && victim) EffectManager.SpawnEffect(effect, new EffectData { origin = at, scale = eggRadius }, NetworkServer.active);
             } catch (Exception) { }
             owner?.GetComponent<YoshiDriver>()?.PlaySourceSound(0x44618); // egg break
             Destroy(gameObject);

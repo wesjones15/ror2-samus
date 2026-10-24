@@ -125,7 +125,7 @@ namespace Yoshi
             if (e.move_id != 20) return;
             var mouth = Mouth();
             var target = YoshiCombat.CrosshairPoint(body, mouth);
-            YoshiTongue.Show(body, target, YoshiCombat.ScanReach(body, mouth, target));
+            YoshiTongue.Show(body, target);
         }
 
         protected override void UpdateAudio() => audio?.Update();
@@ -168,12 +168,11 @@ namespace Yoshi
         {
             view.Pose(sim, Time.deltaTime);
             // A full Yoshi shows Melee's heavy-carry clips (WaitItem / HeavyWalk1/2) while
-            // walking, and SpecialN2 once he lays the egg. During an actual move the sim's
-            // own pose wins, so attacks and the egg roll still read.
-            var full = YoshiFull.For(body);
-            if (full != null && state.move_id == 0) {
+            // walking, and one SpecialN2 per victim while laying the queue. During an actual
+            // move the sim's own pose wins, so attacks and the egg roll still read.
+            if (state.move_id == 0) {
                 Present(() => {
-                    if (full.TryPose(Time.deltaTime, in state, out var clip, out var frame))
+                    if (YoshiFull.TryPoseAny(body, Time.deltaTime, in state, out var clip, out var frame))
                         view.ClipPose(clip, frame);
                 });
             }
