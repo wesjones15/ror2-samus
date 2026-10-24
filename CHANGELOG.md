@@ -32,7 +32,7 @@ the five-skill layout RT / LT / RB / LB / B; the skin unlocks follow stages 1, 2
   Luigi's Fireball (10% in flight, 6% after its first bounce). The orb draws the disc's attached `0x4BD` effect
   (`EfPkData` generator 7000), not the air-jolt trail model; the old bounce/impact puffs could leave permanent sparks.
   It flies level for 20 m before arcing down, and each surface contact now gets the source's air-jolt arc as a short flash.
-  The 27.5-unit blue aura is scaled and softened into a glow around the orb.
+  The 27.5-unit blue aura uses a centred radial glow instead of its corner-centred texture, so the edges fade.
 - *Egg Lay* is the RT alternate: Pikachu tenses with his Thunder-start animation, pitches his upper body
   with the camera, and lashes Yoshi's tongue from his mouth. Caught enemies are laid in Yoshi eggs behind
   him, with Yoshi's Egg Lay swallow/lay/break sounds (no voice). The 3 s cooldown is spent only on a catch.
