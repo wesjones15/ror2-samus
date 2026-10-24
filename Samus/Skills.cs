@@ -26,15 +26,15 @@ namespace Samus
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             secondaryAlt2 = new MeleeSkillInfo {
                 defName="MeleeSamusMorphRoll",nameToken="SSBM_SAMUS_MORPHROLL",descriptionToken="SSBM_SAMUS_MORPHROLL_DESC",
-                displayName="Morph Ball Roll",description="LT: the down-B morph, but no bomb. Hold LT to roll in the Morph Ball, bouncing off enemies and walls; it deals light damage without knockback and has 25% health armor. Release LT to stop. Recharges in 5 s.",
-                icon="EngiBodyPlaceSpiderMine",recharge=5f,stock=1,combat=true },
+                displayName="Morph Ball Roll",description="LT: the down-B morph, but no bomb. Hold LT to roll in the Morph Ball for up to 10 seconds, bouncing off enemies and walls; it deals light damage without knockback and has 25% health armor. Release LT to stop standing. Recharges in 4 s.",
+                icon="EngiBodyPlaceSpiderMine",recharge=4f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeSamus2",nameToken="SSBM_SKILL_2",descriptionToken="SSBM_SKILL_DESC_2",
-                displayName="Missile",description="RB: side-B fires a homing missile; a quick direction fires a super missile.",
+                displayName="Missile",description="RB: side-B fires a homing missile; a quick direction fires a super missile. 1 second cooldown.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeSamus3",nameToken="SSBM_SKILL_3",descriptionToken="SSBM_SKILL_DESC_3",
-                displayName="Screw Attack",description="LB: up-B launches Screw Attack, followed by helpless fall.",
+                displayName="Screw Attack",description="LB: up-B launches Screw Attack, followed by helpless fall. 3 second cooldown.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeSamus1",nameToken="SSBM_SKILL_1",descriptionToken="SSBM_SKILL_DESC_1",

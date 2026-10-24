@@ -14,12 +14,12 @@ namespace Yoshi
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeYoshi0",nameToken="SSBM_YOSHI_SKILL_0",descriptionToken="SSBM_YOSHI_SKILL_DESC_0",
-                displayName="Egg Lay",description="RT: lash the tongue 20 m along the camera aim and swallow the first enemy it touches, bosses too. Carry it inside briefly; he lays its egg behind you automatically. It breaks out after a few more seconds (longest for bosses).",
-                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
+                displayName="Egg Lay",description="RT: lash the tongue 20 m along the camera aim and swallow the first enemy it touches, bosses too. He lays its egg behind you at once. It breaks out after a few more seconds (longest for bosses). 3 second cooldown.",
+                icon="CommandoBodyFirePistol",recharge=3f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeYoshiBomb",nameToken="SSBM_YOSHI_BOMB",descriptionToken="SSBM_YOSHI_BOMB_DESC",
-                displayName="Yoshi Bomb",description="LT: a short hop and a slam straight down (in the air, the slam is immediate). The landing hits everything near and sends stars running out along the ground.",
-                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
+                displayName="Yoshi Bomb",description="LT: a short hop and a slam straight down (in the air, the slam is immediate). The landing hits everything near and sends stars running out along the ground. 3 second cooldown.",
+                icon="EngiBodyPlaceSpiderMine",recharge=3f,stock=1,combat=true },
             secondaryAlt = new MeleeSkillInfo {
                 defName="MeleeYoshiShield",nameToken="SSBM_YOSHI_SHIELD",descriptionToken="SSBM_YOSHI_SHIELD_DESC",
                 displayName="Shield / Air Feint",description="LT: hold a shield on the ground or evade once in the air.",
@@ -34,8 +34,8 @@ namespace Yoshi
                 icon="EngiBodyPlaceSpiderMine",recharge=5f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeYoshi3",nameToken="SSBM_YOSHI_SKILL_3",descriptionToken="SSBM_YOSHI_SKILL_DESC_3",
-                displayName="Egg Throw",description="LB: hop and throw an egg that bursts on contact. The camera pitch sets the arc. No cooldown.",
-                icon="LoaderBodyChargeFist",recharge=0f,stock=1,combat=true },
+                displayName="Egg Throw",description="LB: hop and throw an egg that bursts on contact. The camera pitch sets the arc. 2 second cooldown.",
+                icon="LoaderBodyChargeFist",recharge=2f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };
 
