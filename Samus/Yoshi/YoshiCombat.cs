@@ -41,15 +41,16 @@ namespace Yoshi
             else if (e.move_id == 24) Bomb(body, origin, scale);
         }
 
-        /// The world point under the camera crosshair, within the lash's reach, or the point
-        /// 20 m along the camera ray when it is on empty sky. The shared convergence fix: the
+        /// The world point under the camera crosshair, within the lash's reach, or a point
+        /// along the camera ray when it is on empty sky. The shared convergence fix: the
         /// camera's parallel forward ray starts above the mouth, so following it drops a low
-        /// or close target below the lash.
+        /// or close target below the lash. The camera sits several metres behind the mouth,
+        /// so the ray gets that much extra reach to find a target the full lash can touch.
         internal static Vector3 CrosshairPoint(CharacterBody body, Vector3 mouth)
         {
             if (!body) return mouth + Vector3.forward * TongueReach;
             if (!body.inputBank) return mouth + body.transform.forward * TongueReach;
-            return MeleeAim.ProjectilePoint(body, mouth, MeleeAim.CameraRay(body, body.inputBank), TongueReach);
+            return MeleeAim.ProjectilePoint(body, mouth, MeleeAim.CameraRay(body, body.inputBank), TongueReach + 10f);
         }
 
         /// Where the tongue leaves the body. The animated mouth bone (Yoshi joint 42)
