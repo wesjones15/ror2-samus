@@ -29,7 +29,8 @@ the five-skill layout RT / LT / RB / LB / B; the skin unlocks follow stages 1, 2
 
 **Pikachu** (RT Thunder Shock, LT A, **RB Thunder**, LB Quick Attack, B Skull Bash):
 - *Thunder Shock* is shot along the crosshair and bounces and reflects off surfaces, ending after ten ground bounces, like
-  Luigi's Fireball (10% in flight, 6% after its first bounce).
+  Luigi's Fireball (10% in flight, 6% after its first bounce). The orb draws the disc's attached `0x4BD` effect
+  (`EfPkData` generator 7000), not the air-jolt trail model; the old bounce/impact puffs could leave permanent sparks.
 - *Quick Attack* homes on the same lock-on Olimar and Mario use (the nearest enemy to the camera, preferring ones in front, up
   to `Combat.LockRangeMetres`, 25 m) and arrives in the source's two zips whatever the distance. Without a target it
   zips along the stick and camera, and a second zip needs a turn of at least 38 degrees or another LB press. Zips never
