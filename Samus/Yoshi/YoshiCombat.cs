@@ -253,6 +253,8 @@ namespace Yoshi
     {
         const float ReelSeconds = 0.45f;
         const float HoldSeconds = 20f;
+        /// How long Yoshi carries the swallowed enemy before laying the egg by himself.
+        const float AutoLaySeconds = 3f;
         const float LayingSeconds = 0.5f;
         const uint SwallowSound = 0xdd;      // SpecialN2 frame 0: the swallow cue
         const uint LaySound = 0x4460c;       // SpecialN2 frame 25: the source's lay cue
@@ -291,7 +293,7 @@ namespace Yoshi
         }
 
         CharacterBody owner, victim;
-        float age;
+        float age, carriedAt;
         bool carrying, laying, laid, pendingLay;
         float layAge;
         Vector3 layPoint;
@@ -332,8 +334,9 @@ namespace Yoshi
                 return;
             }
             if (carrying) {
-                // Keep the belly hold alive until the player lays the egg.
+                // Keep the belly hold alive; he lays the egg on his own after the carry.
                 EnemyHold.Hold(victim, 5f);
+                if (Time.time - carriedAt >= AutoLaySeconds) Release();
                 return;
             }
             // Reel: the victim hangs on the tongue tip and shrinks into the mouth.
@@ -347,12 +350,14 @@ namespace Yoshi
             if (victimModel) victimModel.localScale = originalScale * (1f - amount);
             if (t >= 1f) {
                 carrying = true;
+                carriedAt = Time.time;
                 if (victimModel) GameSettings.HideRenderers(victimModel, true);
                 owner.GetComponent<YoshiDriver>()?.PlaySourceSound(SwallowSound);
             }
         }
 
-        /// Lay the egg behind Yoshi (a second Egg Lay press).
+        /// Lay the egg behind Yoshi. `FixedUpdate` calls this after the carry window; the
+        /// source swallow/lay clip then runs and the egg appears on its frame 25.
         internal void Release()
         {
             if (!carrying || laying || !owner || !victim) return;

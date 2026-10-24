@@ -14,7 +14,7 @@ namespace Yoshi
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeYoshi0",nameToken="SSBM_YOSHI_SKILL_0",descriptionToken="SSBM_YOSHI_SKILL_DESC_0",
-                displayName="Egg Lay",description="RT: lash the tongue 20 m along the camera aim and swallow the first enemy it touches, bosses too. Carry it inside while you walk slowly, then press RT again to lay its egg behind you. It breaks out after a few seconds (longest for bosses).",
+                displayName="Egg Lay",description="RT: lash the tongue 20 m along the camera aim and swallow the first enemy it touches, bosses too. Carry it inside while you walk slowly; after a few seconds he lays its egg behind you automatically. It breaks out after a few more seconds (longest for bosses).",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeYoshi1",nameToken="SSBM_YOSHI_SKILL_1",descriptionToken="SSBM_YOSHI_SKILL_DESC_1",
@@ -22,7 +22,7 @@ namespace Yoshi
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeYoshi2",nameToken="SSBM_YOSHI_SKILL_2",descriptionToken="SSBM_YOSHI_SKILL_DESC_2",
-                displayName="Egg Roll",description="RB: curl into an egg and roll, steering with the move stick. It hits what it runs into and bounces off walls; press RB or B at any time to break out.",
+                displayName="Egg Roll",description="RB: hold to curl into an egg and roll, steering with the move stick. The egg's armor absorbs hits and you take no health damage until it breaks; release RB to break out. It bowls enemies away and bounces off walls.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeYoshi3",nameToken="SSBM_YOSHI_SKILL_3",descriptionToken="SSBM_YOSHI_SKILL_DESC_3",

@@ -9,7 +9,7 @@ namespace Yoshi
     // facing, hitbox sampling and recovery; this supplies Yoshi's presentation
     // and skill layout. The Egg Throw (SpecialHi) is a ranged projectile.
     [DefaultExecutionOrder(-200)]
-    public sealed class YoshiDriver : MeleeDriver
+    public sealed class YoshiDriver : MeleeDriver, IMeleeBypassDefense
     {
         static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Samus.Plugin.AssetsDir,MeleeNative.FighterYoshi,model);
         MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
@@ -34,29 +34,51 @@ namespace Yoshi
 
         // The tongue reports a swallow while the sim is stepping; the sim hears about it
         // before the next step (ssbm_sim_connect cannot run inside a callback).
-        bool connectQueued, releaseQueued, primaryWasDown;
+        // Egg-roll armor, as a fraction of maximum health. Every hit while rolling is
+        // rejected, the pool drains, and when it is gone the egg breaks open. No health
+        // damage reaches Yoshi while he is in the egg.
+        const float RollArmorFraction = 0.5f, RollDamageScale = 2.5f, RollForceScale = 3f;
+        float rollArmor;
+
+        bool connectQueued;
         internal void QueueConnect() => connectQueued = true;
         protected override void BeforeStep(in MeleeNative.Pad pad)
         {
-            if (releaseQueued) {
-                releaseQueued = false;
-                YoshiFull.For(body)?.Release();
-            }
             if (!connectQueued) return;
             connectQueued = false;
             MeleeNative.ssbm_sim_connect(sim);
         }
         protected override bool IsChargeMove(uint moveId) => false;
 
-        /// While full, Egg Lay lays the egg instead of starting another grab; sprint is off.
+        /// While full, Egg Lay is masked (the egg is laid automatically) and sprint is off.
         protected override uint FilterButtons(uint buttons)
         {
-            bool down = (buttons & MeleeControls.NeutralB) != 0;
-            bool carrying = YoshiFull.IsCarrying(body), laying = YoshiFull.IsLaying(body);
-            if (carrying && down && !primaryWasDown) releaseQueued = true;
-            primaryWasDown = down;
-            if (!carrying && !laying) return buttons;
+            if (!YoshiFull.IsCarrying(body) && !YoshiFull.IsLaying(body)) return buttons;
             return buttons & ~(MeleeControls.NeutralB | MeleeControls.Sprint);
+        }
+
+        /// The egg absorbs hits until its armor runs out. No health damage lands while the
+        /// roll is out; the hit that empties the pool breaks the egg (and is absorbed too).
+        public override bool BlockMeleeDamage(float healthFraction)
+        {
+            if (!active || Recovering || state.move_id != 21) return base.BlockMeleeDamage(healthFraction);
+            AbsorbRollDamage(healthFraction);
+            return true;
+        }
+        public bool BlockBypassDamage(float healthFraction)
+        {
+            if (!active || Recovering || state.move_id != 21) return false;
+            AbsorbRollDamage(healthFraction);
+            return true;
+        }
+        void AbsorbRollDamage(float healthFraction)
+        {
+            if (rollArmor <= 0f) return;
+            rollArmor -= Mathf.Max(0f, healthFraction);
+            if (rollArmor > 0f) return;
+            rollArmor = 0f;
+            if (sim != IntPtr.Zero) MeleeNative.ssbm_sim_break_roll(sim);
+            PlaySourceSound(0x44618); // the egg shell breaks
         }
 
         internal void PlaySourceSound(uint sound)
@@ -79,6 +101,8 @@ namespace Yoshi
         // camera line (or the full 20 m when the lash is thrown into empty space).
         protected override void OnEventStarted(MeleeNative.Event e)
         {
+            // 21 is the egg roll: a fresh armor pool for this roll.
+            if (e.move_id == 21) { rollArmor = RollArmorFraction; return; }
             if (e.move_id != 20) return;
             var aim = body.inputBank ? MeleeAim.CameraRay(body, body.inputBank).direction : body.transform.forward;
             YoshiTongue.Show(body, aim, YoshiCombat.ScanReach(body, aim));
@@ -156,7 +180,19 @@ namespace Yoshi
         protected override void DrawHud() { }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 5), feet, rotation, scale));
-        protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
+        protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale)
+        {
+            // The rolling egg is a bowling ball: keep the authored hitboxes and timing but
+            // hit much harder and send victims flying.
+            if (state.move_id == 21) {
+                for (int i = 0; i < count; i++) {
+                    samples[i].damage *= RollDamageScale;
+                    samples[i].base_knockback = (uint)Mathf.Round(samples[i].base_knockback * RollForceScale);
+                    samples[i].growth = (uint)Mathf.Round(samples[i].growth * RollForceScale);
+                }
+            }
+            hits.Apply(body, samples, count, scale);
+        }
         protected override MeleeSkillSet SkillSet => YoshiSkills.Built;
         protected override void OnEventHit(MeleeNative.Event e) => YoshiCombat.Attack(body, e, scale);
         protected override void FallbackSkills()
