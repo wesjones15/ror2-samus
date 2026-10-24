@@ -12,7 +12,6 @@ namespace Samus
     {
         public static ControlSheet SamusSheet(CharacterBody body) => MeleeSheet.Build(
             "Intergalactic Bounty Hunter", Skills.Layout, body: body,
-            footer: "X is also RoR2's interact: with a prompt up it goes to that, not the grapple.",
             grab: (pad, keys) =>
             {
                 var user = LocalUserManager.GetFirstLocalUser();
