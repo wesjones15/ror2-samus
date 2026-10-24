@@ -113,6 +113,15 @@ static class Program
                 Check(rgba.Length>=4&&rgba[3]<1f&&rgba[2]>rgba[0],"Fox Illusion ghost is not a faded blue body");
             } finally {MeleeNative.ssbm_view_free(ghost);}
         } else Console.WriteLine("SKIP: Fox Illusion ghost article ("+MeleeNative.Error+")");
+        var bolt=MeleeNative.ssbm_article_new(NativeLib.CString(assets),MeleeNative.FighterFox,0,0);
+        if(bolt!=IntPtr.Zero) {
+            try {
+                var colors=MeleeNative.ssbm_view_colors(bolt,out uint count);
+                Check(colors!=IntPtr.Zero&&count>0,"Blaster bolt has no source colours");
+                var rgba=new float[count*4];Marshal.Copy(colors,rgba,0,rgba.Length);
+                Check(rgba.Length>=4&&rgba[0]>0.9f&&rgba[1]<0.1f&&rgba[2]<0.1f,"Blaster bolt is not red");
+            } finally {MeleeNative.ssbm_view_free(bolt);}
+        } else Console.WriteLine("SKIP: Blaster bolt article ("+MeleeNative.Error+")");
         var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterFox);
         if(sim==IntPtr.Zero) {Console.WriteLine("SKIP: Fox Illusion cue ("+MeleeNative.Error+")");return;}
         try {
