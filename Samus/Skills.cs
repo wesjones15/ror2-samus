@@ -14,27 +14,27 @@ namespace Samus
         {
             primary = new MeleeSkillInfo {
                 defName="MeleeSamus0",nameToken="SSBM_SKILL_0",descriptionToken="SSBM_SKILL_DESC_0",
-                displayName="Charge Shot",description="Walk while charging. Tap again to fire; sprint, jump or X grab to store. Airborne neutral special fires stored charge immediately. A full charge hits for at least 2000% damage.",
+                displayName="Charge Shot",description="RT: hold to charge, release to fire. Tap to store a charge; sprint, jump or grab to keep it.",
                 icon="MageBodyFireFirebolt",recharge=0.75f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleeSamusBomb",nameToken="SSBM_BOMB",descriptionToken="SSBM_BOMB_DESC",
-                displayName="Morph Ball Bomb",description="Press LT to drop one bomb, then hold LT to roll in ball form on the ground or in the air. Bombs deal 2x damage with 1.5x blast radius. Ball armor absorbs 25% of maximum health. Release LT or lose all ball armor to return to normal form. Recharges in 4 s.",
+                displayName="Morph Ball Bomb",description="LT: drop a bomb, then hold to roll as Morph Ball. The ball absorbs hits; release to stand. Recharges.",
                 icon="EngiBodyPlaceSpiderMine",recharge=4f,stock=1,combat=true },
             secondaryAlt = new MeleeSkillInfo {
                 defName="MeleeShield",nameToken="SSBM_SHIELD",descriptionToken="SSBM_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="LT: hold a shield on the ground or evade once in the air. Shield drains when held or hit; it regenerates while released and breaks when depleted.",
+                displayName="Shield / Air Feint",description="LT: hold to shield on the ground; in the air, evade once.",
                 icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeSamus2",nameToken="SSBM_SKILL_2",descriptionToken="SSBM_SKILL_DESC_2",
-                displayName="Missile",description="RB: side-B fires a homing missile; a quick direction fires a super missile. 1 second cooldown.",
+                displayName="Missile",description="RB: fire a homing missile. Flick a direction for a super missile. Two charges.",
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeSamus3",nameToken="SSBM_SKILL_3",descriptionToken="SSBM_SKILL_DESC_3",
-                displayName="Screw Attack",description="LB: up-B launches Screw Attack, followed by helpless fall. 3 second cooldown.",
+                displayName="Screw Attack",description="LB: rise in a spinning attack, then fall helpless. Recharges.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeSamus1",nameToken="SSBM_SKILL_1",descriptionToken="SSBM_SKILL_DESC_1",
-                displayName="Power Suit",description="B: neutral A while stationary. LS + B selects camera-directed A attacks; a timed flick charges a smash.",
+                displayName="Power Suit",description="B: neutral A. LS + B aims attacks; flick to charge a smash.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };
