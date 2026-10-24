@@ -644,9 +644,15 @@ static class Program
         try {
             MeleeNative.ssbm_projectile_lifetime(straight,0);
             MeleeNative.ssbm_projectile_straight(straight,200f);
-            for(int f=0;f<36;f++)MeleeNative.ssbm_projectile_step(straight,1.0/60,default,0);
-            MeleeNative.ssbm_projectile_state(straight,out var level);
-            Check(Math.Abs(level.position.y)<0.001f,"Thunder Shock arced before 20 m: y "+level.position.y);
+            int straightFrames=0;
+            for(;straightFrames<600;straightFrames++) {
+                MeleeNative.ssbm_projectile_step(straight,1.0/60,default,0);
+                MeleeNative.ssbm_projectile_state(straight,out var level);
+                float distance=(float)Math.Sqrt(level.position.x*level.position.x+level.position.y*level.position.y+level.position.z*level.position.z);
+                Check(Math.Abs(level.position.y)<0.001f,"Thunder Shock arced before 20 m: y "+level.position.y);
+                if(distance>=200f)break;
+            }
+            Check(straightFrames<600,"Thunder Shock never reached 20 m");
             for(int f=0;f<3;f++)MeleeNative.ssbm_projectile_step(straight,1.0/60,default,0);
             MeleeNative.ssbm_projectile_state(straight,out var falling);
             Check(falling.position.y<0f,"Thunder Shock did not arc after 20 m: y "+falling.position.y);
