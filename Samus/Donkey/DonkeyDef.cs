@@ -17,9 +17,13 @@ namespace Donkey
                 displayName="Giant Punch",description="RT: hold to wind the arm up, one swing at a time, then let go for a punch whose damage and knockback grow with the swings (full at 10). Shield cancels and keeps the swings for later. No cooldown.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
-                defName="MeleeDonkey1",nameToken="SSBM_DONKEY_SKILL_1",descriptionToken="SSBM_DONKEY_SKILL_DESC_1",
-                displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",
-                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
+                defName="MeleeDonkeySlap",nameToken="SSBM_DONKEY_SLAP",descriptionToken="SSBM_DONKEY_SLAP_DESC",
+                displayName="Hand Slap",description="LT: slam the ground over and over while it is held, planted in place. Each slam sends a shockwave along the ground that hits and holds enemies, bosses too, for as long as you keep slapping. No cooldown.",
+                icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
+            secondaryAlt = new MeleeSkillInfo {
+                defName="MeleeDonkeyShield",nameToken="SSBM_DONKEY_SHIELD",descriptionToken="SSBM_DONKEY_SHIELD_DESC",
+                displayName="Shield / Air Feint",description="LT: hold a shield on the ground or evade once in the air.",
+                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeDonkey2",nameToken="SSBM_DONKEY_SKILL_2",descriptionToken="SSBM_DONKEY_SKILL_DESC_2",
                 displayName="Headbutt",description="RB: a headbutt. On the ground it buries what it hits for a few seconds, bosses included; in the air it spikes them downward.",
@@ -29,13 +33,9 @@ namespace Donkey
                 displayName="Spinning Kong",description="LB: spin upward, steering with the move stick. Strong first hit, then repeated hits, with a limited rise.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
-                defName="MeleeDonkeySlap",nameToken="SSBM_DONKEY_SLAP",descriptionToken="SSBM_DONKEY_SLAP_DESC",
-                displayName="Hand Slap",description="B: slam the ground over and over while it is held, planted in place. Each slam sends a shockwave along the ground that hits and holds enemies, bosses too, for as long as you keep slapping. No cooldown.",
-                icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
-            extraAlt = new MeleeSkillInfo {
-                defName="MeleeDonkeyShield",nameToken="SSBM_DONKEY_SHIELD",descriptionToken="SSBM_DONKEY_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air.",
-                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
+                defName="MeleeDonkey1",nameToken="SSBM_DONKEY_SKILL_1",descriptionToken="SSBM_DONKEY_SKILL_DESC_1",
+                displayName="A Attack",description="B: neutral A while stationary. LS + B selects camera-directed attacks; a flick charges a smash.",
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };
 
@@ -76,7 +76,7 @@ namespace Donkey
             nameToken="SSBM_DONKEY_NAME",subtitleToken="SSBM_DONKEY_SUBTITLE",descriptionToken="SSBM_DONKEY_DESCRIPTION",
             outroToken="SSBM_DONKEY_OUTRO",failToken="SSBM_DONKEY_FAIL",
             nameStr="Donkey Kong",subtitleStr="King of the Jungle",
-            descriptionStr="Donkey Kong brings his Melee loadout to Petrichor V.\n\nRT: Giant Punch. LT: contextual A. RB: Headbutt. LB: Spinning Kong. B: Hand Slap, with Shield / Air Feint as the fifth skill alternate.\n\nOffline prototype.",
+            descriptionStr="Donkey Kong brings his Melee loadout to Petrichor V.\n\nRT: Giant Punch. B: contextual A. RB: Headbutt. LB: Spinning Kong. LT: Hand Slap, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.55f,0.35f,0.2f),
             baseMaxHealth=130f,levelMaxHealth=39f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,

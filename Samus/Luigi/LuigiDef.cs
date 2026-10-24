@@ -21,9 +21,13 @@ namespace Luigi
                 displayName="Super Scope",description="RT, in place of the Fireball: tap for a burst of small shots; hold to charge, release to fire a bigger beam (up to ten levels, the biggest burning), along your crosshair. 48 shots of ammo; a charged shot costs more, and it refills slowly when you stop. Needs the items archive from your disc (extracted with the rest).",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
-                defName="MeleeLuigi1",nameToken="SSBM_LUIGI_SKILL_1",descriptionToken="SSBM_LUIGI_SKILL_DESC_1",
-                displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",
-                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
+                defName="MeleeLuigiCyclone",nameToken="SSBM_LUIGI_CYCLONE",descriptionToken="SSBM_LUIGI_CYCLONE_DESC",
+                displayName="Luigi Cyclone",description="LT: spin, pulling nearby enemies into repeated hits before a launching last hit. Steer while spinning; tap LT again and again in the air to climb.",
+                icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
+            secondaryAlt = new MeleeSkillInfo {
+                defName="MeleeLuigiShield",nameToken="SSBM_LUIGI_SHIELD",descriptionToken="SSBM_LUIGI_SHIELD_DESC",
+                displayName="Shield / Air Feint",description="LT: hold a shield on the ground or evade once in the air.",
+                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeLuigi2",nameToken="SSBM_LUIGI_SKILL_2",descriptionToken="SSBM_LUIGI_SKILL_DESC_2",
                 displayName="Green Missile",description="RB: hold to charge (up to 90 frames), release to launch along your crosshair. Speed and damage grow with the charge, and it stops on what it hits. One launch in eight misfires: a far faster, 25% blast.",
@@ -33,13 +37,9 @@ namespace Luigi
                 displayName="Super Jump Punch",description="LB: rise with a punch. Right on top of Luigi it is a 25% fire hit (20% in the air); anything farther gets a weak coin hit that pays gold. It ends in a helpless fall with long landing lag.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
-                defName="MeleeLuigiCyclone",nameToken="SSBM_LUIGI_CYCLONE",descriptionToken="SSBM_LUIGI_CYCLONE_DESC",
-                displayName="Luigi Cyclone",description="B: spin, pulling nearby enemies into repeated hits before a launching last hit. Steer while spinning; tap B again and again in the air to climb.",
-                icon="EngiBodyPlaceSpiderMine",recharge=0f,stock=1,combat=true },
-            extraAlt = new MeleeSkillInfo {
-                defName="MeleeLuigiShield",nameToken="SSBM_LUIGI_SHIELD",descriptionToken="SSBM_LUIGI_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air.",
-                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
+                defName="MeleeLuigi1",nameToken="SSBM_LUIGI_SKILL_1",descriptionToken="SSBM_LUIGI_SKILL_DESC_1",
+                displayName="A Attack",description="B: neutral A while stationary. LS + B selects camera-directed attacks; a flick charges a smash.",
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
             // The Super Scope (native move 17) is the primary skill's.
             slotForMove=m => m == 17 ? 0 : MeleeSkillSet.DefaultSlot(m),
@@ -81,7 +81,7 @@ namespace Luigi
             nameToken="SSBM_LUIGI_NAME",subtitleToken="SSBM_LUIGI_SUBTITLE",descriptionToken="SSBM_LUIGI_DESCRIPTION",
             outroToken="SSBM_LUIGI_OUTRO",failToken="SSBM_LUIGI_FAIL",
             nameStr="Luigi",subtitleStr="The Eternal Understudy",
-            descriptionStr="Luigi brings his Melee loadout to Petrichor V.\n\nRT: Fireball. LT: contextual A. RB: Green Missile. LB: Super Jump Punch. B: Luigi Cyclone, with Shield / Air Feint as the fifth skill alternate.\n\nOffline prototype.",
+            descriptionStr="Luigi brings his Melee loadout to Petrichor V.\n\nRT: Fireball. B: contextual A. RB: Green Missile. LB: Super Jump Punch. LT: Luigi Cyclone, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.3f,0.75f,0.35f),
             baseMaxHealth=100f,levelMaxHealth=30f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,

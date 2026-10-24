@@ -60,18 +60,18 @@ load logs an error; an initialized body that fails returns to Commando behavior.
 | --- | --- | --- |
 | Move / aim | LS / RS | RoR2 movement / mouse |
 | Neutral-B / Charge Shot | RT | Primary (left mouse by default) |
-| Contextual A / smash | LT; LS direction selects attack | Secondary (right mouse by default) |
+| Contextual A / smash | B; LS direction selects attack | C |
 | Side-B / missiles | RB | Utility |
 | Up-B / Screw Attack | LB | Special |
-| Fifth skill: down-B / Bomb | B | C |
-| Fifth skill alternate: Shield / Air Feint | Select in loadout; B shields on ground, evades in air | C |
+| Fifth skill: down-B / Bomb | LT | Secondary (right mouse by default) |
+| Fifth skill alternate: Shield / Air Feint | Select in loadout; LT shields on ground, evades in air | Secondary |
 | Jump | A; every jump has Commando's standard height | Jump |
 | Sprint / interrupt Charge Shot | LS click | Sprint |
 | Grab / aerial Z-air | X, except visible interact prompts | Interact, away from prompts |
 | Store Charge Shot while charging | Sprint, X or jump | Sprint, Interact or jump |
-| Throw a captured non-boss | LS direction + LT/RT | WASD + primary/secondary |
-| Pummel a captured non-boss | Neutral LT/RT | Neutral primary/secondary |
-| Boss grapple | Hold X to pull self / stay attached; LT contextual attacks; A jumps off | Hold Interact; secondary attacks; jump detaches |
+| Throw a captured non-boss | LS direction + B/RT | WASD + C/primary |
+| Pummel a captured non-boss | Neutral B/RT | Neutral C/primary |
+| Boss grapple | Hold X to pull self / stay attached; B contextual attacks; A jumps off | Hold Interact; C attacks; jump detaches |
 | Interact / equipment | X / Y | RoR2 bindings |
 
 Neutral special starts charging, another press fires, and jump/cancel stores the
@@ -81,21 +81,21 @@ legs. All grounded special abilities use this generic mobile pose; contextual A,
 grabs and authored dashes remain full-body. Sprint during startup or charging stores the current shot and resumes
 sprinting. `Controls.HoldCharge` optionally changes firing to hold/release. Side special
 uses missiles; a quick directional flick selects a super missile. Up special is
-Screw Attack; B's default down-B drops a bomb. Select Shield / Air Feint in the
-fifth loadout row to replace B's bomb with ground shielding and one air evade per
+Screw Attack; LT's default down-B drops a bomb. Select Shield / Air Feint in the
+fifth loadout row to replace LT's bomb with ground shielding and one air evade per
 airtime. Shield drains when held/hit, regenerates when released and stuns on
 depletion. Its source models, player palette, scale, sounds and dodge hurt-state
 window are native-driven. An existing vanilla Interact prompt owns X until release.
-Flick direction + LT, hold, then release for a smash. LB always remains up-B.
+Flick direction + B, hold, then release for a smash. LB always remains up-B.
 Side-B rotates Samus's upper body and cannon from the disc's vertical pose
 toward the live camera aim while her legs and travel continue independently.
 After a knockdown, repeated ordinary hits are rejected through get-up and for
 one second afterward. Existing RoR2 stun extends this protection until control
-returns; a buffered LT attack can start during that window. This anti-stunlock
+returns; a buffered B attack can start during that window. This anti-stunlock
 timing is a RoR2 adaptation and awaits an in-game playtest.
 
 With LS held above 0.3, camera pitch selects up attacks from 20 degrees above
-level and down attacks from 50 degrees below. This applies to contextual LT only;
+level and down attacks from 50 degrees below. This applies to contextual B only;
 RT/RB/LB/B each explicitly select their assigned B move. Neutral controls remain neutral,
 and captured throws retain raw LS axes. These selection bands are a 3D adaptation.
 
@@ -127,9 +127,9 @@ same return phase; ordinary wall/unstuck correction stays immediate. In-game
 verification is pending.
 The shared MeleeArrival state replaces the vanilla pod. Ground X grabs; air X uses
 Z-air. Both extend original tether geometry along the live camera vector to 20m,
-stopping at walls. Ordinary captured enemies enable Melee-style LS axes and LT/RT
+stopping at walls. Ordinary captured enemies enable Melee-style LS axes and B/RT
 pummel or throws; A releases to jump. Boss/champion targets pull Samus toward the
-contact instead. Hold X to remain attached and use contextual LT; they never enter
+contact instead. Hold X to remain attached and use contextual B; they never enter
 native capture or throw states and their AI/position is not changed.
 RoR2 capture stops on interruption, death, release or an eight-second timeout; player
 bodies and stationary encounter objects are excluded. Constrained tether/ledge physics
@@ -149,7 +149,7 @@ including jump-power item scaling. Special-attack launch velocities stay separat
 Cooldowns and damage coefficients are RoR2 adaptations. Four alternate disc
 costumes unlock persistently after stage 1, 2, 3 and 4 teleporter events as Samus.
 Special recharge is shorter in 0.2.13: Charge Shot 0.75s, missile 1s, Screw
-Attack 3s and Bomb 1s. LT presses made during host stun or native knockdown
+Attack 3s and Bomb 1s. B presses made during host stun or native knockdown
 are buffered briefly and execute once when Samus regains control.
 
 At final death Samus plays her source grounded knockdown pose, then the same

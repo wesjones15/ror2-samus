@@ -17,9 +17,13 @@ namespace Captain
                 displayName="Falcon Punch",description="RT: a long wind-up, then a flaming punch of enormous damage and knockback. Turn the camera during the wind-up to reverse it. No cooldown.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
-                defName="MeleeCaptain1",nameToken="SSBM_CAPTAIN_SKILL_1",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_1",
-                displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",
-                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
+                defName="MeleeCaptainKick",nameToken="SSBM_CAPTAIN_KICK",descriptionToken="SSBM_CAPTAIN_KICK_DESC",
+                displayName="Falcon Kick",description="LT: a fast flaming kick that travels with you; in the air it dives diagonally downward.",
+                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
+            secondaryAlt = new MeleeSkillInfo {
+                defName="MeleeCaptainShield",nameToken="SSBM_CAPTAIN_SHIELD",descriptionToken="SSBM_CAPTAIN_SHIELD_DESC",
+                displayName="Shield / Air Feint",description="LT: hold a shield on the ground or evade once in the air.",
+                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeCaptain2",nameToken="SSBM_CAPTAIN_SKILL_2",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_2",
                 displayName="Raptor Boost",description="RB: lunge forward. Touching anything turns the lunge into a launching uppercut; in the air it spikes them down instead. A miss leaves you open.",
@@ -29,13 +33,9 @@ namespace Captain
                 displayName="Falcon Dive",description="LB: leap upward with a grab. Whatever it touches, bosses included, is caught, burned, blasted away and you rebound off it.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
-                defName="MeleeCaptainKick",nameToken="SSBM_CAPTAIN_KICK",descriptionToken="SSBM_CAPTAIN_KICK_DESC",
-                displayName="Falcon Kick",description="B: a fast flaming kick that travels with you; in the air it dives diagonally downward.",
-                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
-            extraAlt = new MeleeSkillInfo {
-                defName="MeleeCaptainShield",nameToken="SSBM_CAPTAIN_SHIELD",descriptionToken="SSBM_CAPTAIN_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air.",
-                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
+                defName="MeleeCaptain1",nameToken="SSBM_CAPTAIN_SKILL_1",descriptionToken="SSBM_CAPTAIN_SKILL_DESC_1",
+                displayName="A Attack",description="B: neutral A while stationary. LS + B selects camera-directed attacks; a flick charges a smash.",
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };
 
@@ -77,7 +77,7 @@ namespace Captain
             nameToken="SSBM_CAPTAIN_NAME",subtitleToken="SSBM_CAPTAIN_SUBTITLE",descriptionToken="SSBM_CAPTAIN_DESCRIPTION",
             outroToken="SSBM_CAPTAIN_OUTRO",failToken="SSBM_CAPTAIN_FAIL",
             nameStr="Captain Falcon",subtitleStr="F-Zero Racer",
-            descriptionStr="Captain Falcon brings his Melee loadout to Petrichor V.\n\nRT: Falcon Punch. LT: contextual A. RB: Raptor Boost. LB: Falcon Dive. B: Falcon Kick, with Shield / Air Feint as the fifth skill alternate.\n\nOffline prototype.",
+            descriptionStr="Captain Falcon brings his Melee loadout to Petrichor V.\n\nRT: Falcon Punch. B: contextual A. RB: Raptor Boost. LB: Falcon Dive. LT: Falcon Kick, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.2f,0.35f,0.75f),
             baseMaxHealth=110f,levelMaxHealth=33f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,

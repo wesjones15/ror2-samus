@@ -37,7 +37,7 @@ namespace Pikachu
         protected override bool AssetsBusy => Samus.Plugin.AssetsBusy;
         protected override uint AllowedButtons => PikachuSkills.Allowed(body);
         protected override bool ShieldSelected => PikachuSkills.ShieldSelected(body);
-        protected override MeleeControlLayout Layout => PikachuSkills.Controls;
+        protected override MeleeControlLayout Layout => MeleeControlLayout.Samus;
         protected override bool IsRangedMove(uint moveId) => moveId == ThunderShock;
         protected override bool IsChargeMove(uint moveId) => false;
 

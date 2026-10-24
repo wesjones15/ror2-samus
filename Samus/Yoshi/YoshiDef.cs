@@ -17,8 +17,16 @@ namespace Yoshi
                 displayName="Egg Lay",description="RT: lash the tongue 20 m along the camera aim and swallow the first enemy it touches, bosses too. Carry it inside briefly; he lays its egg behind you automatically. It breaks out after a few more seconds (longest for bosses).",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
+                defName="MeleeYoshiBomb",nameToken="SSBM_YOSHI_BOMB",descriptionToken="SSBM_YOSHI_BOMB_DESC",
+                displayName="Yoshi Bomb",description="LT: a short hop and a slam straight down (in the air, the slam is immediate). The landing hits everything near and sends stars running out along the ground.",
+                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
+            secondaryAlt = new MeleeSkillInfo {
+                defName="MeleeYoshiShield",nameToken="SSBM_YOSHI_SHIELD",descriptionToken="SSBM_YOSHI_SHIELD_DESC",
+                displayName="Shield / Air Feint",description="LT: hold a shield on the ground or evade once in the air.",
+                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
+            extra = new MeleeSkillInfo {
                 defName="MeleeYoshi1",nameToken="SSBM_YOSHI_SKILL_1",descriptionToken="SSBM_YOSHI_SKILL_DESC_1",
-                displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",
+                displayName="A Attack",description="B: neutral A while stationary. LS + B selects camera-directed attacks; a flick charges a smash.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             utility = new MeleeSkillInfo {
                 defName="MeleeYoshi2",nameToken="SSBM_YOSHI_SKILL_2",descriptionToken="SSBM_YOSHI_SKILL_DESC_2",
@@ -28,14 +36,6 @@ namespace Yoshi
                 defName="MeleeYoshi3",nameToken="SSBM_YOSHI_SKILL_3",descriptionToken="SSBM_YOSHI_SKILL_DESC_3",
                 displayName="Egg Throw",description="LB: hop and throw an egg that bursts on contact. The camera pitch sets the arc. No cooldown.",
                 icon="LoaderBodyChargeFist",recharge=0f,stock=1,combat=true },
-            extra = new MeleeSkillInfo {
-                defName="MeleeYoshiBomb",nameToken="SSBM_YOSHI_BOMB",descriptionToken="SSBM_YOSHI_BOMB_DESC",
-                displayName="Yoshi Bomb",description="B: a short hop and a slam straight down (in the air, the slam is immediate). The landing hits everything near and sends stars running out along the ground.",
-                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=1,combat=true },
-            extraAlt = new MeleeSkillInfo {
-                defName="MeleeYoshiShield",nameToken="SSBM_YOSHI_SHIELD",descriptionToken="SSBM_YOSHI_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air.",
-                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };
 
@@ -77,7 +77,7 @@ namespace Yoshi
             nameToken="SSBM_YOSHI_NAME",subtitleToken="SSBM_YOSHI_SUBTITLE",descriptionToken="SSBM_YOSHI_DESCRIPTION",
             outroToken="SSBM_YOSHI_OUTRO",failToken="SSBM_YOSHI_FAIL",
             nameStr="Yoshi",subtitleStr="Yoshi's Island Dinosaur",
-            descriptionStr="Yoshi brings his Melee loadout to Petrichor V.\n\nRT: Egg Lay. LT: contextual A. RB: Egg Roll. LB: Egg Throw. B: Yoshi Bomb, with Shield / Air Feint as the fifth skill alternate.\n\nOffline prototype.",
+            descriptionStr="Yoshi brings his Melee loadout to Petrichor V.\n\nRT: Egg Lay. B: contextual A. RB: Egg Roll. LB: Egg Throw. LT: Yoshi Bomb, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.35f,0.7f,0.35f),
             baseMaxHealth=100f,levelMaxHealth=30f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,

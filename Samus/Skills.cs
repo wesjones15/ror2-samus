@@ -17,9 +17,13 @@ namespace Samus
                 displayName="Charge Shot",description="Walk while charging. Tap again to fire; sprint, jump or X grab to store. Airborne neutral special fires stored charge immediately.",
                 icon="MageBodyFireFirebolt",recharge=0.75f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
-                defName="MeleeSamus1",nameToken="SSBM_SKILL_1",descriptionToken="SSBM_SKILL_DESC_1",
-                displayName="Power Suit",description="LT: neutral A while stationary. LS + LT selects camera-directed A attacks; a timed flick charges a smash.",
-                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
+                defName="MeleeSamusBomb",nameToken="SSBM_BOMB",descriptionToken="SSBM_BOMB_DESC",
+                displayName="Bomb",description="LT: down-B drops Samus's original timed bomb.",
+                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
+            secondaryAlt = new MeleeSkillInfo {
+                defName="MeleeShield",nameToken="SSBM_SHIELD",descriptionToken="SSBM_SHIELD_DESC",
+                displayName="Shield / Air Feint",description="LT: hold a shield on the ground or evade once in the air. Shield drains when held or hit; it regenerates while released and breaks when depleted.",
+                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeSamus2",nameToken="SSBM_SKILL_2",descriptionToken="SSBM_SKILL_DESC_2",
                 displayName="Missile",description="RB: side-B fires a homing missile; a quick direction fires a super missile.",
@@ -29,13 +33,9 @@ namespace Samus
                 displayName="Screw Attack",description="LB: up-B launches Screw Attack, followed by helpless fall.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
-                defName="MeleeSamusBomb",nameToken="SSBM_BOMB",descriptionToken="SSBM_BOMB_DESC",
-                displayName="Bomb",description="B: down-B drops Samus's original timed bomb.",
-                icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
-            extraAlt = new MeleeSkillInfo {
-                defName="MeleeShield",nameToken="SSBM_SHIELD",descriptionToken="SSBM_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air. Shield drains when held or hit; it regenerates while released and breaks when depleted.",
-                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
+                defName="MeleeSamus1",nameToken="SSBM_SKILL_1",descriptionToken="SSBM_SKILL_DESC_1",
+                displayName="Power Suit",description="B: neutral A while stationary. LS + B selects camera-directed A attacks; a timed flick charges a smash.",
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };
 

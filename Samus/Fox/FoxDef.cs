@@ -17,9 +17,13 @@ namespace Fox
                 displayName="Blaster",description="RT: fire the Blaster along your crosshair. Every tap fires (at most one shot per 0.12 s); hold to keep firing at a steady rate.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
-                defName="MeleeFox1",nameToken="SSBM_FOX_SKILL_1",descriptionToken="SSBM_FOX_SKILL_DESC_1",
-                displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",
-                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
+                defName="MeleeFoxReflector",nameToken="SSBM_FOX_REFLECTOR",descriptionToken="SSBM_FOX_REFLECTOR_DESC",
+                displayName="Reflector",description="LT: a shine around Fox that damages and knocks back nearby enemies, bosses included. Hold to keep it up: it turns enemy projectiles back on their shooters. Jump cancels it, and it can be used again at once.",
+                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=true },
+            secondaryAlt = new MeleeSkillInfo {
+                defName="MeleeFoxShield",nameToken="SSBM_FOX_SHIELD",descriptionToken="SSBM_FOX_SHIELD_DESC",
+                displayName="Shield / Air Feint",description="LT: hold a shield on the ground or evade once in the air.",
+                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
             utility = new MeleeSkillInfo {
                 defName="MeleeFox2",nameToken="SSBM_FOX_SKILL_2",descriptionToken="SSBM_FOX_SKILL_DESC_2",
                 displayName="Fox Illusion",description="RB: dash forward in a blue streak, hitting everything in your path.",
@@ -29,13 +33,9 @@ namespace Fox
                 displayName="Fire Fox",description="LB: charge a fireball in place, then launch toward the camera, hitting hard.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
-                defName="MeleeFoxReflector",nameToken="SSBM_FOX_REFLECTOR",descriptionToken="SSBM_FOX_REFLECTOR_DESC",
-                displayName="Reflector",description="B: a shine around Fox that damages and knocks back nearby enemies, bosses included. Hold to keep it up: it turns enemy projectiles back on their shooters. Jump cancels it, and it can be used again at once.",
-                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=true },
-            extraAlt = new MeleeSkillInfo {
-                defName="MeleeFoxShield",nameToken="SSBM_FOX_SHIELD",descriptionToken="SSBM_FOX_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air.",
-                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
+                defName="MeleeFox1",nameToken="SSBM_FOX_SKILL_1",descriptionToken="SSBM_FOX_SKILL_DESC_1",
+                displayName="A Attack",description="B: neutral A while stationary. LS + B selects camera-directed attacks; a flick charges a smash.",
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
         };
 
@@ -75,7 +75,7 @@ namespace Fox
             nameToken="SSBM_FOX_NAME",subtitleToken="SSBM_FOX_SUBTITLE",descriptionToken="SSBM_FOX_DESCRIPTION",
             outroToken="SSBM_FOX_OUTRO",failToken="SSBM_FOX_FAIL",
             nameStr="Fox",subtitleStr="Leader of Star Fox",
-            descriptionStr="Fox brings his Melee loadout to Petrichor V.\n\nRT: Blaster. LT: contextual A. RB: Fox Illusion. LB: Fire Fox. B: Reflector, with Shield / Air Feint as the fifth skill alternate.\n\nOffline prototype.",
+            descriptionStr="Fox brings his Melee loadout to Petrichor V.\n\nRT: Blaster. B: contextual A. RB: Fox Illusion. LB: Fire Fox. LT: Reflector, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.85f,0.6f,0.2f),
             baseMaxHealth=110f,levelMaxHealth=33f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,

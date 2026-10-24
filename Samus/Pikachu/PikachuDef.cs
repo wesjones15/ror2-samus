@@ -10,12 +10,6 @@ namespace Pikachu
     internal static class PikachuSkills
     {
         static MeleeSkillSet set;
-        // Pikachu's specials sit on a shuffled layout (native moves: 20 Thunder Shock,
-        // 21 Skull Bash, 23 Quick Attack, 24 Thunder): Thunder takes RB, Quick Attack LB
-        // and Skull Bash the B slot. libssbm's Pikachu `Behavior::slot` agrees.
-        internal static int SlotForMove(uint move) =>
-            move == 20 ? 0 : move == 21 || move == 22 ? 4 : move == 23 ? 3 : move == 24 ? 2 : 1;
-
         internal static readonly MeleeSkillLayout Layout = new MeleeSkillLayout
         {
             primary = new MeleeSkillInfo {
@@ -23,36 +17,26 @@ namespace Pikachu
                 displayName="Thunder Jolt",description="RT: shoot an electric orb along your crosshair. It bounces off the ground, walls and ceilings like Luigi's fireball and fizzles after ten bounces.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
-                defName="MeleePikachu1",nameToken="SSBM_PIKACHU_SKILL_1",descriptionToken="SSBM_PIKACHU_SKILL_DESC_1",
-                displayName="A Attack",description="LT: neutral A while stationary. LS + LT selects camera-directed attacks; a flick charges a smash.",
-                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
-            utility = new MeleeSkillInfo {
                 defName="MeleePikachu2",nameToken="SSBM_PIKACHU_SKILL_2",descriptionToken="SSBM_PIKACHU_SKILL_DESC_2",
-                displayName="Thunder",description="RB: call a lightning bolt down on yourself. The bolt shocks anything in its column; the strike then electrifies everything around Pikachu.",
+                displayName="Thunder",description="LT: call a lightning bolt down on yourself. The bolt shocks anything in its column; the strike then electrifies everything around Pikachu.",
                 icon="CallAirstrikeAlt",recharge=5f,stock=1,combat=true },
+            secondaryAlt = new MeleeSkillInfo {
+                defName="MeleePikachuShield",nameToken="SSBM_PIKACHU_SHIELD",descriptionToken="SSBM_PIKACHU_SHIELD_DESC",
+                displayName="Shield / Air Feint",description="LT: hold a shield on the ground or evade once in the air.",
+                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
+            utility = new MeleeSkillInfo {
+                defName="MeleePikachuSkullBash",nameToken="SSBM_PIKACHU_SKULLBASH",descriptionToken="SSBM_PIKACHU_SKULLBASH_DESC",
+                displayName="Skull Bash",description="RB: hold to charge, release to lunge forward. Damage and distance grow with the charge; it stops on what it hits.",
+                icon="LoaderBodyChargeFist",recharge=1.5f,stock=1,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleePikachu3",nameToken="SSBM_PIKACHU_SKILL_3",descriptionToken="SSBM_PIKACHU_SKILL_DESC_3",
                 displayName="Quick Attack",description="LB: zip to your lock-on (the enemy nearest your crosshair) in two zips, or along your stick and camera. Zip again by turning your stick or pressing LB.",
                 icon="MercBodyAssaulter",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
-                defName="MeleePikachuSkullBash",nameToken="SSBM_PIKACHU_SKULLBASH",descriptionToken="SSBM_PIKACHU_SKULLBASH_DESC",
-                displayName="Skull Bash",description="B: hold to charge, release to lunge forward. Damage and distance grow with the charge; it stops on what it hits.",
-                icon="LoaderBodyChargeFist",recharge=1.5f,stock=1,combat=true },
-            extraAlt = new MeleeSkillInfo {
-                defName="MeleePikachuShield",nameToken="SSBM_PIKACHU_SHIELD",descriptionToken="SSBM_PIKACHU_SHIELD_DESC",
-                displayName="Shield / Air Feint",description="B: hold a shield on the ground or evade once in the air.",
-                icon="EngiBodyPlaceBubbleShield",recharge=0f,stock=1,combat=false },
+                defName="MeleePikachu1",nameToken="SSBM_PIKACHU_SKILL_1",descriptionToken="SSBM_PIKACHU_SKILL_DESC_1",
+                displayName="A Attack",description="B: neutral A while stationary. LS + B selects camera-directed attacks; a flick charges a smash.",
+                icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
             extraName="MeleeExtra",extraTitleToken="SSBM_EXTRA_SLOT",extraTitle="B Skill",extraActionName="Cancel",
-            slotForMove=SlotForMove,
-        };
-
-        /// RT neutral special, LT A, RB Thunder (down special), LB Quick Attack (up
-        /// special), B Skull Bash (side special) or the shield alternate.
-        internal static readonly MeleeControlLayout Controls = new MeleeControlLayout
-        {
-            Primary=MeleeControls.NeutralB,Secondary=MeleeControls.Attack,
-            Utility=MeleeControls.DownB,Special=MeleeControls.UpB,
-            Extra=MeleeControls.SideB,ExtraAlt=MeleeControls.Defend,
         };
 
         internal static readonly SkillSlot[] Slots = MeleeSkillSet.Slots;
@@ -91,7 +75,7 @@ namespace Pikachu
             nameToken="SSBM_PIKACHU_NAME",subtitleToken="SSBM_PIKACHU_SUBTITLE",descriptionToken="SSBM_PIKACHU_DESCRIPTION",
             outroToken="SSBM_PIKACHU_OUTRO",failToken="SSBM_PIKACHU_FAIL",
             nameStr="Pikachu",subtitleStr="The Electric Mouse Pokemon",
-            descriptionStr="Pikachu brings his Melee loadout to Petrichor V.\n\nRT: Thunder Jolt. LT: contextual A. RB: Thunder. LB: Quick Attack, homing on your lock-on. B: Skull Bash, with Shield / Air Feint as the fifth skill alternate.\n\nOffline prototype.",
+            descriptionStr="Pikachu brings his Melee loadout to Petrichor V.\n\nRT: Thunder Jolt. B: contextual A. RB: Skull Bash. LB: Quick Attack, homing on your lock-on. LT: Thunder, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
             outroStr="..and so he left, shocked and satisfied.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.97f,0.84f,0.24f),
             baseMaxHealth=90f,levelMaxHealth=27f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,

@@ -25,7 +25,7 @@ namespace Link
         protected override bool HoldCharge => false;
         protected override bool AssetsReady => Samus.Plugin.LinkReady;
         protected override bool AssetsBusy => Samus.Plugin.AssetsBusy;
-        // With a bomb in his hand LT throws it and B drops it (BeforeStep), so the sim must not
+        // With a bomb in his hand B throws it and LT drops it (BeforeStep), so the sim must not
         // start a jab or pull a second bomb on the same press.
         protected override uint AllowedButtons => LinkSkills.Allowed(body) & ~(LinkShot.CarriedBomb(body) != null ? (2u | 16u) : 0u);
         protected override bool ShieldSelected => LinkSkills.ShieldSelected(body);

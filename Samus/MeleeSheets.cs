@@ -19,16 +19,15 @@ namespace Samus
                 var player = user != null ? user.inputPlayer : null;
                 var eventSystem = user != null ? user.eventSystem : null;
                 string x = ControlGlyphs.Pad(player, PadButton.X, "X");
-                string lt = ControlGlyphs.Pad(player, PadButton.LT, "LT");
+                string b = ControlGlyphs.Pad(player, PadButton.B, "B");
                 string a = ControlGlyphs.Pad(player, PadButton.A, "A");
                 string interact = ControlGlyphs.Key(eventSystem, "Interact", "Interact");
-                string secondary = ControlGlyphs.Key(eventSystem, "SecondarySkill", "Secondary");
                 string jump = ControlGlyphs.Key(eventSystem, "Jump", "Jump");
                 pad.Add(x, "Grapple beam (bosses pull you in)")
-                    .Add("Captured", lt + " pummel, LS + " + lt + " throw")
-                    .Add(x + " + " + lt + ", or " + a, "Let go");
+                    .Add("Captured", b + " pummel, LS + " + b + " throw")
+                    .Add(x + " + " + b + ", or " + a, "Let go");
                 keys.Add(interact, "Grapple beam (bosses pull you in)")
-                    .Add("Captured", secondary + " pummel, Move throw")
+                    .Add("Captured", "C pummel, Move throw")
                     .Add(jump, "Let go");
             });
 

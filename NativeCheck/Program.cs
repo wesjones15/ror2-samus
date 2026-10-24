@@ -289,7 +289,7 @@ static class Program
                 try {
                     var selectPad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(0,0,1),allowed=0};
                     MeleeNative.ssbm_sim_step(select,in host,in selectPad,1.0/60);
-                    selectPad.buttons=4|16;selectPad.allowed=16;
+                    selectPad.buttons=4|16;selectPad.allowed=2;
                     MeleeNative.ssbm_sim_step(select,in host,in selectPad,1.0/60);
                     MeleeNative.ssbm_sim_state(select,out var selectState);Check(selectState.move_id==24,"selection did not start down-B");
                     selectPad.buttons=0;selectPad.allowed=0;
