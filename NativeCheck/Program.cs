@@ -613,7 +613,6 @@ static class Program
             try {
                 var pad=new MeleeNative.Pad{aim=new MeleeNative.Vec3(0,0,1),allowed=31};
                 for(int f=0;f<10;f++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
-                MeleeNative.ssbm_sim_lock_target(sim,new MeleeNative.Vec3(0,0,60),1);
                 pad.buttons=1024;MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);pad.buttons=0;
                 MeleeNative.ssbm_sim_state(sim,out var state);Check(state.move_id==23,"LB did not start Quick Attack");
                 float furthest=state.position.z;
