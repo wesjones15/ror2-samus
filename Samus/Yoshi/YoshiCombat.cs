@@ -32,10 +32,19 @@ namespace Yoshi
             else if (e.move_id == 24) Bomb(body, origin, scale);
         }
 
-        /// Where the tongue leaves the body: the sim position is at the feet, so lift it
-        /// to the head. Shared by the hit cast and the drawn tongue so they line up.
+        /// Where the tongue leaves the body. The animated mouth bone (Yoshi joint 42)
+        /// follows the head as the tongue-out clip lowers it; the old fixed core-height
+        /// point was where the head sat before the animation. Shared by the hit cast and
+        /// the drawn tongue so they line up.
         internal static Vector3 Mouth(CharacterBody body)
-            => body.corePosition + Vector3.up * Mathf.Max(0.35f, body.radius * 0.8f);
+        {
+            var driver = body ? body.GetComponent<YoshiDriver>() : null;
+            if (driver) return driver.Mouth();
+            return MouthFallback(body);
+        }
+
+        internal static Vector3 MouthFallback(CharacterBody body)
+            => body.corePosition + Vector3.up * Mathf.Max(0.25f, body.radius * 0.35f);
 
         // Egg Lay: the tongue swallows the first enemy in its reach. There is no boss
         // immunity: Mithrix is laid in an egg like anything else. A capsule overlap

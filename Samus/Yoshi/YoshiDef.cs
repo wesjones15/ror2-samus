@@ -76,7 +76,7 @@ namespace Yoshi
             cachedName="MeleeYoshi",bodyName="MeleeYoshiBody",displayName="MeleeYoshiDisplay",
             nameToken="SSBM_YOSHI_NAME",subtitleToken="SSBM_YOSHI_SUBTITLE",descriptionToken="SSBM_YOSHI_DESCRIPTION",
             outroToken="SSBM_YOSHI_OUTRO",failToken="SSBM_YOSHI_FAIL",
-            nameStr="Yoshi",subtitleStr="Yoshi's Island Dinosaur",
+            nameStr="Yoshi",subtitleStr="Mario's Dog",
             descriptionStr="Yoshi brings his Melee loadout to Petrichor V.\n\nRT: Egg Lay. B: contextual A. RB: Egg Roll. LB: Egg Throw. LT: Yoshi Bomb, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.35f,0.7f,0.35f),

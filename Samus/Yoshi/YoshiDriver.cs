@@ -81,6 +81,21 @@ namespace Yoshi
             PlaySourceSound(0x44618); // the egg shell breaks
         }
 
+        readonly float[] mouthBone = new float[16];
+        /// The live animated mouth bone, in world metres. Yoshi's model joint 42 is the
+        /// jaw/mouth; unlike a fixed core-height point it follows the head down when the
+        /// tongue-out clip plays.
+        internal Vector3 Mouth()
+        {
+            if (sim != IntPtr.Zero && MeleeNative.ssbm_sim_bone(sim, 42, mouthBone) == 1)
+            {
+                var point = new Vector3(mouthBone[12], mouthBone[13], mouthBone[14]) * scale;
+                var forward = body ? body.transform.forward : Vector3.forward;
+                return point + new Vector3(forward.x, 0f, forward.z).normalized * 0.12f;
+            }
+            return YoshiCombat.MouthFallback(body);
+        }
+
         internal void PlaySourceSound(uint sound)
         {
             if (sim == IntPtr.Zero) return;
