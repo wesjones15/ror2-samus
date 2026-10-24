@@ -30,7 +30,7 @@ namespace Fox
                 icon="EngiBodyPlaceSpiderMine",recharge=1f,stock=2,combat=true },
             special = new MeleeSkillInfo {
                 defName="MeleeFox3",nameToken="SSBM_FOX_SKILL_3",descriptionToken="SSBM_FOX_SKILL_DESC_3",
-                displayName="Fire Fox",description="LB: charge a fireball in place, then launch toward the camera, hitting hard.",
+                displayName="Fire Fox",description="LB: charge a fireball in place, then launch toward the camera, hitting hard and ending in a fiery impact that burns and blasts nearby enemies.",
                 icon="LoaderBodyChargeFist",recharge=3f,stock=1,combat=true },
             extra = new MeleeSkillInfo {
                 defName="MeleeFox1",nameToken="SSBM_FOX_SKILL_1",descriptionToken="SSBM_FOX_SKILL_DESC_1",

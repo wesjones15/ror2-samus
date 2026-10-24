@@ -21,6 +21,58 @@ namespace Fox
             if (e.move_id == 20) FoxShot.Spawn(body, origin, aim, scale);
             // Strength 1 is the shine starting (the burst, then the bubble stays up); 2 is it going down.
             else if (e.move_id == 24 && e.strength < 1.5f) Reflector.Burst(body, origin, scale);
+            // Fire Fox's end event (strength 3) is the host's fiery impact burst.
+            else if (e.move_id == 23 && e.strength >= 2.5f) FireFoxImpact(body, origin, scale);
+        }
+
+        // Fire Fox's landing/end burst (host adaptation): a fire AoE with falloff,
+        // plus a much harder impact on the nearest enemy. The source ends Fire Fox
+        // with a rebound/landing; this gives the end of the move a payoff without
+        // replacing the disc launch hitboxes.
+        internal static void FireFoxImpact(CharacterBody body, Vector3 origin, float scale)
+        {
+            if (!MeleeNet.Acts(body)) return;
+            const float RadiusUnits = 75f;        // 7.5 m
+            const float InnerUnits = 22f;         // full AoE damage within 2.2 m
+            const float ImpactPercent = 32f;      // nearest enemy only
+            const float ClosePercent = 22f;       // AoE at the centre
+            const float EdgePercent = 6f;         // AoE at the rim
+            var center = body.corePosition;
+            float radius = RadiusUnits * scale;
+            float inner = InnerUnits * scale;
+            var search = new SphereSearch { origin = center, radius = radius, mask = LayerIndex.entityPrecise.mask };
+            search.RefreshCandidates().FilterCandidatesByHurtBoxTeam(TeamMask.GetEnemyTeams(body.teamComponent.teamIndex)).FilterCandidatesByDistinctHurtBoxEntities();
+            HealthComponent impact = null;
+            float nearest = float.MaxValue;
+            var hits = new List<(HurtBox hurt, float distance)>();
+            foreach (var hurt in search.GetHurtBoxes())
+            {
+                if (!hurt || !hurt.healthComponent || !hurt.healthComponent.alive) continue;
+                float distance = Vector3.Distance(hurt.transform.position, center);
+                hits.Add((hurt, distance));
+                if (distance < nearest) { nearest = distance; impact = hurt.healthComponent; }
+            }
+            try {
+                var effect = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OmniExplosionVFX");
+                if (effect) EffectManager.SpawnEffect(effect, new EffectData { origin = center, scale = Mathf.Max(1f, radius) }, NetworkServer.active);
+                body.GetComponent<MeleeDriver>()?.HitSpark(1u, 30f, center);
+            } catch (Exception) { }
+            foreach (var (hurt, distance) in hits)
+            {
+                bool direct = hurt.healthComponent == impact;
+                float falloff = Mathf.InverseLerp(inner, radius, distance);
+                float coefficient = Mathf.Lerp(ClosePercent, EdgePercent, falloff) / 3f;
+                if (direct) coefficient += ImpactPercent / 3f;
+                var away = hurt.transform.position - center;
+                var dir = away.sqrMagnitude > 0.01f ? away.normalized : Vector3.up;
+                NativeHit.Deal(body, hurt.healthComponent, new NativeHitSpec {
+                    coefficient = coefficient,
+                    position = hurt.transform.position,
+                    force = new Vector3(dir.x, 0f, dir.z) * (direct ? 2600f : 1300f) + Vector3.up * (direct ? 1400f : 700f),
+                    procCoefficient = 1f, damageType = DamageType.IgniteOnHit, color = DamageColorIndex.Default,
+                    staggerDuration = direct ? 0.5f : 0.25f, staggerBosses = direct,
+                });
+            }
         }
 
         // The Reflector (down-B): a frame-1 AoE that clears space around Fox with

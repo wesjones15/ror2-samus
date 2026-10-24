@@ -8,12 +8,12 @@ static class Program
 {
     static readonly MeleeNative.CollideFn collide=Collide;
     static readonly MeleeNative.EventFn evt=Event;
-    static int jumps, hits,throws;
+    static int jumps, hits,throws,fireFoxImpacts;
     static MeleeNative.Event lastShot;static int shotCount;
     static MeleeNative.Event lastThunder;static int thunderSpawn,thunderStrike;
     static void Collide(IntPtr user,in MeleeNative.Vec3 from,in MeleeNative.Vec3 to,out MeleeNative.Collision result)
     { result=new MeleeNative.Collision { position=new MeleeNative.Vec3(to.x,Math.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
-    static void Event(IntPtr user,in MeleeNative.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++;if(e.kind==6)throws++;if(e.kind==2&&e.move_id==20){lastShot=e;shotCount++;} if(e.kind==2&&e.move_id==24){if(e.strength<1.5f){thunderSpawn++;lastThunder=e;}else thunderStrike++;} }
+    static void Event(IntPtr user,in MeleeNative.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++;if(e.kind==6)throws++;if(e.kind==2&&e.move_id==20){lastShot=e;shotCount++;} if(e.kind==2&&e.move_id==24){if(e.strength<1.5f){thunderSpawn++;lastThunder=e;}else thunderStrike++;} if(e.kind==2&&e.move_id==23&&e.strength>=2.5f)fireFoxImpacts++; }
     static void Check(bool ok,string what) { if(!ok) throw new Exception(what); }
     // Multiplayer: another machine replays an owner's recorded calls on a shadow sim and ends each batch where
     // the owner is, in the same action, for every fighter; a corrupt log is refused.
@@ -141,6 +141,23 @@ static class Program
         } finally {MeleeNative.ssbm_sim_free(sim);}
         Console.WriteLine("PASS: Fox Illusion's blue streak is joint-bound and its ghost article is a faded blue body through C#");
     }
+    // Fire Fox ends with one host burst event (move 23, strength 3) at the end of its travel.
+    static void FireFoxImpactRegressions(string assets,in MeleeNative.Host host)
+    {
+        var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterFox);
+        if(sim==IntPtr.Zero) {Console.WriteLine("SKIP: Fire Fox impact ("+MeleeNative.Error+")");return;}
+        fireFoxImpacts=0;
+        try {
+            var pad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(1,0.4f,0),allowed=31};
+            for(int i=0;i<4;i++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+            pad.buttons=1024; // UP_B
+            for(int i=0;i<30;i++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+            pad.buttons=0;
+            for(int i=0;i<240;i++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+            Check(fireFoxImpacts==1,"Fire Fox emitted "+fireFoxImpacts+" impact bursts");
+        } finally {MeleeNative.ssbm_sim_free(sim);}
+        Console.WriteLine("PASS: Fire Fox emits one end-of-travel impact burst through C#");
+    }
     static int Main(string[] args)
     {
         try {Run(args);return 0;}
@@ -181,6 +198,7 @@ static class Program
         ReplayRegressions(assets,in host);
         MovesetChecks(assets);
         FoxIllusionRegressions(assets,in host);
+        FireFoxImpactRegressions(assets,in host);
         jumps=hits=throws=0;
         foreach(int fps in new[]{30,60,144}) {
             var dash=MeleeNative.ssbm_sim_new(NativeLib.CString(assets),default);Check(dash!=IntPtr.Zero,MeleeNative.Error);
