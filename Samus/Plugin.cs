@@ -60,7 +60,7 @@ namespace Samus
             MeleeDiag.On=Diagnostics.Value;
             ScopeRefill=Config.Bind("Luigi","ScopeAmmoPerSecond",6f,new ConfigDescription("Super Scope: shots of ammo the 48-shot magazine refills a second after a moment idle (host adaptation; the source never refills). 0 never refills.",new AcceptableValueRange<float>(0f,100f)));
             ScopeRange=Config.Bind("Luigi","ScopeRangeScale",3f,new ConfigDescription("Super Scope: how many times as fast and as far as the source's the beam flies, because an open world is bigger than a stage.",new AcceptableValueRange<float>(1f,10f)));
-            ScopeChargeSmoke=Config.Bind("Luigi","ScopeChargeSmoke",true,"Super Scope: kick up the disc's ground dust/smoke (efSync 0x3EF and 0x3F4) at the holder's feet while the trigger is held, growing with the charge. Host visual: the decomp's Start state has no effect at all; this reproduces the planted-stance smoke rather than putting a ball at the muzzle.");
+            ScopeChargeSmoke=Config.Bind("Luigi","ScopeChargeSmoke",true,"Super Scope: puff the disc's smoke (efSync 0x405) above the holder's feet while the trigger is held, growing with the charge. Host visual: the decomp's Start state has no effect at all; this reproduces the planted-stance smoke rather than putting a ball at the muzzle.");
             // Melee multiplayer: the messages that carry a fighter to the other players (MeleeNet).
             MeleeNet.Register();
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");

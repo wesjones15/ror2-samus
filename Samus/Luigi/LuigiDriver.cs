@@ -135,12 +135,13 @@ namespace Luigi
             }
             if (Time.time < scopeSmokeAt) return;
             scopeSmokeAt = Time.time + 0.11f;
-            var foot = body.footPosition;
+            // Keep the puffs above the ground: ground dust emitters fall below the feet.
+            var foot = body.footPosition + Vector3.up * (0.25f + 0.03f * level);
             float angle = Time.time * 5f;
-            var drift = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * (0.28f + 0.02f * level);
-            float size = scale * (1.3f + 0.08f * level);
-            Effects?.Spawn(0x3EFu, MeleeParticles.At(foot + drift, Quaternion.identity, size));
-            Effects?.Spawn(0x3F4u, MeleeParticles.At(foot - drift * 0.6f, Quaternion.identity, size * 0.8f));
+            var drift = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * (0.3f + 0.03f * level);
+            float size = scale * (1.5f + 0.1f * level);
+            Effects?.Spawn(0x405u, MeleeParticles.At(foot + drift, Quaternion.identity, size));
+            Effects?.Spawn(0x405u, MeleeParticles.At(foot - drift, Quaternion.identity, size));
         }
         // Gives the sim the scope while the loadout holds it (and the items archive was extracted), every step.
         void UpdateScope()

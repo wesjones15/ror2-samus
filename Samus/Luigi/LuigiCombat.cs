@@ -41,12 +41,20 @@ namespace Luigi
             if (!MeleeNet.Acts(body) || !MeleeScopeBeam.Available(Samus.Plugin.AssetsDir)) return;
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             var aim = new Vector3(e.direction.x, e.direction.y, e.direction.z).normalized;
+            // A gun fires along the crosshair ray, not from the hand toward the point the crosshair
+            // happens to hit: converging from a low muzzle to a floor point bends the shot into the
+            // ground at the player's feet. Keep the camera's forward direction; the sweep handles walls.
             if (body.inputBank)
-                aim = MeleeAim.ProjectileDirection(body, origin, MeleeAim.CameraRay(body, body.inputBank));
+                aim = MeleeAim.CameraRay(body, body.inputBank).direction.normalized;
             var muzzle = origin + aim * 0.6f;
-            // ftCo_ItemScopeFire.c fn_800D84D4: efSync 0x430, the muzzle flash, at the shot's origin.
             if (effects != null && aim.sqrMagnitude > 0.0001f)
-                effects.Spawn(0x430, MeleeParticles.At(muzzle, Quaternion.LookRotation(aim), scale));
+            {
+                var rotation = Quaternion.LookRotation(aim);
+                // fn_800D84D4's 0x430 generator is not in the common particle bank in a drawable form;
+                // 0x431 is the visible additive burst, paired with the scope's smoke puff.
+                effects.Spawn(0x431u, MeleeParticles.At(muzzle, rotation, scale));
+                effects.Spawn(0x405u, MeleeParticles.At(muzzle, rotation, scale * 0.8f));
+            }
             MeleeScopeBeam.Spawn(body, muzzle, aim, (uint)Mathf.Clamp(Mathf.RoundToInt(e.strength), 0, 9),
                 new MeleeScopeBeam.Config { AssetsDir = Samus.Plugin.AssetsDir, Scale = scale, RangeScale = Samus.Plugin.ScopeRange.Value });
         }
