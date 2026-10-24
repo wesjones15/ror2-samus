@@ -141,6 +141,21 @@ static class Program
         } finally {MeleeNative.ssbm_sim_free(sim);}
         Console.WriteLine("PASS: Fox Illusion's blue streak is joint-bound and its ghost article is a faded blue body through C#");
     }
+    // A host terrain correction may move the fighter without resetting its action.
+    static void NudgeRegression(string assets)
+    {
+        var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterFox);
+        if(sim==IntPtr.Zero) {Console.WriteLine("SKIP: nudge ("+MeleeNative.Error+")");return;}
+        try {
+            MeleeNative.ssbm_sim_state(sim,out var before);
+            Check(MeleeNative.HasNudge,"this ssbm.dll has no ssbm_sim_nudge");
+            MeleeNative.ssbm_sim_nudge(sim,new MeleeNative.Vec3(0,10,0),1);
+            MeleeNative.ssbm_sim_state(sim,out var after);
+            Check(Math.Abs(after.position.y-10)<.001f&&after.move_id==before.move_id&&after.frame==before.frame,
+                "nudge changed the action or did not move the fighter");
+        } finally {MeleeNative.ssbm_sim_free(sim);}
+        Console.WriteLine("PASS: ssbm_sim_nudge moves a live fighter without resetting its action");
+    }
     // Fire Fox ends with one host burst event (move 23, strength 3) at the end of its travel.
     static void FireFoxImpactRegressions(string assets,in MeleeNative.Host host)
     {
@@ -198,6 +213,7 @@ static class Program
         ReplayRegressions(assets,in host);
         MovesetChecks(assets);
         FoxIllusionRegressions(assets,in host);
+        NudgeRegression(assets);
         FireFoxImpactRegressions(assets,in host);
         jumps=hits=throws=0;
         foreach(int fps in new[]{30,60,144}) {

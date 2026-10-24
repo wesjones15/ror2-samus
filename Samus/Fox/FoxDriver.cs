@@ -78,8 +78,25 @@ namespace Fox
         }
         protected override void StepPresentation(float dt)
         {
+            Present(() => KeepIllusionAboveGround());
             Present(() => Effects?.Step(sim, dt));
             Present(() => Particles?.Step(dt));
+        }
+        // A horizontal Illusion can end up inside a rising slope before the host
+        // collision callback sees it. While the dash is active, lift the sim onto a
+        // nearby non-flat floor instead of letting the visual and the sim go under
+        // the map. Only a slope (0.55..0.97 up normal) is used, so a platform above
+        // the fighter is never mistaken for ground; the sim is never pulled down.
+        void KeepIllusionAboveGround()
+        {
+            if (!MeleeNative.HasNudge || !MeleeNet.Acts(body)) return;
+            if (MeleeNative.ssbm_sim_state(sim, out var current) != 1 || current.move_id != 21) return;
+            var feet = ToWorld(current.position);
+            if (!WorldProbe.Ground(feet + Vector3.up * 3f, 6f, out var floor)) return;
+            if (floor.normal.y <= 0.55f || floor.normal.y >= 0.97f) return;
+            float lift = floor.point.y - feet.y;
+            if (lift <= 0.02f || lift > 2.5f) return;
+            MeleeNative.ssbm_sim_nudge(sim, ToSim(new Vector3(feet.x, floor.point.y + 0.02f, feet.z)), 1);
         }
         protected override void DrawPresentation(Vector3 at, Quaternion rotation)
         {
