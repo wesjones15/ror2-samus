@@ -615,7 +615,24 @@ static class Program
             // A wall reflect spends the same ten-contact budget as a ground bounce (Projectile::reflect).
             Check(wall&&bounces+1==10,"Thunder Shock took "+bounces+" ground bounces plus one wall reflect, expected ten surface contacts in all");
         }finally{MeleeNative.ssbm_projectile_free(shot);}
-        Console.WriteLine("PASS: Pikachu Quick Attack reaches a locked enemy, Skull Bash and Thunder complete without rubberbanding at 30/60/144 FPS, and Thunder Shock reflects and bounces ten times");
+        // The RT alternate borrows Yoshi's Egg Lay: the sim starts move 20 on its tense
+        // Thunder clip, and the swallow/lay cues resolve from Yoshi's bank on Pikachu.
+        if(MeleeNative.ssbm_assets_complete(NativeLib.CString(assets),MeleeNative.FighterYoshi)==1) {
+            var lay=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterPikachu);Check(lay!=IntPtr.Zero,"Pikachu Egg Lay sim: "+MeleeNative.Error);
+            try {
+                MeleeNative.ssbm_sim_set_host_flags(lay,1);
+                var pad=new MeleeNative.Pad{aim=new MeleeNative.Vec3(0,0,1),allowed=31};
+                for(int f=0;f<10;f++)MeleeNative.ssbm_sim_step(lay,in host,in pad,1.0/60);
+                pad.buttons=256;MeleeNative.ssbm_sim_step(lay,in host,in pad,1.0/60);pad.buttons=0;
+                MeleeNative.ssbm_sim_state(lay,out var state);Check(state.move_id==20,"RT did not start borrowed Egg Lay");
+                Check(MeleeNative.ssbm_sim_play_sound_from(lay,MeleeNative.FighterYoshi,0x4460c)==1,"Yoshi lay cue missing: "+MeleeNative.Error);
+                var pcm=new float[32000*2];Check(MeleeNative.ssbm_sim_audio(lay,pcm,32000)==32000,MeleeNative.Error);
+                Check(Array.Exists(pcm,x=>Math.Abs(x)>0.0001f),"Yoshi lay cue decoded silence on Pikachu");
+                for(int f=0;f<90&&state.move_id==20;f++){MeleeNative.ssbm_sim_step(lay,in host,in pad,1.0/60);MeleeNative.ssbm_sim_state(lay,out state);}
+                Check(state.move_id==0,"borrowed Egg Lay never ended");
+            }finally{MeleeNative.ssbm_sim_free(lay);}
+        }
+        Console.WriteLine("PASS: Pikachu Quick Attack reaches a locked enemy, Skull Bash and Thunder complete without rubberbanding at 30/60/144 FPS, Thunder Shock reflects and bounces ten times, and the borrowed Egg Lay starts on move 20 with Yoshi's lay cue");
     }
     static void DefenseRegressions(string assets,in MeleeNative.Host host)
     {
