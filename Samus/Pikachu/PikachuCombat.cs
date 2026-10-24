@@ -19,7 +19,12 @@ namespace Pikachu
         {
             if (!MeleeNet.Acts(body)) return;
             var feet = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
-            if (e.move_id == 20) Shock(driver, body, feet, scale, e);
+            if (e.move_id == 20)
+            {
+                // The RT slot can hold Yoshi's Egg Lay instead; that move's tongue and
+                // egg belong to PikachuDriver/YoshiTongue, not to Thunder Jolt.
+                if (!PikachuSkills.EggLaySelected(body)) Shock(driver, body, feet, scale, e);
+            }
             else if (e.move_id == 24)
             {
                 if (e.strength < 1.5f) ThunderBolt.Spawn(driver, body, feet, e, scale);

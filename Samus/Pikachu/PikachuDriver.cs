@@ -2,6 +2,7 @@ using System;
 using RoR2;
 using Ror2Common;
 using UnityEngine;
+using Yoshi;
 
 namespace Pikachu
 {
@@ -9,11 +10,15 @@ namespace Pikachu
     // hitbox sampling and recovery; this supplies his presentation, skill layout and
     // host-side context for his staged specials (the Quick Attack lock-on).
     [DefaultExecutionOrder(-200)]
-    public sealed class PikachuDriver : MeleeDriver
+    public sealed class PikachuDriver : MeleeDriver, IEggLayer
     {
         const uint ThunderShock = 20, SkullBash = 21, QuickAttack = 23;
+        /// libssbm::pikachu::HOST_EGG_LAY: the RT slot holds Yoshi's Egg Lay.
+        const uint HostEggLay = 1;
 
-        static IMeleeObjectView EffectView(uint model) => MeleeFighterView.Effect(Samus.Plugin.AssetsDir, MeleeNative.FighterPikachu, model);
+        // Effects are shared assets, not part of a body: Pikachu's RT alternate borrows
+        // Yoshi's Egg Lay tongue/egg presentation, so resolve every cue across all banks.
+        static IMeleeObjectView EffectView(uint model) => MeleeFighterView.EffectAny(Samus.Plugin.AssetsDir, MeleeNative.FighterPikachu, model);
         MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
         MeleeAudio audio;
         // The same lock-on Olimar's RT and Mario's LT use: the enemy nearest where the
@@ -25,13 +30,19 @@ namespace Pikachu
         protected override MeleeEffects EffectsForSparks => Effects;
         internal IntPtr NativeSim => sim;
         readonly MeleeHitTracker hits = new MeleeHitTracker();
+        // The borrowed Egg Lay's mouth: Pikachu's forward snout joint (16), the analogue
+        // of Yoshi's jaw joint 42. It follows the pitched upper body.
+        readonly float[] mouthBone = new float[16];
+        bool connectQueued;
 
         protected override string FighterName => "Pikachu";
         protected override string AssetsDir => Samus.Plugin.AssetsDir;
         protected override uint FighterKind => MeleeNative.FighterPikachu;
         protected override float MetresPerUnit => Samus.Plugin.MetresPerUnit.Value;
         protected override float JumpScale => Samus.Plugin.JumpScale.Value;
-        protected override float SpeedScale => Samus.Plugin.SpeedScale.Value;
+        protected override float SpeedScale
+            => Samus.Plugin.SpeedScale.Value
+                * (YoshiFull.IsCarrying(body) || YoshiFull.IsLaying(body) ? 0.45f : 1f);
         protected override bool HoldCharge => false;
         protected override bool AssetsReady => Samus.Plugin.PikachuReady;
         protected override bool AssetsBusy => Samus.Plugin.AssetsBusy;
@@ -40,8 +51,58 @@ namespace Pikachu
         protected override MeleeControlLayout Layout => MeleeControlLayout.Samus;
         protected override bool IsRangedMove(uint moveId) => moveId == ThunderShock;
         protected override bool IsChargeMove(uint moveId) => false;
+        /// Egg Lay pays its cooldown only when the tongue swallows something; a miss
+        /// leaves the stock and recharge untouched (Yoshi's shared rule).
+        protected override bool SpendsOnStart(uint moveId)
+            => !(moveId == ThunderShock && PikachuSkills.EggLaySelected(body));
+        /// While an egg lay carries a victim, RT cannot start another lash.
+        protected override uint FilterButtons(uint buttons)
+        {
+            if (!YoshiFull.IsCarrying(body) && !YoshiFull.IsLaying(body)) return buttons;
+            return buttons & ~(MeleeControls.NeutralB | MeleeControls.Sprint);
+        }
 
         protected override void UpdateAudio() => audio?.Update();
+
+        /// The borrowed Egg Lay draws Yoshi's tongue from Pikachu's mouth on move start;
+        /// YoshiTongue catches continuously while it is out.
+        protected override void OnEventStarted(MeleeNative.Event e)
+        {
+            if (e.move_id != ThunderShock || !PikachuSkills.EggLaySelected(body)) return;
+            var mouth = Mouth();
+            YoshiTongue.Show(body, YoshiCombat.CrosshairPoint(body, mouth));
+        }
+
+        internal Vector3 Mouth()
+        {
+            if (sim != IntPtr.Zero && MeleeNative.ssbm_sim_bone(sim, 16, mouthBone) == 1)
+            {
+                var point = new Vector3(mouthBone[12], mouthBone[13], mouthBone[14]) * scale;
+                var forward = body ? body.transform.forward : Vector3.forward;
+                return point + new Vector3(forward.x, 0f, forward.z).normalized * 0.12f;
+            }
+            return YoshiCombat.MouthFallback(body);
+        }
+        internal void QueueConnect() => connectQueued = true;
+        internal void PlaySourceSound(uint sound)
+        {
+            if (sim == IntPtr.Zero) return;
+            // The borrowed move's cues live in Yoshi's bank (no Yoshi voice: Egg Lay has none).
+            if (MeleeNative.ssbm_sim_play_sound_from(sim, MeleeNative.FighterYoshi, sound) != 1)
+                CommonLog.Warn("Pikachu borrowed sound " + sound + ": " + MeleeNative.Error);
+        }
+        internal void PlayEffect(uint id, Vector3 world, Quaternion rotation)
+        {
+            if (Effects == null || scale <= 0f) return;
+            Present(() => Effects.Spawn(id, Matrix4x4.TRS(world / scale, rotation, new Vector3(-1, 1, 1))));
+        }
+        CharacterBody IEggLayer.Body => body;
+        float IEggLayer.UnitScale => scale;
+        MeleeSkillSet IEggLayer.SkillSet => PikachuSkills.Built;
+        Vector3 IEggLayer.Mouth() => Mouth();
+        void IEggLayer.QueueConnect() => QueueConnect();
+        void IEggLayer.PlaySourceSound(uint sound) => PlaySourceSound(sound);
+        void IEggLayer.PlayEffect(uint id, Vector3 world, Quaternion rotation) => PlayEffect(id, world, rotation);
         protected override void CreatePresentation()
         {
             view = new MeleeFighterView(AssetsDir, MeleeNative.FighterPikachu, Math.Min(body.skinIndex, 4));
@@ -106,6 +167,11 @@ namespace Pikachu
         // kept while the move runs; the sim spends its two source zips getting there.
         protected override void BeforeStep(in MeleeNative.Pad p)
         {
+            // The RT slot's loadout can hold Yoshi's Egg Lay; the sim needs to know before
+            // it reads the pad, so DownB starts Egg Lay instead of Thunder Jolt.
+            MeleeNative.ssbm_sim_set_host_flags(sim,
+                PikachuSkills.EggLaySelected(body) ? HostEggLay : 0u);
+            if (connectQueued) { connectQueued = false; MeleeNative.ssbm_sim_connect(sim); }
             if (!MeleeNative.HasStagedSpecials) return;
             bool quick = (p.buttons & MeleeControls.UpB) != 0 || state.move_id == QuickAttack;
             if (!quick)

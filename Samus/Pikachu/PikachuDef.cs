@@ -16,6 +16,10 @@ namespace Pikachu
                 defName="MeleePikachu0",nameToken="SSBM_PIKACHU_SKILL_0",descriptionToken="SSBM_PIKACHU_SKILL_DESC_0",
                 displayName="Thunder Jolt",description="RT: shoot an electric orb along your crosshair. It bounces off the ground, walls and ceilings like Luigi's fireball and fizzles after ten bounces.",
                 icon="CommandoBodyFirePistol",recharge=0f,stock=1,combat=true },
+            primaryAlt = new MeleeSkillInfo {
+                defName="MeleePikachuEggLay",nameToken="SSBM_PIKACHU_EGGLAY",descriptionToken="SSBM_PIKACHU_EGGLAY_DESC",
+                displayName="Egg Lay (Yoshi)",description="RT: borrow Yoshi's Egg Lay. Pikachu tenses with his Thunder animation, pitches his upper body with the camera and lashes Yoshi's tongue 20 m at the crosshair, swallowing up to six enemies it touches. He lays an egg for each behind him; each breaks out after 5 seconds (7 for large enemies, 10 for bosses). 3 second cooldown, only after the tongue catches an enemy.",
+                icon="CommandoBodyFirePistol",recharge=3f,stock=1,combat=true },
             secondary = new MeleeSkillInfo {
                 defName="MeleePikachu2",nameToken="SSBM_PIKACHU_SKILL_2",descriptionToken="SSBM_PIKACHU_SKILL_DESC_2",
                 displayName="Thunder",description="LT: call a lightning bolt down on yourself. The bolt shocks anything in its column; the strike then electrifies everything around Pikachu.",
@@ -45,6 +49,8 @@ namespace Pikachu
         internal static void Set(MeleeSkillSet built) => set = built;
         internal static GenericSkill Get(CharacterBody body, int slot) => set.Get(body, slot);
         internal static bool ShieldSelected(CharacterBody body) => set.ShieldSelected(body);
+        /// The RT slot's loadout holds Yoshi's Egg Lay instead of Thunder Jolt.
+        internal static bool EggLaySelected(CharacterBody body) => set != null && set.PrimaryAltSelected(body);
         internal static NativeSkillDef Expected(CharacterBody body, int slot) => set.Expected(body, slot);
         internal static int Slot(CharacterBody body, uint move) => set.Slot(body, move);
         internal static uint Allowed(CharacterBody body) => set.Allowed(body);
@@ -75,7 +81,7 @@ namespace Pikachu
             nameToken="SSBM_PIKACHU_NAME",subtitleToken="SSBM_PIKACHU_SUBTITLE",descriptionToken="SSBM_PIKACHU_DESCRIPTION",
             outroToken="SSBM_PIKACHU_OUTRO",failToken="SSBM_PIKACHU_FAIL",
             nameStr="Pikachu",subtitleStr="The Electric Mouse Pokemon",
-            descriptionStr="Pikachu brings his Melee loadout to Petrichor V.\n\nRT: Thunder Jolt. B: contextual A. RB: Skull Bash. LB: Quick Attack, homing on your lock-on. LT: Thunder, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
+            descriptionStr="Pikachu brings his Melee loadout to Petrichor V.\n\nRT: Thunder Jolt, with Yoshi's Egg Lay as its alternate. B: contextual A. RB: Skull Bash. LB: Quick Attack, homing on your lock-on. LT: Thunder, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
             outroStr="..and so he left, shocked and satisfied.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.97f,0.84f,0.24f),
             baseMaxHealth=90f,levelMaxHealth=27f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
