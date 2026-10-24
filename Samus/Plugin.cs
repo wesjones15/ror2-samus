@@ -31,7 +31,7 @@ namespace Samus
         internal static ConfigEntry<float> LockRange;
         internal static ConfigEntry<bool> LogEffects;
         internal static ConfigEntry<bool> Diagnostics;
-        internal static ConfigEntry<float> ScopeRefill,ScopeRange;
+        internal static ConfigEntry<float> ScopeRange;
         internal static ConfigEntry<bool> ScopeChargeSmoke;
         string nativePath,configuredDisc,pluginDirectory;
         bool nativeStarted,destroyed;
@@ -58,7 +58,6 @@ namespace Samus
             MeleeFighterView.FighterBrightness=FighterBrightness.Value;
             Diagnostics=Config.Bind("Debug","Diagnostics",true,"Log each Melee move start (slot, charge, authority, whether it may deal damage), each hitbox batch and each hit dealt, as [MeleeDiag] lines in the BepInEx log. For finding why a move deals no damage. Cheap, but turn it off once everything works.");
             MeleeDiag.On=Diagnostics.Value;
-            ScopeRefill=Config.Bind("Luigi","ScopeAmmoPerSecond",6f,new ConfigDescription("Super Scope: shots of ammo the 48-shot magazine refills a second after a moment idle (host adaptation; the source never refills). 0 never refills.",new AcceptableValueRange<float>(0f,100f)));
             ScopeRange=Config.Bind("Luigi","ScopeRangeScale",3f,new ConfigDescription("Super Scope: how many times as fast and as far as the source's the beam flies, because an open world is bigger than a stage.",new AcceptableValueRange<float>(1f,10f)));
             ScopeChargeSmoke=Config.Bind("Luigi","ScopeChargeSmoke",true,"Super Scope: puff the disc's smoke (efSync 0x405) above the holder's feet while the trigger is held, growing with the charge. Host visual: the decomp's Start state has no effect at all; this reproduces the planted-stance smoke rather than putting a ball at the muzzle.");
             // Melee multiplayer: the messages that carry a fighter to the other players (MeleeNet).

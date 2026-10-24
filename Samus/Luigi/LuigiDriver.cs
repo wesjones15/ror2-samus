@@ -134,14 +134,15 @@ namespace Luigi
                 return;
             }
             if (Time.time < scopeSmokeAt) return;
-            scopeSmokeAt = Time.time + 0.11f;
-            // Keep the puffs above the ground: ground dust emitters fall below the feet.
+            scopeSmokeAt = Time.time + (0.13f - 0.006f * level);
+            // Keep the puffs above the ground, and pass the view scale (not the puff size) to At:
+            // At divides the world position by it, so any other value moves the smoke away from the feet.
             var foot = body.footPosition + Vector3.up * (0.25f + 0.03f * level);
             float angle = Time.time * 5f;
             var drift = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * (0.3f + 0.03f * level);
-            float size = scale * (1.5f + 0.1f * level);
-            Effects?.Spawn(0x405u, MeleeParticles.At(foot + drift, Quaternion.identity, size));
-            Effects?.Spawn(0x405u, MeleeParticles.At(foot - drift, Quaternion.identity, size));
+            Effects?.Spawn(0x405u, MeleeParticles.At(foot + drift, Quaternion.identity, scale));
+            Effects?.Spawn(0x405u, MeleeParticles.At(foot - drift, Quaternion.identity, scale));
+            if (level >= 5) Effects?.Spawn(0x405u, MeleeParticles.At(foot, Quaternion.identity, scale));
         }
         // Gives the sim the scope while the loadout holds it (and the items archive was extracted), every step.
         void UpdateScope()
@@ -150,7 +151,7 @@ namespace Luigi
             var set = SkillSet;
             bool want = set != null && set.PrimaryAltSelected(body);
             bool available = MeleeScopeBeam.Available(AssetsDir);
-            scopeOn = MeleeNative.ssbm_sim_scope(sim, want && available ? 1u : 0u, Samus.Plugin.ScopeRefill.Value) == 1;
+            scopeOn = MeleeNative.ssbm_sim_scope(sim, want && available ? 1u : 0u, 0f) == 1;
             if (want && !scopeOn && !scopeWarned)
             {
                 scopeWarned = true;
@@ -162,7 +163,8 @@ namespace Luigi
         {
             if (!scopeOn || Arriving || MeleeNative.ssbm_sim_scope_state(sim, out var info) != 1) return;
             string charge = info.stage == 1 ? "   charge " + (info.level * 100 / 9) + "%" : "";
-            GUI.Box(new Rect(Screen.width / 2f - 130, Screen.height - 130, 260, 30), "Super Scope  " + info.ammo + " / " + info.capacity + charge);
+            // Host adaptation: the runtime scope has no ammo cap, so show an infinite magazine.
+            GUI.Box(new Rect(Screen.width / 2f - 130, Screen.height - 130, 260, 30), "Super Scope  ∞" + charge);
         }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
