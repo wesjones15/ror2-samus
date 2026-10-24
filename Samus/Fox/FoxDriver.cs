@@ -22,8 +22,7 @@ namespace Fox
         // itfoxillusion.c::itFoxillusion_Phys keep four historical positions; the item
         // is drawn one frame behind and its ghost copy three frames behind).
         MeleeFighterView illusionView;
-        readonly List<(Vector3 at, Quaternion rotation)> illusionTrail = new List<(Vector3 at, Quaternion rotation)>();
-        float illusionClock;
+        readonly List<(Vector3 at, Quaternion rotation, float time)> illusionTrail = new List<(Vector3 at, Quaternion rotation, float time)>();
         readonly float[] gunMatrix = new float[16];
         readonly MeleeHitTracker hits = new MeleeHitTracker();
 
@@ -59,7 +58,7 @@ namespace Fox
         {
             shieldView?.Dispose(); shieldView = null;
             gunView?.Dispose(); gunView = null;
-            illusionView?.Dispose(); illusionView = null; illusionTrail.Clear(); illusionClock = 0f;
+            illusionView?.Dispose(); illusionView = null; illusionTrail.Clear();
             view?.Dispose(); view = null;
             entryPlatform?.Dispose(); entryPlatform = null;
             audio?.Dispose(); audio = null;
@@ -68,7 +67,7 @@ namespace Fox
         }
         protected override void ResetPresentation()
         {
-            illusionView?.Dispose(); illusionView = null; illusionTrail.Clear(); illusionClock = 0f;
+            illusionView?.Dispose(); illusionView = null; illusionTrail.Clear();
             Effects?.Dispose(); Particles?.Dispose();
             Particles = new MeleeParticles(AssetsDir, scale);
             Effects = new MeleeEffects(Particles, scale, EffectView, null, Samus.Plugin.LogEffects.Value);
@@ -111,23 +110,39 @@ namespace Fox
         // translucent blue Fox trail, so one draw per historical position is enough.
         void DrawIllusionGhosts(Vector3 at, Quaternion rotation)
         {
+            float now = Time.unscaledTime;
             var velocity = new Vector3(state.velocity.x, state.velocity.y, state.velocity.z);
             // SpecialS is the dash; the 40-frame end clip keeps the last ghosts in place
             // until the move ends, as ftFx_SpecialS_CheckGhostRemove does.
             bool dashing = state.move_id == 21 && velocity.sqrMagnitude > 16f;
             if (dashing)
             {
-                illusionClock += Time.deltaTime;
-                if (illusionTrail.Count == 0 || illusionClock >= 1f / 60f)
+                if (illusionTrail.Count == 0 || now - illusionTrail[0].time >= 1f / 60f)
                 {
-                    illusionClock = illusionTrail.Count == 0 ? 0f : Mathf.Max(0f, illusionClock - 1f / 60f);
-                    illusionTrail.Insert(0, (at, rotation));
-                    if (illusionTrail.Count > 6) illusionTrail.RemoveAt(6);
+                    illusionTrail.Insert(0, (at, rotation, now));
+                    if (illusionTrail.Count > 8) illusionTrail.RemoveAt(8);
                 }
             }
-            else if (state.move_id != 21) { illusionTrail.Clear(); illusionClock = 0f; }
-            int count = illusionTrail.Count >= 4 ? 2 : illusionTrail.Count >= 2 ? 1 : 0;
+            else if (state.move_id != 21) illusionTrail.Clear();
+            // One ghost at history[1], a second at history[3], as itfoxillusion.c does.
+            int count = 0;
+            if (illusionTrail.Count > 0)
+            {
+                float span = now - illusionTrail[illusionTrail.Count - 1].time;
+                count = span >= 3f / 60f ? 2 : illusionTrail.Count >= 2 ? 1 : 0;
+            }
             if (count == 0) { illusionView?.Models.HideAll(); return; }
+            (Vector3 at, Quaternion rotation) At(float time)
+            {
+                var best = illusionTrail[0];
+                float bestDelta = Mathf.Abs(best.time - time);
+                for (int i = 1; i < illusionTrail.Count; i++)
+                {
+                    float delta = Mathf.Abs(illusionTrail[i].time - time);
+                    if (delta < bestDelta) { best = illusionTrail[i]; bestDelta = delta; }
+                }
+                return (best.at, best.rotation);
+            }
             if (illusionView == null) illusionView = new MeleeFighterView(AssetsDir, MeleeNative.FighterFox, 2, 0);
             if (illusionView.InstanceDraws == null || illusionView.InstanceDraws.Length != count)
             {
@@ -135,8 +150,8 @@ namespace Fox
                 for (int i = 0; i < count; i++) draws[i] = new ViewDraw { key = (ulong)(i + 1), alpha = 1f };
                 illusionView.InstanceDraws = draws;
             }
-            var near = illusionTrail[Mathf.Min(1, illusionTrail.Count - 1)];
-            var far = illusionTrail[Mathf.Min(3, illusionTrail.Count - 1)];
+            var near = At(now - 1f / 60f);
+            var far = At(now - 3f / 60f);
             illusionView.ObjectPose(0f);
             illusionView.Models.Update(scale, d => d.key == 1 ? near : far);
         }
