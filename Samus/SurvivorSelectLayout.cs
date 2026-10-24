@@ -43,7 +43,28 @@ namespace Samus
             layout.minHeight = height;
             layout.flexibleHeight = 0f;
             LayoutRebuilder.MarkLayoutForRebuild(container as RectTransform);
+            FitStripHighlights(container.parent);
             Debug.Log($"[Melee] survivor grid: {grid.transform.childCount} icons -> container '{container.name}' height {height}");
+        }
+
+        // The skill strips' HoverHighlight is a child of the strip's inset Inner, so the white hover
+        // outline draws inside the row instead of over it. Expand it back out to the strip's edges.
+        static void FitStripHighlights(Transform leftPanel)
+        {
+            if (!leftPanel) return;
+            Transform skillPanel = null;
+            foreach (var t in leftPanel.GetComponentsInChildren<Transform>(true))
+                if (t.name == "SkillPanel") { skillPanel = t; break; }
+            if (!skillPanel) return;
+            foreach (var t in skillPanel.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name != "HoverHighlight") continue;
+                var rt = (RectTransform)t;
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = Vector2.one;
+                rt.offsetMin = new Vector2(-4f, -4f);
+                rt.offsetMax = new Vector2(4f, 4f);
+            }
         }
 
         // The grid's real height (rows x portrait, plus padding) with one extra portrait row.
