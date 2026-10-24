@@ -254,7 +254,7 @@ namespace Yoshi
         const float ReelSeconds = 0.45f;
         const float HoldSeconds = 20f;
         /// How long Yoshi carries the swallowed enemy before laying the egg by himself.
-        const float AutoLaySeconds = 3f;
+        const float AutoLaySeconds = 0.3f;
         const float LayingSeconds = 0.5f;
         const uint SwallowSound = 0xdd;      // SpecialN2 frame 0: the swallow cue
         const uint LaySound = 0x4460c;       // SpecialN2 frame 25: the source's lay cue
