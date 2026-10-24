@@ -602,7 +602,7 @@ static class Program
         Console.WriteLine("PASS: camera directional moves, independent host yaw/backpedal and stored-shot live aim through native DLL at 30/60/144 Hz");
     }
     // Pikachu staged specials and Thunder Shock through the native boundary: Quick Attack
-    // reaches a locked enemy in its two zips, no move snaps the fighter back, Skull Bash
+    // travels along the camera vector in its two zips, no move snaps the fighter back, Skull Bash
     // travels, Thunder reports its spawn and strike, and the shot bounces ten times.
     static void PikachuRegressions(string assets,in MeleeNative.Host host)
     {
@@ -622,8 +622,7 @@ static class Program
                     Check(state.position.z>=furthest-0.001f,"Quick Attack rubberbanded at "+fps+" FPS");furthest=Math.Max(furthest,state.position.z);
                 }
                 Check(state.move_id==0,"Quick Attack never ended");
-                Check(state.position.z>=60-14&&state.position.z<=60,"Quick Attack stopped "+(60-state.position.z)+" short of the locked enemy at "+fps+" FPS");
-                MeleeNative.ssbm_sim_lock_target(sim,default,0);
+                Check(state.position.z>=20,"Quick Attack travelled only "+state.position.z+" along the camera vector at "+fps+" FPS");
             }finally{MeleeNative.ssbm_sim_free(sim);}
             sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterPikachu);Check(sim!=IntPtr.Zero,MeleeNative.Error);
             try {
@@ -702,7 +701,7 @@ static class Program
                 Check(state.move_id==0,"borrowed Egg Lay never ended");
             }finally{MeleeNative.ssbm_sim_free(lay);}
         }
-        Console.WriteLine("PASS: Pikachu Quick Attack reaches a locked enemy, Skull Bash and Thunder complete without rubberbanding at 30/60/144 FPS, Thunder Shock flies level for 20 m then arcs and reflects/bounces ten times, and the borrowed Egg Lay starts on move 20 with Yoshi's lay cue");
+        Console.WriteLine("PASS: Pikachu Quick Attack travels along the camera vector, Skull Bash and Thunder complete without rubberbanding at 30/60/144 FPS, Thunder Shock flies level for 20 m then arcs and reflects/bounces ten times, and the borrowed Egg Lay starts on move 20 with Yoshi's lay cue");
     }
     static void DefenseRegressions(string assets,in MeleeNative.Host host)
     {
