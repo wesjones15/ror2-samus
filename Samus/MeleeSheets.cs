@@ -21,10 +21,11 @@ namespace Samus
                 string x = ControlGlyphs.Pad(player, PadButton.X, "X");
                 string b = ControlGlyphs.Pad(player, PadButton.B, "B");
                 string a = ControlGlyphs.Pad(player, PadButton.A, "A");
+                string stick = ControlGlyphs.Stick(eventSystem, "LS");
                 string interact = ControlGlyphs.Key(eventSystem, "Interact", "Interact");
                 string jump = ControlGlyphs.Key(eventSystem, "Jump", "Jump");
                 pad.Add(x, "Grapple beam (bosses pull you in)")
-                    .Add("Captured", b + " pummel, LS + " + b + " throw")
+                    .Add("Captured", b + " pummel, " + stick + " + " + b + " throw")
                     .Add(x + " + " + b + ", or " + a, "Let go");
                 keys.Add(interact, "Grapple beam (bosses pull you in)")
                     .Add("Captured", "C pummel, Move throw")
@@ -37,8 +38,8 @@ namespace Samus
         public static ControlSheet LinkSheet(CharacterBody body) => MeleeSheet.Build("Hero of Hyrule", Link.LinkSkills.Layout, body: body);
         public static ControlSheet PikachuSheet(CharacterBody body) => MeleeSheet.Build(
             "The Electric Mouse Pokemon", Pikachu.PikachuSkills.Layout, body: body,
-            footer: "Quick Attack homes on your lock-on, in two zips: turn the stick or press LB again for the second.");
-        public static ControlSheet YoshiSheet(CharacterBody body) => MeleeSheet.Build("Yoshi's Island Dinosaur", Yoshi.YoshiSkills.Layout, body: body);
+            footer: "Quick Attack homes on your lock-on, in two zips: turn the stick or press LB again for the second. The RT alternate is Yoshi's Egg Lay: Pikachu tenses with his Thunder start, pitches his upper body and lashes the tongue.");
+        public static ControlSheet YoshiSheet(CharacterBody body) => MeleeSheet.Build("Mario's Dog", Yoshi.YoshiSkills.Layout, body: body);
         public static ControlSheet DonkeySheet(CharacterBody body) => MeleeSheet.Build("King of the Jungle", Donkey.DonkeySkills.Layout, body: body);
     }
 }
