@@ -54,9 +54,11 @@ namespace Yoshi
         /// the lash is thrown: a miss leaves the stock and cooldown untouched.
         protected override bool SpendsOnStart(uint moveId) => moveId != 20;
 
-        /// The lash's direction, fixed when Egg Lay starts so the drawn tongue and the
-        /// frame-20 grab use the same line even if the camera moves meanwhile.
-        internal Vector3 TongueAim { get; private set; }
+        /// The crosshair point the lash is aimed at, fixed when Egg Lay starts. The mouth
+        /// moves through the clip (and the upper-body pitch), so the drawn lash and the
+        /// frame-20 grab re-aim from the live mouth to this same point.
+        internal Vector3 TongueTarget { get; private set; }
+        internal bool HasTongueTarget { get; private set; }
 
         /// While full, Egg Lay is masked (the egg is laid automatically) and sprint is off.
         protected override uint FilterButtons(uint buttons)
@@ -128,8 +130,9 @@ namespace Yoshi
             if (e.move_id == 21) { rollArmor = RollArmorFraction; return; }
             if (e.move_id != 20) return;
             var mouth = Mouth();
-            TongueAim = YoshiCombat.AimAtCrosshair(body, mouth);
-            YoshiTongue.Show(body, TongueAim, YoshiCombat.ScanReach(body, mouth, TongueAim));
+            TongueTarget = YoshiCombat.CrosshairPoint(body, mouth);
+            HasTongueTarget = true;
+            YoshiTongue.Show(body, TongueTarget, YoshiCombat.ScanReach(body, mouth, TongueTarget));
         }
 
         protected override void UpdateAudio() => audio?.Update();
