@@ -8,6 +8,8 @@
   material; `Visuals.GummyClones` turns that off. The AI masters re-decide at 20 Hz instead of 4 Hz. Not yet played in
   game.
 
+- Every Melee fighter can cancel a special fall or an airborne hit-fall into an A attack, instead of waiting for touchdown.
+
 # 0.3.0 one Melee plugin with eight fighters
 
 A single **Melee** plugin with eight survivors. Install `Samus.dll` and `ssbm.dll` (native ABI 5) from one ZIP.
