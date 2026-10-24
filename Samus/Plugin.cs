@@ -74,7 +74,7 @@ namespace Samus
             RoR2Application.onLoad+=InitializeAssets;
             ContentProvider.Register(Guid,AddContent);
             Language.onCurrentLanguageChanged+=Tokens;
-            ItemHooks.Install();GlyphOverride.Install();MeleeSkins.Install();
+            ItemHooks.Install();GlyphOverride.Install();MeleeSkins.Install();SurvivorSelectLayout.Install();
             PauseControls.Install(gameObject);
             PauseControls.Register("MeleeSamusBody", body => MeleeSheets.SamusSheet(body));
             PauseControls.Register("MeleeFoxBody", body => MeleeSheets.FoxSheet(body));
