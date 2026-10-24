@@ -9,7 +9,7 @@ namespace Yoshi
     // facing, hitbox sampling and recovery; this supplies Yoshi's presentation
     // and skill layout. The Egg Throw (SpecialHi) is a ranged projectile.
     [DefaultExecutionOrder(-200)]
-    public sealed class YoshiDriver : MeleeDriver, IMeleeBypassDefense
+    public sealed class YoshiDriver : MeleeDriver, IMeleeBypassDefense, IEggLayer
     {
         static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Samus.Plugin.AssetsDir,MeleeNative.FighterYoshi,model);
         MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
@@ -99,6 +99,13 @@ namespace Yoshi
             }
             return YoshiCombat.MouthFallback(body);
         }
+        CharacterBody IEggLayer.Body => body;
+        float IEggLayer.UnitScale => scale;
+        MeleeSkillSet IEggLayer.SkillSet => YoshiSkills.Built;
+        Vector3 IEggLayer.Mouth() => Mouth();
+        void IEggLayer.QueueConnect() => QueueConnect();
+        void IEggLayer.PlaySourceSound(uint sound) => PlaySourceSound(sound);
+        void IEggLayer.PlayEffect(uint id, Vector3 world, Quaternion rotation) => PlayEffect(id, world, rotation);
 
         internal void PlaySourceSound(uint sound)
         {

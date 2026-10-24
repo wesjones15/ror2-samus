@@ -8,10 +8,26 @@ using UnityEngine.Networking;
 
 namespace Yoshi
 {
+    /// A fighter that can drive the borrowed Egg Lay presentation: the mouth joint, the
+    /// swallow/egg cues (from Yoshi's bank) and the skill slot whose charge pays for a catch.
+    /// Yoshi implements it for his own Egg Lay; Pikachu implements it for the RT alternate.
+    public interface IEggLayer
+    {
+        CharacterBody Body { get; }
+        float UnitScale { get; }
+        MeleeSkillSet SkillSet { get; }
+        Vector3 Mouth();
+        void QueueConnect();
+        void PlaySourceSound(uint sound);
+        void PlayEffect(uint id, Vector3 world, Quaternion rotation);
+    }
+
     // Yoshi's combat: disc hitboxes posed on their original bones, mapped to RoR2
     // damage, plus the tongue and egg, the thrown egg and the Yoshi Bomb's stars.
     internal static class YoshiCombat
     {
+        internal static IEggLayer LayerOf(CharacterBody body)
+            => body ? body.GetComponent<IEggLayer>() : null;
         // Host adaptations for an open world. The source tongue is a grab capsule at the
         // mouth; the host stretches it to 20 m so it works as a long-range grab and the
         // drawn lash reaches exactly as far as the cast.
@@ -34,7 +50,7 @@ namespace Yoshi
                 // the sim at the source grab, not at the first catch: the tongue clip keeps
                 // its 40-tick length and the lay queue does not stretch it.
                 YoshiTongue.Catch(body, e.move_id);
-                if (YoshiTongue.HasCaught(body)) body.GetComponent<YoshiDriver>()?.QueueConnect();
+                if (YoshiTongue.HasCaught(body)) LayerOf(body)?.QueueConnect();
             }
             else if (e.move_id == 23) ThrowEgg(body, camera, scale);
             else if (e.move_id == 24) Bomb(body, origin, scale);
@@ -62,8 +78,8 @@ namespace Yoshi
         /// the drawn tongue so they line up.
         internal static Vector3 Mouth(CharacterBody body)
         {
-            var driver = body ? body.GetComponent<YoshiDriver>() : null;
-            if (driver) return driver.Mouth();
+            var layer = body ? body.GetComponent<IEggLayer>() : null;
+            if (layer != null) return layer.Mouth();
             return MouthFallback(body);
         }
 
@@ -134,7 +150,7 @@ namespace Yoshi
             // Throw from the hand/chest, not the feet: the source spawns at the hand bone.
             // At foot height the egg's first sweep starts inside the ground and bursts.
             var hand = body.corePosition + Vector3.up * 0.2f;
-            body.GetComponent<YoshiDriver>()?.PlaySourceSound(0x44612); // SpecialHi frame 18: throw
+            LayerOf(body)?.PlaySourceSound(0x44612); // SpecialHi frame 18: throw
             Egg.Spawn(body, hand, flat * Mathf.Cos(angle) + Vector3.up * Mathf.Sin(angle), scale, EggSpeed);
         }
 
@@ -269,8 +285,8 @@ namespace Yoshi
             var seen = new HashSet<CharacterBody>();
             int n = YoshiCombat.CatchAlong(owner, mouth, aim, length, seen, YoshiCombat.MaxEggLayFoes);
             if (n <= 0) return;
-            owner.GetComponent<YoshiDriver>()?.QueueConnect();
-            NativeSkills.SpendDeferred(YoshiSkills.Built, owner, moveId);
+            YoshiCombat.LayerOf(owner)?.QueueConnect();
+            NativeSkills.SpendDeferred(YoshiCombat.LayerOf(owner)?.SkillSet ?? YoshiSkills.Built, owner, moveId);
         }
 
         void CatchNow(uint moveId)
@@ -301,7 +317,7 @@ namespace Yoshi
             // Egg Lay pays its cooldown only for a catch; the start deferred the spend.
             if (spent) return;
             spent = true;
-            NativeSkills.SpendDeferred(YoshiSkills.Built, owner, moveId);
+            NativeSkills.SpendDeferred(YoshiCombat.LayerOf(owner)?.SkillSet ?? YoshiSkills.Built, owner, moveId);
         }
 
         /// The current tip in world space; the reel keeps a caught enemy there.
@@ -462,7 +478,7 @@ namespace Yoshi
                     pendingLay = false;
                     if (YoshiEgg.Lay(owner, victim, layPoint)) {
                         laid = true;
-                        owner.GetComponent<YoshiDriver>()?.PlaySourceSound(LaySound);
+                        YoshiCombat.LayerOf(owner)?.PlaySourceSound(LaySound);
                     } else { Destroy(this); return; }
                 }
                 if (layAge >= LayingSeconds) Destroy(this);
@@ -502,8 +518,8 @@ namespace Yoshi
             if (victimModel) victimModel.localScale = originalScale;
             // Start the sim's SpecialN2 with this victim's lay, so its swallow/lay animation
             // and cues belong to the egg actually being laid, not to the first catch.
-            owner.GetComponent<YoshiDriver>()?.QueueConnect();
-            owner.GetComponent<YoshiDriver>()?.PlaySourceSound(SwallowSound);
+            YoshiCombat.LayerOf(owner)?.QueueConnect();
+            YoshiCombat.LayerOf(owner)?.PlaySourceSound(SwallowSound);
             int ring = slot / 3, side = slot % 3;
             var behind = owner.footPosition - owner.transform.forward * (owner.radius + 1.0f + ring * 0.9f)
                 + owner.transform.right * ((side - 1) * 0.9f);
@@ -762,7 +778,10 @@ namespace Yoshi
                 var effect = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OmniExplosionVFX");
                 if (effect && victim) EffectManager.SpawnEffect(effect, new EffectData { origin = at, scale = eggRadius }, NetworkServer.active);
             } catch (Exception) { }
-            owner?.GetComponent<YoshiDriver>()?.PlaySourceSound(0x44618); // egg break
+            YoshiCombat.LayerOf(owner)?.PlaySourceSound(0x44618); // egg break
+            // The source's shell bits (efSync 0x4CF, common model 30); EffectAny lets a
+            // borrowed Egg Lay draw them from Pikachu too.
+            YoshiCombat.LayerOf(owner)?.PlayEffect(1231, at, Quaternion.identity);
             Destroy(gameObject);
         }
 
@@ -913,7 +932,7 @@ namespace Yoshi
             transform.position = at;
             MeleeNative.ssbm_projectile_impact(projectile, IntPtr.Zero);
             ReadState();
-            var driver = owner ? owner.GetComponent<YoshiDriver>() : null;
+            var driver = owner ? owner.GetComponent<IEggLayer>() : null;
             driver?.PlaySourceSound(0x44618); // itYoshieggthrow_UnkMotion2: egg break
             var velocity = new Vector3(state.velocity.x, state.velocity.y, state.velocity.z);
             driver?.PlayEffect(1231, at, velocity.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(velocity) : Quaternion.identity);
