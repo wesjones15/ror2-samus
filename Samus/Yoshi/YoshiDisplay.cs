@@ -13,7 +13,8 @@ namespace Yoshi
             var source = new MeleeSelectSource(
                 Samus.Plugin.AssetsDir, MeleeNative.FighterYoshi, YoshiSkins.Selected,
                 Samus.Plugin.MetresPerUnit.Value, logEffects: Samus.Plugin.LogEffects.Value,
-                effectView: model => MeleeFighterView.Effect(Samus.Plugin.AssetsDir, MeleeNative.FighterYoshi, model));
+                effectView: model => MeleeFighterView.Effect(Samus.Plugin.AssetsDir, MeleeNative.FighterYoshi, model),
+                projectiles: new[] { new MeleeSelectProjectile(23, 0, 0, 4.5f, 22f) }); // Egg Throw: EggSpeed 4.5, EggAngleBias 22
             return new MeleeSelectDisplay(source);
         }
     }
