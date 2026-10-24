@@ -46,14 +46,21 @@ namespace Pikachu
             {
                 AssetsDir = Samus.Plugin.AssetsDir,
                 Fighter = MeleeNative.FighterPikachu,
-                // Article 1 is the travelling orb (itpikachutjoltground); it has no
-                // model, so the orb is drawn with article 2's (the ground jolt) model
-                // and the orb's own trail particle (efSync 0x4BD = EfPkData 7000).
+                // Article 1 is the travelling ground jolt (itpikachutjoltground.c); it has no
+                // model. Its whole visual is effect 0x4BD, attached to the item:
+                //   efsync.c case 0x4BD -> hsd_8039EFAC(0, 7, 0x1B58, jobj)
+                //   = EfPkData generator 7000, attached to the jolt item's JObj.
+                // Do not borrow article 2's model here: that is the separate air-jolt trail
+                // spawned only after the ground jolt's first surface contact
+                // (it_802B3F88), and its 36-frame Object clip freezes while our bouncing
+                // host shot keeps flying. Generators 7001-7003 are children of 0x4BD, not
+                // bounce/impact puffs; spawning them per contact leaks their 0-lifetime
+                // generators (permanent white sparks), so only the attached 0x4BD is used.
                 Article = 1, State = 0,
-                ViewArticle = 2, ViewState = 0,
+                ViewArticle = uint.MaxValue,
                 Scale = scale,
                 Particles = driver.Particles,
-                TrailParticle = 7000, BouncePuff = 7001, ImpactPuff = 7002, DespawnPuff = 7003,
+                TrailParticle = 7000, BouncePuff = 0, ImpactPuff = 0, DespawnPuff = 0,
                 PlaySound = id => { if (driver.NativeSim != IntPtr.Zero) MeleeNative.ssbm_sim_play_sound(driver.NativeSim, id); },
                 BounceSound = ShockBounceSound,
             });
