@@ -55,17 +55,19 @@ namespace Pikachu
                 // model. Its whole visual is effect 0x4BD, attached to the item:
                 //   efsync.c case 0x4BD -> hsd_8039EFAC(0, 7, 0x1B58, jobj)
                 //   = EfPkData generator 7000, attached to the jolt item's JObj.
-                // Do not borrow article 2's model here: that is the separate air-jolt trail
-                // spawned only after the ground jolt's first surface contact
-                // (it_802B3F88), and its 36-frame Object clip freezes while our bouncing
-                // host shot keeps flying. Generators 7001-7003 are children of 0x4BD, not
-                // bounce/impact puffs; spawning them per contact leaks their 0-lifetime
-                // generators (permanent white sparks), so only the attached 0x4BD is used.
+                // Article 2 is the air-jolt arc the source spawns on a surface contact
+                // (it_802B3554 -> it_802B4224, itpikachutjoltair.c xDF4 <= 24). It is drawn
+                // only as a short flash at each bounce, never carried by the flying orb (a
+                // 36-frame clip on a 10-second shot froze into a static white web).
                 Article = 1, State = 0,
                 ViewArticle = uint.MaxValue,
                 Scale = scale,
+                // Host adaptation: fly level for 20 m, then the disc's gentle arc and the
+                // unchanged ten-surface bounce budget take over.
+                StraightMetres = 20f,
                 Particles = driver.Particles,
                 TrailParticle = 7000, BouncePuff = 0, ImpactPuff = 0, DespawnPuff = 0,
+                BounceViewArticle = 2, BounceViewState = 0, BounceViewScale = 0.6f, BounceViewFrames = 24,
                 PlaySound = id => { if (driver.NativeSim != IntPtr.Zero) MeleeNative.ssbm_sim_play_sound(driver.NativeSim, id); },
                 BounceSound = ShockBounceSound,
             });

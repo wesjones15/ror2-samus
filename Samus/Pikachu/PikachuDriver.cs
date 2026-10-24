@@ -108,6 +108,10 @@ namespace Pikachu
             view = new MeleeFighterView(AssetsDir, MeleeNative.FighterPikachu, Math.Min(body.skinIndex, 4));
             audio = new MeleeAudio(sim);
             Particles = new MeleeParticles(AssetsDir, scale);
+            // The source 0x4BD aura's child generator 7002 is a 27.5-unit additive sprite,
+            // which reads as a hard blue square around the orb. Scale and soften it so it
+            // reads as a glow; the small 7001/7003 sparks keep their size.
+            Particles.Tune(7002, 0.45f, 0.60f, true);
             Effects = new MeleeEffects(Particles, scale, EffectView, null, Samus.Plugin.LogEffects.Value);
             entryPlatform = MeleeFighterView.EntryPlatform(AssetsDir);
             hits.Stagger = Samus.Plugin.StaggerDuration.Value;
@@ -127,6 +131,10 @@ namespace Pikachu
         {
             Effects?.Dispose(); Particles?.Dispose();
             Particles = new MeleeParticles(AssetsDir, scale);
+            // The source 0x4BD aura's child generator 7002 is a 27.5-unit additive sprite,
+            // which reads as a hard blue square around the orb. Scale and soften it so it
+            // reads as a glow; the small 7001/7003 sparks keep their size.
+            Particles.Tune(7002, 0.45f, 0.60f, true);
             Effects = new MeleeEffects(Particles, scale, EffectView, null, Samus.Plugin.LogEffects.Value);
         }
         protected override void ResetEntryPlatform()
