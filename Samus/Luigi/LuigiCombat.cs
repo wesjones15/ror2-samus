@@ -50,9 +50,9 @@ namespace Luigi
             if (effects != null && aim.sqrMagnitude > 0.0001f)
             {
                 var rotation = Quaternion.LookRotation(aim);
-                // fn_800D84D4's 0x430 generator is not in the common particle bank in a drawable form;
-                // 0x431 is the visible additive burst, paired with the scope's smoke puff.
-                effects.Spawn(0x431u, MeleeParticles.At(muzzle, rotation, scale) * Matrix4x4.Scale(Vector3.one * 2.5f));
+                // fn_800D84D4's 0x430 generator produces no drawable common sprites. 0x42F's white
+                // burst (common effect model 32) is the drawable stand-in, paired with the smoke puff.
+                effects.Spawn(0x42Fu, MeleeParticles.At(muzzle, rotation, scale) * Matrix4x4.Scale(Vector3.one * 2.5f));
                 effects.Spawn(0x405u, MeleeParticles.At(muzzle, rotation, scale));
             }
             MeleeScopeBeam.Spawn(body, muzzle, aim, (uint)Mathf.Clamp(Mathf.RoundToInt(e.strength), 0, 9),
