@@ -28,29 +28,28 @@ namespace Yoshi
             var origin = new Vector3(e.position.x, e.position.y, e.position.z) * scale;
             var camera = body.inputBank ? MeleeAim.CameraRay(body, body.inputBank).direction : aim;
             if (e.move_id == 20 && e.strength < 1.5f)
-            {
-                // The lash was drawn toward this crosshair point at the start of the move.
-                // The mouth moves through the clip (and with the upper-body pitch), so the
-                // grab re-aims from the live mouth to the same point.
-                var driver = body.GetComponent<YoshiDriver>();
-                var target = driver != null && driver.HasTongueTarget
-                    ? driver.TongueTarget : CrosshairPoint(body, Mouth(body));
-                Tongue(body, target, e.move_id);
-            }
+                // The lash and the grab both read the live crosshair: the player may still
+                // be panning through the tongue's startup. Once it catches, it locks to the
+                // victim so the reel cannot drag it around with the camera.
+                Tongue(body, e.move_id);
             else if (e.move_id == 23) ThrowEgg(body, camera, scale);
             else if (e.move_id == 24) Bomb(body, origin, scale);
         }
 
-        /// The world point under the camera crosshair, within the lash's reach, or a point
-        /// along the camera ray when it is on empty sky. The shared convergence fix: the
-        /// camera's parallel forward ray starts above the mouth, so following it drops a low
-        /// or close target below the lash. The camera sits several metres behind the mouth,
-        /// so the ray gets that much extra reach to find a target the full lash can touch.
+        /// The world point under the camera crosshair, within the lash's reach. With a hit,
+        /// the shared convergence fix returns that hit: the camera's parallel forward ray
+        /// starts above the mouth, so following it drops a low or close target below the
+        /// lash. The camera sits several metres behind the mouth, so the ray gets that much
+        /// extra reach to find a target the full lash can touch. On empty sky it returns the
+        /// point on the camera ray at the lash's reach from the mouth, so the tip lands on
+        /// the crosshair instead of on a parallel line below it.
         internal static Vector3 CrosshairPoint(CharacterBody body, Vector3 mouth)
         {
             if (!body) return mouth + Vector3.forward * TongueReach;
             if (!body.inputBank) return mouth + body.transform.forward * TongueReach;
-            return MeleeAim.ProjectilePoint(body, mouth, MeleeAim.CameraRay(body, body.inputBank), TongueReach + 10f);
+            var ray = MeleeAim.CameraRay(body, body.inputBank);
+            if (MeleeAim.ProjectilePoint(body, mouth, ray, TongueReach + 10f, out var point)) return point;
+            return MeleeAim.PointOnRayAtReach(mouth, ray, TongueReach);
         }
 
         /// Where the tongue leaves the body. The animated mouth bone (Yoshi joint 42)
@@ -73,9 +72,12 @@ namespace Yoshi
         // stopping it early; the lash's own extent is separately clamped to the first
         // terrain the narrow centre probe meets, so it stops at a wall or floor instead
         // of passing through it.
-        static void Tongue(CharacterBody body, Vector3 target, uint moveId)
+        static void Tongue(CharacterBody body, uint moveId)
         {
             var mouth = Mouth(body);
+            // Live crosshair, not a point frozen at the move start: a player still panning
+            // would otherwise see the lash below the reticle for the tongue's whole startup.
+            var target = CrosshairPoint(body, mouth);
             var delta = target - mouth;
             float want = delta.magnitude;
             if (want < 0.001f) return;
@@ -83,11 +85,12 @@ namespace Yoshi
             float limit = Mathf.Min(want, TerrainReach(body, mouth, aim));
             var caught = FindTarget(body, mouth, aim, limit, out float distance);
             if (caught == null) return;
-            // The tongue was drawn to this distance at the start of the move; pin it to the
-            // target in case the victim moved into or out of the original line.
-            YoshiTongue.SetReach(body, distance + 0.35f);
             if (!YoshiFull.Begin(body, caught)) return;
             body.GetComponent<YoshiDriver>()?.QueueConnect();
+            // Lock the lash to the caught victim so the reel cannot follow the camera.
+            float locked = Mathf.Min(distance + 0.35f, limit);
+            YoshiTongue.SetReach(body, locked);
+            YoshiTongue.LockTo(body, mouth + aim * locked);
             // Egg Lay pays its cooldown only for a catch; the start deferred the spend.
             NativeSkills.SpendDeferred(YoshiSkills.Built, body, moveId);
         }
@@ -204,6 +207,9 @@ namespace Yoshi
         CharacterBody owner;
         /// The crosshair point the lash is aimed at while the mouth moves through the clip.
         Vector3 target;
+        /// Once the tongue catches, the target is the victim's tip and no longer follows
+        /// the camera; otherwise the reel would drag the victim around with the crosshair.
+        bool locked;
         float reach, age;
         LineRenderer line;
         Material material;
@@ -263,6 +269,13 @@ namespace Yoshi
                     tongue.reach = Mathf.Clamp(reach, 1f, YoshiCombat.TongueReach);
         }
 
+        /// Stop following the camera and hold the lash on the caught victim's tip.
+        internal static void LockTo(CharacterBody owner, Vector3 point)
+        {
+            foreach (var tongue in active)
+                if (tongue && tongue.owner == owner) { tongue.target = point; tongue.locked = true; }
+        }
+
         /// The current tip in world space; the reel keeps the caught enemy there.
         internal static bool TryTip(CharacterBody owner, out Vector3 tip)
         {
@@ -299,13 +312,18 @@ namespace Yoshi
             if (age >= TotalSeconds) { Destroy(gameObject); return; }
             float amount = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Amount()));
             var origin = YoshiCombat.Mouth(owner);
+            // Before a catch the lash reads the live crosshair every frame: panning during
+            // the startup no longer leaves it on the point from the button press.
+            if (!locked) target = YoshiCombat.CrosshairPoint(owner, origin);
             var delta = target - origin;
             float want = delta.magnitude;
             if (want < 0.0001f) { line.enabled = false; return; }
             var aim = delta / want;
-            // The lash points at the stored crosshair point from the live mouth, and stops
-            // at terrain even as the head moves through the clip and its pitch.
-            float length = Mathf.Min(Mathf.Min(reach, want),
+            // Before a catch the lash follows the live target up to the full reach; the
+            // start-of-move scan is only a width hint. After a catch its reach is the
+            // victim's tip.
+            float cap = locked ? reach : YoshiCombat.TongueReach;
+            float length = Mathf.Min(Mathf.Min(cap, want),
                 YoshiCombat.TerrainReach(owner, origin, aim)) * amount;
             // A little gravity sag keeps it from reading as a laser; cap it so a 20 m
             // lash does not bow metres downward.

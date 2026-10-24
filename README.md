@@ -222,20 +222,24 @@ the viewer and automated pose/boundary checks; RoR2 play remains unverified.
 Yoshi's Egg Lay tongue aims at the camera crosshair point instead of following the
 camera's parallel forward ray (the shared `MeleeAim.ProjectilePoint` fix behind
 Samus's Charge Shot and Luigi's Scope), so a mouth below the camera no longer fires
-under a close target. The point is fixed when the move starts and the lash re-aims
-from the animated mouth to it, so the clip's head motion cannot drag the tip off
-target. The lash stops at the first terrain it meets (a narrow centre probe, so its
-own thickness does not eat it on a floor it passes over), and the drawn tongue is
-clamped to the same contact. Yoshi's upper body also pitches toward camera elevation
-(the Scope's bounded 60-degree bend), moving the head and mouth with the aim. Egg
-Lay's 3 s cooldown now starts only when the tongue swallows an enemy: a miss or a
-lash stopped by terrain costs no stock or cooldown. The laid egg's ground and wall
-probes ignore every character body, including the victim inside it: the probe mask
-contains `EnemyBody`, and a small victim's capsule sat above the egg, so the ground
-clamp lifted the egg on the victim's head every tick. Large eggs were unaffected only
-because the probe started inside their taller capsule. Small and large eggs now fall
-at gravity. Shared camera/sweep, damage-permission, real-disc pose checks and viewer
-captures at 45/0/-45 degrees pass and the plugin builds; not yet played in RoR2.
+under a close target. The lash reads the live crosshair every frame, so panning
+through the tongue's startup keeps the tip on the reticle; it re-aims from the
+animated mouth each frame, and once it catches it locks to the victim so the reel
+cannot drag him with the camera. On empty sky the aim point is now on the camera ray
+at the lash's reach (`MeleeAim.PointOnRayAtReach`), not a parallel line that sits
+below the reticle. The lash stops at the first terrain it meets (a narrow centre
+probe, so its own thickness does not eat it on a floor it passes over), and the drawn
+tongue is clamped to the same contact. Yoshi's upper body also pitches toward camera
+elevation (the Scope's bounded 60-degree bend), moving the head and mouth with the
+aim. Egg Lay's 3 s cooldown now starts only when the tongue swallows an enemy: a miss
+or a lash stopped by terrain costs no stock or cooldown. The laid egg's ground and
+wall probes ignore every character body, including the victim inside it: the probe
+mask contains `EnemyBody`, and a small victim's capsule sat above the egg, so the
+ground clamp lifted the egg on the victim's head every tick. Large eggs were
+unaffected only because the probe started inside their taller capsule. Small and
+large eggs now fall at gravity. Shared camera/sweep, damage-permission, real-disc
+pose checks and viewer captures at 45/0/-45 degrees pass and the plugin builds; not
+yet played in RoR2.
 
 Known limits: full TEV/animated texture and UV fidelity, other source transition blending,
 complete particle trail/mirror/alpha-compare semantics, and gameplay visual/audio
