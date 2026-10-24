@@ -21,7 +21,9 @@ namespace Yoshi
         protected override uint FighterKind => MeleeNative.FighterYoshi;
         protected override float MetresPerUnit => Samus.Plugin.MetresPerUnit.Value;
         protected override float JumpScale => Samus.Plugin.JumpScale.Value;
-        protected override float SpeedScale => Samus.Plugin.SpeedScale.Value;
+        protected override float SpeedScale
+            => Samus.Plugin.SpeedScale.Value
+                * (YoshiFull.IsCarrying(body) || YoshiFull.IsLaying(body) ? 0.45f : 1f);
         protected override bool HoldCharge => false;
         protected override bool AssetsReady => Samus.Plugin.YoshiReady;
         protected override bool AssetsBusy => Samus.Plugin.AssetsBusy;
@@ -32,23 +34,46 @@ namespace Yoshi
 
         // The tongue reports a swallow while the sim is stepping; the sim hears about it
         // before the next step (ssbm_sim_connect cannot run inside a callback).
-        bool connectQueued;
+        bool connectQueued, releaseQueued, primaryWasDown;
         internal void QueueConnect() => connectQueued = true;
         protected override void BeforeStep(in MeleeNative.Pad pad)
         {
+            if (releaseQueued) {
+                releaseQueued = false;
+                YoshiFull.For(body)?.Release();
+            }
             if (!connectQueued) return;
             connectQueued = false;
             MeleeNative.ssbm_sim_connect(sim);
         }
         protected override bool IsChargeMove(uint moveId) => false;
 
+        /// While full, Egg Lay lays the egg instead of starting another grab; sprint is off.
+        protected override uint FilterButtons(uint buttons)
+        {
+            bool down = (buttons & MeleeControls.NeutralB) != 0;
+            bool carrying = YoshiFull.IsCarrying(body), laying = YoshiFull.IsLaying(body);
+            if (carrying && down && !primaryWasDown) releaseQueued = true;
+            primaryWasDown = down;
+            if (!carrying && !laying) return buttons;
+            return buttons & ~(MeleeControls.NeutralB | MeleeControls.Sprint);
+        }
+
+        internal void PlaySourceSound(uint sound)
+        {
+            if (sim == IntPtr.Zero) return;
+            if (MeleeNative.ssbm_sim_play_sound(sim, sound) != 1)
+                CommonLog.Warn("Yoshi sound " + sound + ": " + MeleeNative.Error);
+        }
+
         // Egg Lay draws its tongue from the first frame of the clip, so it is already out
-        // when the sim's frame-20 grab event runs. The capture uses the same reach.
+        // when the sim's frame-20 grab event runs. It stretches to the first enemy in the
+        // camera line (or the full 20 m when the lash is thrown into empty space).
         protected override void OnEventStarted(MeleeNative.Event e)
         {
             if (e.move_id != 20) return;
             var aim = body.inputBank ? MeleeAim.CameraRay(body, body.inputBank).direction : body.transform.forward;
-            YoshiTongue.Show(body, aim, YoshiCombat.TongueReach);
+            YoshiTongue.Show(body, aim, YoshiCombat.ScanReach(body, aim));
         }
 
         protected override void UpdateAudio() => audio?.Update();
@@ -90,6 +115,16 @@ namespace Yoshi
         protected override void DrawPresentation(Vector3 at, Quaternion rotation)
         {
             view.Pose(sim, Time.deltaTime);
+            // A full Yoshi shows Melee's heavy-carry clips (WaitItem / HeavyWalk1/2) while
+            // walking, and SpecialN2 once he lays the egg. During an actual move the sim's
+            // own pose wins, so attacks and the egg roll still read.
+            var full = YoshiFull.For(body);
+            if (full != null && state.move_id == 0) {
+                Present(() => {
+                    if (full.TryPose(Time.deltaTime, in state, out var clip, out var frame))
+                        view.ClipPose(clip, frame);
+                });
+            }
             // The egg model replaces the body through the fighter's visibility table and
             // is spun about its own centre by the presentation's roll angle. Draw it a
             // little larger than the body so it reads as Yoshi curled inside.

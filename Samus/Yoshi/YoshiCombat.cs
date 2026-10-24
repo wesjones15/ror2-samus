@@ -12,10 +12,10 @@ namespace Yoshi
     // damage, plus the tongue and egg, the thrown egg and the Yoshi Bomb's stars.
     internal static class YoshiCombat
     {
-        // Host adaptations for an open world. The source tongue is a grab capsule at
-        // the mouth; the reach is stretched here so it matches the drawn tongue and
-        // the open-world scale (7 m read as short next to RoR2 enemies).
-        internal const float TongueReach = 9f;
+        // Host adaptations for an open world. The source tongue is a grab capsule at the
+        // mouth; the host stretches it to 20 m so it works as a long-range grab and the
+        // drawn lash reaches exactly as far as the cast.
+        internal const float TongueReach = 20f;
         const float TongueRadius = 0.7f;
         const float EggSpeed = 4.5f;                 // Melee units per tick of a thrown egg
         const float EggAngleBias = 22f;              // degrees added to the camera pitch
@@ -46,14 +46,27 @@ namespace Yoshi
             if (aim.sqrMagnitude < 0.0001f) aim = body.transform.forward;
             aim = aim.normalized;
             var mouth = Mouth(body);
-            var target = FindTarget(body, mouth, aim, out _);
-            if (target && YoshiEgg.Lay(body, target)) body.GetComponent<YoshiDriver>()?.QueueConnect();
+            var target = FindTarget(body, mouth, aim, out float distance);
+            if (target == null) return;
+            // The tongue was drawn to this distance at the start of the move; pin it to the
+            // target in case the victim moved into or out of the original line.
+            YoshiTongue.SetReach(body, distance + 0.35f);
+            if (YoshiFull.Begin(body, target)) body.GetComponent<YoshiDriver>()?.QueueConnect();
+        }
+
+        /// Where the drawn tongue should stop: the nearest catchable enemy along the aim, or
+        /// the full reach when the lash is thrown into empty space.
+        internal static float ScanReach(CharacterBody body, Vector3 aim)
+        {
+            if (aim.sqrMagnitude < 0.0001f) aim = body.transform.forward;
+            var target = FindTarget(body, Mouth(body), aim.normalized, out float distance);
+            return target ? Mathf.Min(distance + 0.35f, TongueReach) : TongueReach;
         }
 
         static CharacterBody FindTarget(CharacterBody body, Vector3 mouth, Vector3 aim, out float distance)
         {
             distance = TongueReach;
-            var hits = new Collider[64];
+            var hits = new Collider[128];
             int n = Physics.OverlapCapsuleNonAlloc(mouth, mouth + aim * TongueReach, TongueRadius, hits,
                 LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Collide);
             CharacterBody best = null;
@@ -65,7 +78,7 @@ namespace Yoshi
                 var target = hurt.healthComponent.body;
                 if (!target || target == body || !target.teamComponent
                     || target.teamComponent.teamIndex == body.teamComponent.teamIndex) continue;
-                if (!hurt.healthComponent.alive || YoshiEgg.IsTrapped(target)) continue;
+                if (!hurt.healthComponent.alive || YoshiEgg.IsTrapped(target) || YoshiFull.IsHolding(target)) continue;
                 var point = hurt.collider ? hurt.collider.ClosestPoint(mouth) : hurt.transform.position;
                 float d = Vector3.Distance(mouth, point);
                 if (d > TongueReach || d >= bestDistance) continue;
@@ -128,7 +141,9 @@ namespace Yoshi
         // The SpecialN clip runs 40 ticks: the tongue is fully out at its frame-20 grab and
         // back by the end of the clip.
         const float ExtendSeconds = 0.18f, HoldSeconds = 0.22f, RetractSeconds = 0.25f;
-        const int Points = 12;
+        const int Points = 16;
+        const float TotalSeconds = ExtendSeconds + HoldSeconds + RetractSeconds;
+        static readonly List<YoshiTongue> active = new List<YoshiTongue>();
         static Shader shader;
         CharacterBody owner;
         Vector3 aim;
@@ -139,56 +154,256 @@ namespace Yoshi
         internal static void Show(CharacterBody owner, Vector3 aim, float reach)
         {
             if (!owner) return;
+            for (int i = active.Count - 1; i >= 0; i--)
+                if (!active[i] || active[i].owner == owner) { if (active[i]) Destroy(active[i].gameObject); active.RemoveAt(i); }
             var go = new GameObject("Yoshi tongue");
             var tongue = go.AddComponent<YoshiTongue>();
             tongue.owner = owner;
             tongue.aim = aim.normalized;
-            tongue.reach = Mathf.Clamp(reach, 1f, 12f);
+            tongue.reach = Mathf.Clamp(reach, 1f, YoshiCombat.TongueReach);
             if (!shader) shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color");
             if (!shader) { Destroy(go); return; }
-            var line = go.AddComponent<LineRenderer>();
-            tongue.line = line;
+            var renderer = go.AddComponent<LineRenderer>();
+            tongue.line = renderer;
             tongue.material = new Material(shader) { color = new Color(0.92f, 0.27f, 0.36f, 1f) };
-            line.material = tongue.material;
-            line.useWorldSpace = true;
-            line.positionCount = Points;
-            line.startWidth = 0.26f;
-            line.endWidth = 0.11f;
-            line.numCapVertices = 6;
-            line.numCornerVertices = 2;
-            line.alignment = LineAlignment.View;
-            line.textureMode = LineTextureMode.Stretch;
-            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            line.receiveShadows = false;
+            renderer.material = tongue.material;
+            renderer.useWorldSpace = true;
+            renderer.positionCount = Points;
+            float width = Mathf.Clamp(0.22f + tongue.reach * 0.006f, 0.22f, 0.55f);
+            renderer.startWidth = width;
+            renderer.endWidth = width * 0.42f;
+            renderer.numCapVertices = 6;
+            renderer.numCornerVertices = 2;
+            renderer.alignment = LineAlignment.View;
+            renderer.textureMode = LineTextureMode.Stretch;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            var start = YoshiCombat.Mouth(owner);
+            for (int i = 0; i < Points; i++) renderer.SetPosition(i, start);
+        }
+
+        /// Shorten the lash to the victim the cast caught, so the tip is on the enemy.
+        internal static void SetReach(CharacterBody owner, float reach)
+        {
+            foreach (var tongue in active)
+                if (tongue && tongue.owner == owner)
+                    tongue.reach = Mathf.Clamp(reach, 1f, YoshiCombat.TongueReach);
+        }
+
+        /// The current tip in world space; the reel keeps the caught enemy there.
+        internal static bool TryTip(CharacterBody owner, out Vector3 tip)
+        {
+            foreach (var tongue in active)
+            {
+                if (!tongue || tongue.owner != owner) continue;
+                float amount = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(tongue.Amount()));
+                tip = YoshiCombat.Mouth(owner) + tongue.aim * (tongue.reach * amount);
+                return true;
+            }
+            tip = default;
+            return false;
+        }
+
+        float Amount()
+        {
+            if (age < ExtendSeconds) return age / ExtendSeconds;
+            if (age < ExtendSeconds + HoldSeconds) return 1f;
+            return 1f - (age - ExtendSeconds - HoldSeconds) / RetractSeconds;
         }
 
         void LateUpdate()
         {
             if (!owner || !owner.healthComponent || !owner.healthComponent.alive) { Destroy(gameObject); return; }
             age += Time.deltaTime;
-            if (age >= ExtendSeconds + HoldSeconds + RetractSeconds) { Destroy(gameObject); return; }
-            float amount;
-            if (age < ExtendSeconds) amount = age / ExtendSeconds;
-            else if (age < ExtendSeconds + HoldSeconds) amount = 1f;
-            else amount = 1f - (age - ExtendSeconds - HoldSeconds) / RetractSeconds;
-            amount = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(amount));
+            if (age >= TotalSeconds) { Destroy(gameObject); return; }
+            float amount = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Amount()));
             float length = reach * amount;
             var origin = YoshiCombat.Mouth(owner);
+            // A little gravity sag keeps it from reading as a laser; cap it so a 20 m
+            // lash does not bow metres downward.
+            float sag = Mathf.Min(0.04f * length, 0.25f);
             for (int i = 0; i < Points; i++)
             {
                 float u = i / (Points - 1f);
                 var point = origin + aim * (length * u);
-                // A little gravity sag keeps it from reading as a laser.
-                point.y -= Mathf.Sin(u * Mathf.PI) * 0.06f * length;
+                point.y -= Mathf.Sin(u * Mathf.PI) * sag;
                 line.SetPosition(i, point);
             }
             line.enabled = amount > 0.01f;
         }
 
+        void OnEnable() { active.Add(this); }
         void OnDestroy()
         {
+            active.Remove(this);
             if (line) line.material = null;
             if (material) { Destroy(material); material = null; }
+        }
+    }
+
+    // A swallowed enemy, inside Yoshi until he lays the egg. The reel drags the visible body
+    // to the tongue tip and shrinks it to nothing; then Yoshi carries it (Melee's own
+    // WaitItem / HeavyWalk1 / HeavyWalk2 clips are his heavy-item gait) at a slow walk.
+    // A second Egg Lay press (or a timeout) lays the egg behind him with SpecialN2.
+    internal sealed class YoshiFull : MonoBehaviour
+    {
+        const float ReelSeconds = 0.45f;
+        const float HoldSeconds = 20f;
+        const float LayingSeconds = 0.5f;
+        const uint SwallowSound = 0xdd;      // SpecialN2 frame 0: the swallow cue
+        const uint LaySound = 0x4460c;       // SpecialN2 frame 25: the source's lay cue
+        static readonly List<YoshiFull> live = new List<YoshiFull>();
+
+        internal static bool IsHolding(CharacterBody victim)
+        {
+            foreach (var full in live) if (full && full.victim == victim) return true;
+            return false;
+        }
+        internal static bool IsCarrying(CharacterBody body)
+        {
+            var full = For(body);
+            return full && full.carrying;
+        }
+        internal static bool IsLaying(CharacterBody body)
+        {
+            var full = For(body);
+            return full && full.laying;
+        }
+        internal static YoshiFull For(CharacterBody body)
+            => body ? body.GetComponent<YoshiFull>() : null;
+
+        internal static bool Begin(CharacterBody owner, CharacterBody victim)
+        {
+            if (!MeleeNet.Acts(owner) || !victim || For(owner) || IsHolding(victim)) return false;
+            if (!EnemyHold.Hold(victim, HoldSeconds)) return false;
+            var full = owner.gameObject.AddComponent<YoshiFull>();
+            full.owner = owner;
+            full.victim = victim;
+            if (victim.modelLocator && victim.modelLocator.modelTransform) {
+                full.victimModel = victim.modelLocator.modelTransform;
+                full.originalScale = full.victimModel.localScale;
+            }
+            return true;
+        }
+
+        CharacterBody owner, victim;
+        float age;
+        bool carrying, laying, laid, pendingLay;
+        float layAge;
+        Vector3 layPoint;
+        Transform victimModel;
+        Vector3 originalScale = Vector3.one;
+        float carryFrame;
+
+        void OnEnable() { live.Add(this); }
+        void OnDestroy()
+        {
+            live.Remove(this);
+            if (victimModel) victimModel.localScale = originalScale;
+            if (victim && !laid) {
+                if (victimModel) GameSettings.HideRenderers(victimModel, false);
+                EnemyHold.Release(victim);
+            }
+        }
+
+        void FixedUpdate()
+        {
+            if (!owner || !owner.healthComponent || !owner.healthComponent.alive
+                || !victim || !victim.healthComponent || !victim.healthComponent.alive)
+            {
+                Destroy(this);
+                return;
+            }
+            if (laying) {
+                layAge += Time.fixedDeltaTime;
+                // SpecialN2 frame 25 is where the source spawns the egg.
+                if (pendingLay && layAge >= 25f / 60f) {
+                    pendingLay = false;
+                    if (YoshiEgg.Lay(owner, victim, layPoint)) {
+                        laid = true;
+                        owner.GetComponent<YoshiDriver>()?.PlaySourceSound(LaySound);
+                    } else { Destroy(this); return; }
+                }
+                if (layAge >= LayingSeconds) Destroy(this);
+                return;
+            }
+            if (carrying) {
+                // Keep the belly hold alive until the player lays the egg.
+                EnemyHold.Hold(victim, 5f);
+                return;
+            }
+            // Reel: the victim hangs on the tongue tip and shrinks into the mouth.
+            age += Time.fixedDeltaTime;
+            float t = Mathf.Clamp01(age / ReelSeconds);
+            float amount = Mathf.SmoothStep(0f, 1f, t);
+            Vector3 tip;
+            if (!YoshiTongue.TryTip(owner, out tip))
+                tip = YoshiCombat.Mouth(owner);
+            SetCore(victim, tip);
+            if (victimModel) victimModel.localScale = originalScale * (1f - amount);
+            if (t >= 1f) {
+                carrying = true;
+                if (victimModel) GameSettings.HideRenderers(victimModel, true);
+                owner.GetComponent<YoshiDriver>()?.PlaySourceSound(SwallowSound);
+            }
+        }
+
+        /// Lay the egg behind Yoshi (a second Egg Lay press).
+        internal void Release()
+        {
+            if (!carrying || laying || !owner || !victim) return;
+            carrying = false;
+            laying = true;
+            pendingLay = true;
+            layAge = 0f;
+            if (victimModel) victimModel.localScale = originalScale;
+            var behind = owner.footPosition - owner.transform.forward * (owner.radius + 1.0f);
+            behind = WorldProbe.PushOutOfWalls(behind + Vector3.up * 0.5f, 0.6f, 0.5f, null, 0, 8) - Vector3.up * 0.5f;
+            if (WorldProbe.Ground(behind + Vector3.up * 1.5f, 3f, out var floor))
+                behind = floor.point + Vector3.up * 0.03f;
+            layPoint = behind;
+            SetFeet(victim, behind);
+        }
+
+        /// The carry/lay pose for the driver. The reel itself uses the sim's SpecialN2.
+        internal bool TryPose(float dt, in MeleeNative.State state, out string clip, out float frame)
+        {
+            clip = null; frame = 0f;
+            if (laying) {
+                clip = "SpecialN2";
+                frame = Mathf.Clamp(layAge * 60f, 0f, 29f);
+                return true;
+            }
+            if (!carrying || state.grounded == 0) return false;
+            float speed = Mathf.Sqrt(state.velocity.x * state.velocity.x + state.velocity.z * state.velocity.z);
+            if (speed < 0.08f) {
+                carryFrame += dt * 60f * 0.35f;
+                clip = "WaitItem";
+                frame = Mathf.Repeat(carryFrame, 400f);
+            } else {
+                carryFrame += dt * 60f * Mathf.Clamp(speed * 1.8f, 0.5f, 1.6f);
+                clip = ((int)(carryFrame / 25f) & 1) == 0 ? "HeavyWalk1" : "HeavyWalk2";
+                frame = Mathf.Repeat(carryFrame, 25f);
+            }
+            return true;
+        }
+
+        static void SetCore(CharacterBody body, Vector3 core)
+        {
+            if (!body) return;
+            var delta = core - body.corePosition;
+            if (body.characterMotor) {
+                body.characterMotor.velocity = Vector3.zero;
+                body.characterMotor.Motor.SetPosition(body.transform.position + delta);
+            } else body.transform.position += delta;
+        }
+        static void SetFeet(CharacterBody body, Vector3 feet)
+        {
+            if (!body) return;
+            if (body.characterMotor) {
+                body.characterMotor.velocity = Vector3.zero;
+                body.characterMotor.Motor.SetPosition(feet);
+            } else body.transform.position = feet;
         }
     }
 
@@ -222,21 +437,24 @@ namespace Yoshi
 
         CharacterBody owner, victim;
         float releaseAt, eggRadius;
+        Vector3 eggOrigin;
         MeleeFighterView view;
         Transform victimModel;
 
-        internal static bool Lay(CharacterBody owner, CharacterBody victim)
+        internal static bool Lay(CharacterBody owner, CharacterBody victim, Vector3? origin = null)
         {
             if (!MeleeNet.Acts(owner) || !victim || IsTrapped(victim)) return false;
             bool boss = MeleeGrapple.IsBoss(victim);
             float seconds = boss ? BossSeconds : victim.radius >= LargeRadius ? LargeSeconds : NormalSeconds;
-            if (!EnemyHold.Hold(victim, seconds)) return false;
+            if (!EnemyHold.Hold(victim, seconds, false)) return false;
             var go = new GameObject("Yoshi egg (laid)");
             var egg = go.AddComponent<YoshiEgg>();
             egg.owner = owner;
             egg.victim = victim;
             egg.eggRadius = EggRadius(victim);
             egg.releaseAt = Time.time + seconds;
+            egg.eggOrigin = origin ?? EggFoot(victim);
+            if (origin.HasValue) SetFeet(victim, egg.eggOrigin);
             if (victim.modelLocator && victim.modelLocator.modelTransform) {
                 egg.victimModel = victim.modelLocator.modelTransform;
                 GameSettings.HideRenderers(egg.victimModel, true);
@@ -249,8 +467,17 @@ namespace Yoshi
                 CommonLog.Warn("Yoshi egg view: " + e.Message);
                 egg.view?.Dispose(); egg.view = null;
             }
-            go.transform.position = EggFoot(victim);
+            go.transform.position = egg.eggOrigin;
             return true;
+        }
+
+        static void SetFeet(CharacterBody body, Vector3 feet)
+        {
+            if (!body) return;
+            if (body.characterMotor) {
+                body.characterMotor.velocity = Vector3.zero;
+                body.characterMotor.Motor.SetPosition(feet);
+            } else body.transform.position = feet;
         }
 
         static Vector3 EggFoot(CharacterBody victim)
@@ -273,15 +500,16 @@ namespace Yoshi
                 : !victim || !victim.healthComponent || !victim.healthComponent.alive || Time.time >= releaseAt;
             if (over) { BreakOut(); return; }
             if (victimModel) GameSettings.HideRenderers(victimModel, true);
-            transform.position = EggFoot(victim);
+            transform.position = eggOrigin;
         }
 
         void BreakOut()
         {
             try {
                 var effect = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OmniExplosionVFX");
-                if (effect && victim) EffectManager.SpawnEffect(effect, new EffectData { origin = victim.corePosition, scale = eggRadius }, NetworkServer.active);
+                if (effect && victim) EffectManager.SpawnEffect(effect, new EffectData { origin = eggOrigin, scale = eggRadius }, NetworkServer.active);
             } catch (Exception) { }
+            owner?.GetComponent<YoshiDriver>()?.PlaySourceSound(0x44618); // egg break
             Destroy(gameObject);
         }
 
