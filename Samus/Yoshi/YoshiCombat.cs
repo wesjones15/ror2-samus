@@ -670,6 +670,8 @@ namespace Yoshi
                 egg.view?.Dispose(); egg.view = null;
             }
             go.transform.position = egg.eggOrigin;
+            CommonLog.Info("[MeleeDiag] egg laid radius=" + egg.eggRadius
+                + " victim=" + (victim ? victim.name : "null") + " origin=" + egg.eggOrigin);
             if (victim.healthComponent) victim.healthComponent.AddOnIncomingDamageServerReceiver(egg);
             return true;
         }
@@ -707,6 +709,8 @@ namespace Yoshi
             float mass = Mathf.Max(0.5f, Mathf.Pow(Mathf.Max(0.3f, eggRadius), 1.5f));
             float speed = (info.force.magnitude / 900f + Mathf.Max(0f, info.damage) * 0.6f) / mass;
             speed = Mathf.Clamp(speed, 0f, 30f);
+            CommonLog.Info("[MeleeDiag] egg hit damage=" + info.damage + " force=" + info.force.magnitude
+                + " mass=" + mass + " speed=" + speed);
             velocity += direction * speed;
             velocity.y += Mathf.Min(speed * 0.3f, 5f);
             velocity = Vector3.ClampMagnitude(velocity, 30f);
@@ -779,6 +783,9 @@ namespace Yoshi
 
         void BreakOut()
         {
+            CommonLog.Info("[MeleeDiag] egg break victim=" + (victim ? victim.name : "gone")
+                + " age=" + Mathf.Max(0f, releaseAt - Time.time) + " held="
+                + (victim ? EnemyHold.IsHeld(victim).ToString() : "-"));
             // The egg's origin is its bottom. Put the victim back on clear ground before the
             // hold ends, so a pushed or sloped egg cannot leave it under the floor.
             var at = transform.position;
