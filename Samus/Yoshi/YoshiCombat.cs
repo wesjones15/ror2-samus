@@ -110,14 +110,22 @@ namespace Yoshi
             int count = 0;
             for (int i = 0; i < n && count < max; i++)
             {
-                var health = tongueHits[i] ? tongueHits[i].GetComponentInParent<HealthComponent>() : null;
+                var collider = tongueHits[i];
+                if (!collider) continue;
+                // Every enemy is edible. A HurtBox carries its own health link (its
+                // transform is not necessarily a child of the body), while a slime or
+                // other simple body only exposes its HealthComponent on an ancestor.
+                var hurt = collider.GetComponent<HurtBox>();
+                var health = hurt && hurt.healthComponent
+                    ? hurt.healthComponent
+                    : collider.GetComponentInParent<HealthComponent>();
                 if (!health) continue;
                 var target = health.body;
                 if (!target || target == body || !target.teamComponent
                     || target.teamComponent.teamIndex == body.teamComponent.teamIndex) continue;
                 if (!health.alive || YoshiEgg.IsTrapped(target) || YoshiFull.IsHolding(target)) continue;
                 if (caught != null && !caught.Add(target)) continue;
-                var point = tongueHits[i] ? tongueHits[i].ClosestPoint(mouth) : health.transform.position;
+                var point = collider.ClosestPoint(mouth);
                 float d = Vector3.Distance(mouth, point);
                 if (d > limit) continue;
                 // Do not eat through a wall. Terrain only: the victim's own body and
