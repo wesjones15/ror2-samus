@@ -14,9 +14,9 @@ namespace Pikachu
     {
         // itpikachuthunder.c / ftpikachuspecialn.c sound ids.
         const uint ShockBounceSound = 240079; // 0x3A9CF: the jolt landing on a surface
-        // The down-B Thunder clips carry no sound commands; reuse Pikachu's electric SFX
-        // (Thunder Shock launch) for the cloud rumble and the strike.
-        internal const uint ThunderSound = 240076;
+        // Raw Pikachu sample 1020 (sound 240082): the extracted Thunder effect, not the
+        // Jolt samples (1018/240076 and 1019/240079) or the Thunder voice (240049).
+        internal const uint ThunderSound = 240082;
 
         internal static void Attack(PikachuDriver driver, CharacterBody body, MeleeNative.Event e, float scale)
         {
@@ -96,8 +96,6 @@ namespace Pikachu
         float scale, bottomStart, strikeY, speed, damage, radius;
         int strikeTick, tick;
         bool blocked;
-        bool cloudStopped;
-        ulong cloudKey;
         readonly MeleeFighterView[] segments = new MeleeFighterView[Segments];
         readonly HashSet<HealthComponent> victims = new HashSet<HealthComponent>();
         Collider[] candidates = new Collider[32];
@@ -128,7 +126,6 @@ namespace Pikachu
             {
                 if (!bolt.blocked)
                 {
-                    if (driver.NativeSim != IntPtr.Zero) MeleeNative.ssbm_sim_play_sound(driver.NativeSim, PikachuCombat.ThunderSound);
                     for (int i = 0; i < Segments; i++)
                     {
                         bolt.segments[i] = new MeleeFighterView(Samus.Plugin.AssetsDir, MeleeNative.FighterPikachu, 0, 0);
@@ -136,17 +133,7 @@ namespace Pikachu
                         bolt.segments[i].ForceAdditive = true;
                         bolt.segments[i].BlackToGlow = new Color(1f, 0.78f, 0.12f, 1f);
                     }
-                    // ftPk_SpecialLw_SpawnEffect: efSync 0x4C3 creates common generator 0x24C
-                    // at xD0 + xCC above Pikachu -- the storm cloud over the fixed column.
-                    if (driver.Particles != null)
-                    {
-                        bolt.cloudKey = 0xC10D0000_00000000ul | (uint)bolt.GetInstanceID();
-                        var cloud = feet + Vector3.up * (SegmentLength * Segments * scale);
-                        driver.Particles.Spawn(0x24C, MeleeParticles.At(cloud, Quaternion.identity, scale), bolt.cloudKey);
-                        // The common 0x24C cloud texture is a hard blue square at this size;
-                        // draw it as a soft blue glow and stop it with the bolt.
-                        driver.Particles.Tune(0x24C, 1.25f, 0.85f, true);
-                    }
+
                 }
                 // The leading segment's hitbox (itpikachuthunder article 0, state 0).
                 var probe = MeleeNative.ssbm_projectile_new(NativeLib.CString(Samus.Plugin.AssetsDir), MeleeNative.FighterPikachu, 0, 0, 0, new MeleeNative.Vec3(0, 0, 1));
@@ -243,11 +230,6 @@ namespace Pikachu
         void LateUpdate()
         {
             if (!owner || blocked) return;
-            if (cloudKey != 0 && !cloudStopped && tick > strikeTick + LingerTicks - 4)
-            {
-                cloudStopped = true;
-                try { driver?.Particles?.Stop(cloudKey); } catch (Exception) { }
-            }
             float length = SegmentLength * scale;
             for (int i = 0; i < Segments; i++)
             {
@@ -271,10 +253,6 @@ namespace Pikachu
         void OnDestroy()
         {
             for (int i = 0; i < Segments; i++) { segments[i]?.Dispose(); segments[i] = null; }
-            if (cloudKey != 0 && driver != null && driver.Particles != null)
-            {
-                try { driver.Particles.Stop(cloudKey); } catch (Exception) { }
-            }
             if (current == this) current = null;
         }
     }
