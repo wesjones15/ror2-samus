@@ -78,6 +78,7 @@ namespace Samus
             EggLay.Catch=(owner,victim)=>YoshiFull.Begin(owner,victim);
             EggLay.Lay=(owner,victim,at)=>YoshiEgg.Lay(owner,victim,at);
             EggLay.Laying=owner=>YoshiFull.IsLaying(owner);
+            EggLay.Show=(owner,target)=>YoshiTongue.Show(owner,target);
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
             string hint=Path.Combine(here,"assets_dir.txt");
             AssetsDir=Path.GetFullPath(!string.IsNullOrWhiteSpace(assets.Value)?assets.Value:
