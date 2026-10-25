@@ -16,7 +16,7 @@ namespace Pikachu
         const uint ShockBounceSound = 240079; // 0x3A9CF: the jolt landing on a surface
         // The down-B Thunder clips carry no sound commands; reuse Pikachu's electric SFX
         // (Thunder Shock launch) for the cloud rumble and the strike.
-        const uint ThunderSound = 240076;
+        internal const uint ThunderSound = 240076;
 
         internal static void Attack(PikachuDriver driver, CharacterBody body, MeleeNative.Event e, float scale)
         {
