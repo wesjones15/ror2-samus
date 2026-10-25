@@ -96,6 +96,8 @@ namespace Pikachu
         float scale, bottomStart, strikeY, speed, damage, radius;
         int strikeTick, tick;
         bool blocked;
+        bool cloudStopped;
+        ulong cloudKey;
         readonly MeleeFighterView[] segments = new MeleeFighterView[Segments];
         readonly HashSet<HealthComponent> victims = new HashSet<HealthComponent>();
         Collider[] candidates = new Collider[32];
@@ -133,7 +135,15 @@ namespace Pikachu
                         bolt.segments[i].ForceAdditive = true;
                         bolt.segments[i].BlackToGlow = new Color(1f, 0.78f, 0.12f, 1f);
                     }
-
+                    // ftPk_SpecialLw_SpawnEffect: efSync 0x4C3 creates common generator 0x24C
+                    // at xD0 + xCC above Pikachu -- the storm cloud over the fixed column.
+                    if (driver.Particles != null)
+                    {
+                        bolt.cloudKey = 0xC10D0000_00000000ul | (uint)bolt.GetInstanceID();
+                        var cloud = feet + Vector3.up * (SegmentLength * Segments * scale);
+                        driver.Particles.Spawn(0x24C, MeleeParticles.At(cloud, Quaternion.identity, scale), bolt.cloudKey);
+                        driver.Particles.Tune(0x24C, 1.25f, 0.85f, true);
+                    }
                 }
                 // The leading segment's hitbox (itpikachuthunder article 0, state 0).
                 var probe = MeleeNative.ssbm_projectile_new(NativeLib.CString(Samus.Plugin.AssetsDir), MeleeNative.FighterPikachu, 0, 0, 0, new MeleeNative.Vec3(0, 0, 1));
@@ -230,6 +240,11 @@ namespace Pikachu
         void LateUpdate()
         {
             if (!owner || blocked) return;
+            if (cloudKey != 0 && !cloudStopped && tick > strikeTick + LingerTicks - 4)
+            {
+                cloudStopped = true;
+                try { driver?.Particles?.Stop(cloudKey); } catch (Exception) { }
+            }
             float length = SegmentLength * scale;
             for (int i = 0; i < Segments; i++)
             {
@@ -253,6 +268,10 @@ namespace Pikachu
         void OnDestroy()
         {
             for (int i = 0; i < Segments; i++) { segments[i]?.Dispose(); segments[i] = null; }
+            if (cloudKey != 0 && driver != null && driver.Particles != null)
+            {
+                try { driver.Particles.Stop(cloudKey); } catch (Exception) { }
+            }
             if (current == this) current = null;
         }
     }
