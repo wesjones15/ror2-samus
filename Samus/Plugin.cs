@@ -23,7 +23,7 @@ namespace Samus
         internal static string AssetsDir;
         internal static volatile bool AssetsReady,AssetsBusy,FoxReady,LuigiReady,CaptainReady,LinkReady,PikachuReady,YoshiReady,DonkeyReady;
         internal static ConfigEntry<float> MetresPerUnit,JumpScale,SpeedScale;
-        internal static ConfigEntry<float> QuailScale,StompScale;
+        internal static ConfigEntry<float> QuailScale,StompScale,AttackSpeedScale;
         internal static ConfigEntry<float> Armor;
         internal static ConfigEntry<bool> HoldCharge;
         internal static ConfigEntry<bool> RimLight;
@@ -51,6 +51,8 @@ namespace Samus
             MeleeItems.QuailScale=QuailScale.Value;
             StompScale=Config.Bind("Items","Headstompers",1f,new ConfigDescription("H3AD-5T v2's stomp blast, times this (1: RoR2's). 0 disables the item's blast. Jump in the air with no jumps left to slam down.",new AcceptableValueRange<float>(0f,10f)));
             MeleeItems.StompScale=StompScale.Value;
+            AttackSpeedScale=Config.Bind("Items","AttackSpeed",1f,new ConfigDescription("How much of RoR2's attack speed (Soldier's Syringe, Mocha, ...) speeds up Melee moves. 1 applies it in full, 0 ignores it.",new AcceptableValueRange<float>(0f,10f)));
+            MeleeItems.AttackSpeedScale=AttackSpeedScale.Value;
             Armor=Config.Bind("Combat","Armor",20f,new ConfigDescription("Base armor. RoR2 multiplies incoming damage by 100/(100+armor), so 20 cuts a hit to ~83%. Melee survivors (Mercenary, Loader) use 20.",new AcceptableValueRange<float>(0f,100f)));
             HoldCharge=Config.Bind("Controls","HoldCharge",false,"False: tap neutral special to charge, tap again to fire; sprint/jump/X grab stores. True: hold and release to fire.");
             MissileRange=Config.Bind("Combat","MissileRangeMetres",120f,new ConfigDescription("How far away a homing missile can lock onto an enemy, in metres. A flying Charge Shot or missile has no range cap: it is removed when it has flown 20 s, left the stage's bounds or fallen far below the stage.",new AcceptableValueRange<float>(0f,2000f)));
