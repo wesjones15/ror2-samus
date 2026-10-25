@@ -55,7 +55,7 @@ namespace Pikachu
             get
             {
                 uint allowed = PikachuSkills.Allowed(body);
-                if (quickCharges > 0 && PikachuSkills.QuickOwned(body)) allowed |= 1u << 3;
+                if (quickCharges > 0) allowed |= 1u << 3;
                 return allowed;
             }
         }
@@ -260,7 +260,7 @@ namespace Pikachu
             if (state.move_id == 0 && quickQueued)
             {
                 quickQueued = false;
-                if (quickCharges > 0 && PikachuSkills.QuickOwned(body)) this.pad.QueuePress(MeleeControls.UpB);
+                if (quickCharges > 0) this.pad.QueuePress(MeleeControls.UpB);
             }
         }
 
