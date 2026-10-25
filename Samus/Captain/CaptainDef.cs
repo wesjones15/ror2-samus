@@ -77,7 +77,7 @@ namespace Captain
             nameToken="SSBM_CAPTAIN_NAME",subtitleToken="SSBM_CAPTAIN_SUBTITLE",descriptionToken="SSBM_CAPTAIN_DESCRIPTION",
             outroToken="SSBM_CAPTAIN_OUTRO",failToken="SSBM_CAPTAIN_FAIL",
             nameStr="Captain Falcon",subtitleStr="F-Zero Racer",
-            descriptionStr="Captain Falcon brings his Melee loadout to Petrichor V.\n\nRT: Falcon Punch. B: contextual A. RB: Raptor Boost. LB: Falcon Dive. LT: Falcon Kick, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
+            descriptionStr="Captain Falcon brings his Melee loadout to Petrichor V. Falcon Punch, Falcon Kick, Raptor Boost, and Falcon Dive, plus a shield that doubles as an air feint.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.2f,0.35f,0.75f),
             baseMaxHealth=110f,levelMaxHealth=33f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,

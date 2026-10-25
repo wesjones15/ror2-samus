@@ -85,7 +85,7 @@ namespace Pikachu
             nameToken="SSBM_PIKACHU_NAME",subtitleToken="SSBM_PIKACHU_SUBTITLE",descriptionToken="SSBM_PIKACHU_DESCRIPTION",
             outroToken="SSBM_PIKACHU_OUTRO",failToken="SSBM_PIKACHU_FAIL",
             nameStr="Pikachu",subtitleStr="The Electric Mouse Pokemon",
-            descriptionStr="Pikachu brings his Melee loadout to Petrichor V.\n\nRT: Thunder Jolt, with Yoshi's Egg Lay as its alternate. B: contextual A. RB: Skull Bash. LB: Quick Attack, camera-vector zips with two charges and pass-through damage. LT: Thunder, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
+            descriptionStr="Pikachu brings his Melee loadout to Petrichor V. Thunder Jolt (or Yoshi's Egg Lay), Thunder, Skull Bash, and Quick Attack, plus a shield that doubles as an air feint.",
             outroStr="..and so he left, shocked and satisfied.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.97f,0.84f,0.24f),
             baseMaxHealth=90f,levelMaxHealth=27f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,

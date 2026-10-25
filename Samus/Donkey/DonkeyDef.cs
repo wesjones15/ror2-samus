@@ -76,7 +76,7 @@ namespace Donkey
             nameToken="SSBM_DONKEY_NAME",subtitleToken="SSBM_DONKEY_SUBTITLE",descriptionToken="SSBM_DONKEY_DESCRIPTION",
             outroToken="SSBM_DONKEY_OUTRO",failToken="SSBM_DONKEY_FAIL",
             nameStr="Donkey Kong",subtitleStr="King of the Jungle",
-            descriptionStr="Donkey Kong brings his Melee loadout to Petrichor V.\n\nRT: Giant Punch. B: contextual A. RB: Headbutt. LB: Spinning Kong. LT: Hand Slap, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
+            descriptionStr="Donkey Kong brings his Melee loadout to Petrichor V. Giant Punch, Hand Slap, Headbutt, and Spinning Kong, plus a shield that doubles as an air feint.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.55f,0.35f,0.2f),
             baseMaxHealth=130f,levelMaxHealth=39f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,

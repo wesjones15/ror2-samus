@@ -88,7 +88,7 @@ namespace Luigi
             nameToken="SSBM_LUIGI_NAME",subtitleToken="SSBM_LUIGI_SUBTITLE",descriptionToken="SSBM_LUIGI_DESCRIPTION",
             outroToken="SSBM_LUIGI_OUTRO",failToken="SSBM_LUIGI_FAIL",
             nameStr="Luigi",subtitleStr="The Eternal Understudy",
-            descriptionStr="Luigi brings his Melee loadout to Petrichor V.\n\nRT: Fireball. B: contextual A. RB: Green Missile. LB: Super Jump Punch. LT: Luigi Cyclone, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
+            descriptionStr="Luigi brings his Melee loadout to Petrichor V. Fireball, Luigi Cyclone, Green Missile, and Super Jump Punch, plus a shield that doubles as an air feint.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.3f,0.75f,0.35f),
             baseMaxHealth=100f,levelMaxHealth=30f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,

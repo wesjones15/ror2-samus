@@ -76,7 +76,7 @@ namespace Link
             nameToken="SSBM_LINK_NAME",subtitleToken="SSBM_LINK_SUBTITLE",descriptionToken="SSBM_LINK_DESCRIPTION",
             outroToken="SSBM_LINK_OUTRO",failToken="SSBM_LINK_FAIL",
             nameStr="Link",subtitleStr="Hero of Hyrule",
-            descriptionStr="Link brings his Melee loadout to Petrichor V.\n\nRT: Hero's Bow. B: contextual A. RB: Boomerang. LB: Spin Attack. LT: Bomb (B throws it, LT drops it), with Shield / Air Feint as its alternate.\n\nOffline prototype.",
+            descriptionStr="Link brings his Melee loadout to Petrichor V. Hero's Bow, Bomb, Boomerang, and Spin Attack, plus a shield that doubles as an air feint.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.3f,0.7f,0.3f),
             baseMaxHealth=100f,levelMaxHealth=30f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,

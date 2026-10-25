@@ -75,7 +75,7 @@ namespace Fox
             nameToken="SSBM_FOX_NAME",subtitleToken="SSBM_FOX_SUBTITLE",descriptionToken="SSBM_FOX_DESCRIPTION",
             outroToken="SSBM_FOX_OUTRO",failToken="SSBM_FOX_FAIL",
             nameStr="Fox",subtitleStr="Leader of Star Fox",
-            descriptionStr="Fox brings his Melee loadout to Petrichor V.\n\nRT: Blaster. B: contextual A. RB: Fox Illusion. LB: Fire Fox. LT: Reflector, with Shield / Air Feint as its alternate.\n\nOffline prototype.",
+            descriptionStr="Fox brings his Melee loadout to Petrichor V. Blaster, Reflector, Fox Illusion, and Fire Fox, plus a shield that doubles as an air feint.",
             outroStr="..and so he left, mission complete.",failStr="..and so he vanished, beyond the blast zone.",
             bodyColor=new Color(0.85f,0.6f,0.2f),
             baseMaxHealth=110f,levelMaxHealth=33f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
