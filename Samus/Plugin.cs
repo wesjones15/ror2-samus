@@ -9,6 +9,7 @@ using RoR2;
 using RoR2.ContentManagement;
 using Ror2Common;
 using UnityEngine;
+using Yoshi;
 using Path=System.IO.Path;
 
 namespace Samus
@@ -65,6 +66,11 @@ namespace Samus
             ScopeChargeSmoke=Config.Bind("Luigi","ScopeChargeSmoke",true,"Super Scope: repeat the disc's animated ground smoke and wind streaks (EfCoData model 5, cue 0x3FF) at the feet while charging on the ground. Host visual timing; smoke grows slightly with charge and finishes its animation after release.");
             // Melee multiplayer: the messages that carry a fighter to the other players (MeleeNet).
             MeleeNet.Register();
+            // The shared Egg Lay, for a character outside this plugin (Sunshine Luigi's secret
+            // dpad move): the egg, trap, fan, knockback and break-out stay the Melee ones.
+            EggLay.Catch=(owner,victim)=>YoshiFull.Begin(owner,victim);
+            EggLay.Lay=(owner,victim,at)=>YoshiEgg.Lay(owner,victim,at);
+            EggLay.Laying=owner=>YoshiFull.IsLaying(owner);
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
             string hint=Path.Combine(here,"assets_dir.txt");
             AssetsDir=Path.GetFullPath(!string.IsNullOrWhiteSpace(assets.Value)?assets.Value:
