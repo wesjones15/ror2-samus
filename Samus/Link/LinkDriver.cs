@@ -14,6 +14,7 @@ namespace Link
         static IMeleeObjectView EffectView(uint model)=>MeleeFighterView.Effect(Samus.Plugin.AssetsDir,MeleeNative.FighterLink,model);
         MeleeFighterView view, entryPlatform, shieldView; uint shieldModel;
         MeleeAudio audio;
+        MeleeHeldArticle bow;
         readonly MeleeHitTracker hits = new MeleeHitTracker();
 
         protected override string FighterName => "Link";
@@ -63,6 +64,7 @@ namespace Link
         protected override void CreatePresentation()
         {
             view = MeleeFighterView.ForBody(body, AssetsDir, MeleeNative.FighterLink, Math.Min(body.skinIndex, 4));
+            bow = MeleeHeldArticle.ForFighter(AssetsDir, FighterKind);
             audio = new MeleeAudio(sim);
             Particles = new MeleeParticles(AssetsDir, scale);
             Effects = new MeleeEffects(Particles, scale, EffectView, null, Samus.Plugin.LogEffects.Value);
@@ -75,6 +77,7 @@ namespace Link
         MeleeTrail trail;
         protected override void DisposePresentation()
         {
+            bow?.Dispose(); bow = null;
             trail?.Dispose(); trail = null;
             shieldView?.Dispose(); shieldView = null;
             view?.Dispose(); view = null;
@@ -85,6 +88,7 @@ namespace Link
         }
         protected override void ResetPresentation()
         {
+            bow?.Hide();
             Effects?.Dispose(); Particles?.Dispose();
             Particles = new MeleeParticles(AssetsDir, scale);
             Effects = new MeleeEffects(Particles, scale, EffectView, null, Samus.Plugin.LogEffects.Value);
@@ -102,6 +106,7 @@ namespace Link
         {
             view.Pose(sim, Time.deltaTime);
             view.Models.Update(scale, d => (at, rotation));
+            Present(() => bow?.Draw(sim, scale, at, rotation));
             Present(() => {
                 uint defense = MeleeNative.ssbm_sim_defense_flags(sim);
                 if ((defense & 16) != 0) {

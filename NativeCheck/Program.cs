@@ -15,6 +15,55 @@ static class Program
     { result=new MeleeNative.Collision { position=new MeleeNative.Vec3(to.x,Math.Max(0,to.y),to.z),grounded=to.y<=0?1u:0u }; }
     static void Event(IntPtr user,in MeleeNative.Event e) { if(e.kind==3) jumps++; if(e.kind==2) hits++;if(e.kind==6)throws++;if(e.kind==2&&e.move_id==20){lastShot=e;shotCount++;} if(e.kind==2&&e.move_id==24){if(e.strength<1.5f){thunderSpawn++;lastThunder=e;}else thunderStrike++;} if(e.kind==2&&e.move_id==23&&e.strength>=2.5f)fireFoxImpacts++; }
     static void Check(bool ok,string what) { if(!ok) throw new Exception(what); }
+    static readonly MeleeNative.CollideFn airCollide=AirCollide;
+    static void AirCollide(IntPtr user,in MeleeNative.Vec3 from,in MeleeNative.Vec3 to,out MeleeNative.Collision result)
+    { result=new MeleeNative.Collision { position=to,grounded=0 }; }
+    static void LinkBowRegressions(string assets,in MeleeNative.Host groundHost)
+    {
+        if(MeleeNative.ssbm_assets_complete(NativeLib.CString(assets),MeleeNative.FighterLink)!=1) {
+            Console.WriteLine("SKIP: Link bow (Link cache absent)");return;
+        }
+        Check(MeleeNative.HasLinkBow,"matching native DLL lacks held bow exports");
+        Check(MeleeNative.ssbm_sim_link_bow_state(IntPtr.Zero)==-1,"null bow query must hide");
+        Check(MeleeNative.ssbm_link_bow_update(IntPtr.Zero,IntPtr.Zero)==0,"null bow update must fail");
+        var views=new IntPtr[6];
+        try {
+            for(uint s=0;s<6;s++) {
+                views[s]=MeleeNative.ssbm_article_new(NativeLib.CString(assets),MeleeNative.FighterLink,3,s);
+                Check(views[s]!=IntPtr.Zero,"bow state "+s+": "+MeleeNative.Error);
+                Check(MeleeNative.ssbm_view_model(views[s],out var model)==1&&model.vertex_count>0,"bow state has no mesh");
+            }
+            foreach(bool air in new[]{false,true}) {
+                var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterLink);
+                Check(sim!=IntPtr.Zero,MeleeNative.Error);
+                var host=air ? new MeleeNative.Host { collide=Marshal.GetFunctionPointerForDelegate(airCollide),evt=groundHost.evt } : groundHost;
+                try {
+                    Check(MeleeNative.ssbm_sim_link_bow_state(sim)==-1,"idle Link drew a bow");
+                    var pad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(0,0,1),allowed=31};
+                    for(int t=0;t<4;t++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                    var seen=new bool[3];
+                    for(int t=0;t<210;t++) {
+                        pad.buttons=t<130 ? 256u : 0u;
+                        MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                        int state=MeleeNative.ssbm_sim_link_bow_state(sim);
+                        if(state<0)continue;
+                        Check(state>= (air?3:0)&&state< (air?6:3),"bow picked wrong ground/air table");
+                        seen[state%3]=true;
+                        Check(MeleeNative.ssbm_link_bow_update(views[state],sim)==1,"bow attachment update failed");
+                        Check(MeleeNative.ssbm_link_bow_update(views[(state+1)%6],sim)==0,"bow accepted wrong state view");
+                        var positions=MeleeNative.ssbm_view_positions(views[state],out var count);
+                        Check(positions!=IntPtr.Zero&&count>0,"attached bow has no vertices");
+                        var xyz=new float[checked((int)count*3)];Marshal.Copy(positions,xyz,0,xyz.Length);
+                        foreach(float coordinate in xyz)Check(float.IsFinite(coordinate)&&Math.Abs(coordinate)<100,"attached bow left fighter-local bounds");
+                    }
+                    Check(seen[0]&&seen[1]&&seen[2],"bow did not draw, hold and release (air="+air+")");
+                    Check(MeleeNative.ssbm_sim_link_bow_state(sim)==-1,"released bow never hid");
+                    Check(MeleeNative.ssbm_link_bow_update(views[air?3:0],sim)==0,"idle bow update stayed visible");
+                } finally { MeleeNative.ssbm_sim_free(sim); }
+            }
+        } finally { foreach(var view in views)if(view!=IntPtr.Zero)MeleeNative.ssbm_view_free(view); }
+        Console.WriteLine("PASS: Link bow's six states, charge/release, attached mesh bounds and visibility through C#");
+    }
     static void ScopePitchRegression(string assets,in MeleeNative.Host host)
     {
         var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterLuigi);
@@ -250,6 +299,7 @@ static class Program
         ReplayRegressions(assets,in host);
         MovesetChecks(assets);
         FoxIllusionRegressions(assets,in host);
+        LinkBowRegressions(assets,in host);
         NudgeRegression(assets);
         FireFoxImpactRegressions(assets,in host);
         jumps=hits=throws=0;

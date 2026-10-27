@@ -5,6 +5,14 @@ Luigi, Pikachu, Captain Falcon, Link, Yoshi and Donkey Kong. The player guide is
 repository, and the notes below are the development record, written when Samus was the only fighter. Samus 0.2.x users must
 delete `BepInEx/plugins/MeleeSamus` before installing it (see CHANGELOG.md).
 
+## Link's held bow
+
+Link now draws his extracted bow during Hero's Bow in play and generated skill
+portraits, including ground/air draw, hold and release. The shared presenter uses
+libssbm's attachment and corrected envelope skinning. The C# native boundary
+checks cover all six states and cleanup; in-game validation is pending.
+The separately nocked arrow and sword/shield visibility changes remain unfinished.
+
 ## Goobo Jr. clones
 
 Every Melee survivor registers an AI master, so Goobo Jr. (and an Artifact of Vengeance umbra) can spawn a clone of any of

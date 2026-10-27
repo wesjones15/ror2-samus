@@ -1,5 +1,10 @@
 # Unreleased
 
+- Link's held bow now renders during Hero's Bow in play and generated skill portraits.
+  Ground/air draw, hold and release use the six native item animations and source
+  hand attachment, with corrected envelope skinning. The bow hides after release
+  or interruption and is disposed with its presenter. Not yet played in game.
+
 - **Goobo Jr. clones for every Melee fighter.** Each survivor now registers an AI master, so Goobo Jr. and the like can
   spawn a clone of Samus, Fox, Luigi, Captain Falcon, Link, Pikachu, Yoshi or Donkey Kong. One shared `MeleeBrain` drives
   all of them: it faces and aims at the AI's enemy, sprints and hops after it, alternates the spammable B A-attack with a
