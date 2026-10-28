@@ -8,9 +8,12 @@ delete `BepInEx/plugins/MeleeSamus` before installing it (see CHANGELOG.md).
 ## Link's held bow
 
 Link now draws his extracted bow during Hero's Bow in play and generated skill
-portraits, including ground/air draw, hold and release. The shared presenter uses
-libssbm's attachment and corrected envelope skinning. The C# native boundary
-checks cover all six states and cleanup; in-game validation is pending.
+portraits, including ground/air draw, hold and release. He can walk or sprint
+while charging, with running legs and the bow's upper pose aimed up/down with
+the camera. The shared presenter uses libssbm's attachment and corrected
+envelope skinning. Arrows follow camera aim/crosshair convergence. The C# native
+boundary checks cover all six states, moving charge, aiming and cleanup at
+30/60/144 Hz; in-game validation is pending.
 The separately nocked arrow and sword/shield visibility changes remain unfinished.
 
 ## Goobo Jr. clones

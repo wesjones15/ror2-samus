@@ -4,6 +4,10 @@
   Ground/air draw, hold and release use the six native item animations and source
   hand attachment, with corrected envelope skinning. The bow hides after release
   or interruption and is disposed with its presenter. Not yet played in game.
+- Link can walk or sprint while charging Hero's Bow. Shared running legs keep
+  the bow's upper pose and camera pitch; release fires along the current camera
+  aim. The bow's authored upper-body orientation is retained over the running
+  pelvis. Charge, arrow damage/speed and disc movement tuning are unchanged.
 
 - **Goobo Jr. clones for every Melee fighter.** Each survivor now registers an AI master, so Goobo Jr. and the like can
   spawn a clone of Samus, Fox, Luigi, Captain Falcon, Link, Pikachu, Yoshi or Donkey Kong. One shared `MeleeBrain` drives

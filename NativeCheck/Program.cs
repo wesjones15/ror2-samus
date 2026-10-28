@@ -61,8 +61,47 @@ static class Program
                     Check(MeleeNative.ssbm_link_bow_update(views[air?3:0],sim)==0,"idle bow update stayed visible");
                 } finally { MeleeNative.ssbm_sim_free(sim); }
             }
+            LinkMobileBowRegression(assets,in groundHost,views);
         } finally { foreach(var view in views)if(view!=IntPtr.Zero)MeleeNative.ssbm_view_free(view); }
         Console.WriteLine("PASS: Link bow's six states, charge/release, attached mesh bounds and visibility through C#");
+    }
+    static void LinkMobileBowRegression(string assets,in MeleeNative.Host host,IntPtr[] views)
+    {
+        foreach(int fps in new[]{30,60,144}) {
+            var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterLink);
+            var level=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterLink);
+            Check(sim!=IntPtr.Zero&&level!=IntPtr.Zero,MeleeNative.Error);
+            try {
+                var pad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(0,0,1),allowed=31};
+                for(int i=0;i<4;i++){MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);MeleeNative.ssbm_sim_step(level,in host,in pad,1.0/60);}
+                pad.buttons=256|32;pad.movement=new MeleeNative.Vec3(0,0,1);
+                var flat=pad;
+                int before=shotCount;
+                for(int i=0;i<fps*2;i++){MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/fps);MeleeNative.ssbm_sim_step(level,in host,in flat,1.0/fps);}
+                MeleeNative.ssbm_sim_state(sim,out var state);
+                Check(state.move_id==20&&state.position.z>50&&state.velocity.z>0.5f,"Link failed to run while holding the bow at "+fps+" Hz");
+                Check(shotCount==before,"sprint released the held bow");
+                var hip=new float[16];var hand=new float[16];var next=new float[16];
+                foreach(float y in new[]{0.6f,-0.6f}) {
+                    pad.aim=new MeleeNative.Vec3(0,y,0.8f);
+                    // At 144 Hz one host update may contain no 60 Hz sim tick.
+                    for(int sample=0;sample<(fps+59)/60;sample++) {
+                        MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/fps);MeleeNative.ssbm_sim_step(level,in host,in flat,1.0/fps);
+                    }
+                    Check(MeleeNative.ssbm_sim_common_bone(level,4,hip)==1&&MeleeNative.ssbm_sim_common_bone(sim,4,next)==1,"Link gait hip unavailable");
+                    for(int i=0;i<16;i++)Check(Math.Abs(hip[i]-next[i])<0.001,"bow pitch changed running hips/legs");
+                    Check(MeleeNative.ssbm_sim_common_bone(level,49,hand)==1&&MeleeNative.ssbm_sim_common_bone(sim,49,next)==1,"Link bow hand unavailable");
+                    Check((next[13]-hand[13])*Math.Sign(y)>0.5f,"bow hand did not track aim at "+fps+" Hz, y="+y+", delta="+(next[13]-hand[13]));
+                    int bowState=MeleeNative.ssbm_sim_link_bow_state(sim);
+                    Check(bowState==1&&MeleeNative.ssbm_link_bow_update(views[bowState],sim)==1,"running pitched bow did not attach");
+                }
+                pad.buttons=32;
+                for(int i=0;i<fps;i++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/fps);
+                Check(shotCount==before+1&&lastShot.strength>0.99f,"running bow lost/repeated its full-charge arrow");
+                Check(Math.Abs(lastShot.direction.y+0.6f)<0.001f&&Math.Abs(lastShot.direction.z-0.8f)<0.001f,"arrow did not keep live camera elevation");
+            } finally { if(sim!=IntPtr.Zero)MeleeNative.ssbm_sim_free(sim);if(level!=IntPtr.Zero)MeleeNative.ssbm_sim_free(level); }
+        }
+        Console.WriteLine("PASS: Link runs while charging, pitches only the upper rig and fires one live-aim arrow at 30/60/144 Hz");
     }
     static void ScopePitchRegression(string assets,in MeleeNative.Host host)
     {
