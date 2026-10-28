@@ -126,6 +126,18 @@ static class Program
                 }
             }
             Check(flashes==1&&puffs==9,"Scope charge script cues: "+flashes+" flash(es), "+puffs+" dust puffs");
+            // The dust model (0x3FF -> common model 5) starts particle generator 9 itself, at its joint 2 about ten units ahead.
+            var dust=MeleeNative.ssbm_effect_new(NativeLib.CString(assets),MeleeNative.FighterLuigi,5);
+            Check(dust!=IntPtr.Zero,"dust model: "+MeleeNative.Error);
+            try {
+                uint n=MeleeNative.ssbm_object_particles(dust,null,0);
+                var triggers=new MeleeNative.ObjectParticle[n];
+                Check(n==1&&MeleeNative.ssbm_object_particles(dust,triggers,n)==n,"dust model particle triggers: "+n);
+                Check(triggers[0].bank==0&&triggers[0].generator==9&&triggers[0].joint==2,"dust model starts generator "+triggers[0].generator);
+                var joint=new float[16];
+                MeleeNative.ssbm_object_update(dust,triggers[0].frame);
+                Check(MeleeNative.ssbm_object_joint(dust,triggers[0].joint,joint)==1&&Math.Abs(joint[14]-10.5f)<0.5f&&Math.Abs(joint[13])<0.01f,"dust model joint is not ten units ahead on the ground");
+            } finally { MeleeNative.ssbm_view_free(dust); }
             Console.WriteLine("PASS: the Scope's Start script spawns one flash and nine dust puffs while the charge is held");
         } finally {MeleeNative.ssbm_sim_free(sim);}
     }
