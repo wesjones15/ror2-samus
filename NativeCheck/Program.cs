@@ -855,14 +855,15 @@ static class Program
                 for(int f=0;f<10;f++)MeleeNative.ssbm_sim_step(lay,in host,in pad,1.0/60);
                 pad.buttons=256;MeleeNative.ssbm_sim_step(lay,in host,in pad,1.0/60);pad.buttons=0;
                 MeleeNative.ssbm_sim_state(lay,out var state);Check(state.move_id==20,"RT did not start borrowed Egg Lay");
+                Check(MeleeNative.ssbm_sim_play_sound_from(lay,MeleeNative.FighterYoshi,0x445d3)==1,"Yoshi tongue cue missing: "+MeleeNative.Error);
                 Check(MeleeNative.ssbm_sim_play_sound_from(lay,MeleeNative.FighterYoshi,0x4460c)==1,"Yoshi lay cue missing: "+MeleeNative.Error);
                 var pcm=new float[32000*2];Check(MeleeNative.ssbm_sim_audio(lay,pcm,32000)==32000,MeleeNative.Error);
-                Check(Array.Exists(pcm,x=>Math.Abs(x)>0.0001f),"Yoshi lay cue decoded silence on Pikachu");
+                Check(Array.Exists(pcm,x=>Math.Abs(x)>0.0001f),"Yoshi tongue/lay cues decoded silence on Pikachu");
                 for(int f=0;f<90&&state.move_id==20;f++){MeleeNative.ssbm_sim_step(lay,in host,in pad,1.0/60);MeleeNative.ssbm_sim_state(lay,out state);}
                 Check(state.move_id==0,"borrowed Egg Lay never ended");
             }finally{MeleeNative.ssbm_sim_free(lay);}
         }
-        Console.WriteLine("PASS: Pikachu Quick Attack travels along the camera vector, Skull Bash and Thunder complete without rubberbanding at 30/60/144 FPS, Thunder Shock flies level for 20 m then arcs and reflects/bounces ten times, and the borrowed Egg Lay starts on move 20 with Yoshi's lay cue");
+        Console.WriteLine("PASS: Pikachu Quick Attack travels along the camera vector, Skull Bash and Thunder complete without rubberbanding at 30/60/144 FPS, Thunder Shock flies level for 20 m then arcs and reflects/bounces ten times, and the borrowed Egg Lay starts on move 20 with Yoshi's tongue and lay cues");
     }
     static void DefenseRegressions(string assets,in MeleeNative.Host host)
     {

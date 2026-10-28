@@ -38,6 +38,12 @@ namespace Yoshi
         const float TongueRadius = 0.7f;
         const float EggSpeed = 4.5f;                 // Melee units per tick of a thrown egg
         const float EggAngleBias = 22f;              // degrees added to the camera pitch
+        /// The tongue's own cue, taken from Yoshi's disc grab: `PlYs.dat`'s Catch action
+        /// plays 0x445D3 at frame 17 (CatchDash at frame 10). Egg Lay lashes the same
+        /// tongue, but its staged `SpecialN` script carries no sound, so the host plays
+        /// this one on every lash for Yoshi, the borrowed Egg Lay on Pikachu, and the
+        /// shared service's users.
+        internal const uint TongueSound = 0x445d3;
         const float BlastRadius = 4.5f, BlastCoefficient = 7f, BlastOutward = 3000f, BlastUpward = 1500f;
 
         internal static void Attack(CharacterBody body, MeleeNative.Event e, float scale)
@@ -235,6 +241,7 @@ namespace Yoshi
             if (!owner) return;
             // One lash per out window: a repeated start event must not restart its clock.
             if (Find(owner) != null) return;
+            PlayLashSound(owner);
             for (int i = active.Count - 1; i >= 0; i--)
                 if (!active[i] || active[i].owner == owner) { if (active[i]) Destroy(active[i].gameObject); active.RemoveAt(i); }
             var go = new GameObject("Yoshi tongue");
@@ -276,6 +283,18 @@ namespace Yoshi
                 if (tongue.material) { Destroy(tongue.material); tongue.material = null; }
                 Destroy(go);
             }
+        }
+
+        /// The mlem: the grab's tongue cue, played when the lash leaves the mouth. A
+        /// fighter with an `IEggLayer` (Yoshi, or Pikachu's borrowed Egg Lay) plays it
+        /// from its own sim; a body outside the Melee plugin has no sim, so the cue gets
+        /// a sound-only one.
+        static void PlayLashSound(CharacterBody owner)
+        {
+            var layer = YoshiCombat.LayerOf(owner);
+            if (layer != null) { layer.PlaySourceSound(YoshiCombat.TongueSound); return; }
+            if (Samus.Plugin.YoshiReady)
+                MeleeOneShot.Play(Samus.Plugin.AssetsDir, MeleeNative.FighterYoshi, YoshiCombat.TongueSound);
         }
 
         /// The source grab event (or a view that failed to spawn) asks the tongue to catch
