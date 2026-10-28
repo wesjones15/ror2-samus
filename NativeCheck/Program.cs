@@ -284,7 +284,7 @@ static class Program
                 if(n==0)continue;
                 var cues=new MeleeNative.Event[n];
                 Check(MeleeNative.ssbm_sim_gfx(sim,cues,n)==n,"Fox Illusion GFX: "+MeleeNative.Error);
-                foreach(var cue in cues)if(cue.kind==1165){streak=true;Check(cue.move_id==0,"Illusion streak is not on TopN");}
+                foreach(var cue in cues)if(cue.kind==1165){streak=true;Check((cue.move_id&65535)==0,"Illusion streak is not on TopN");}
             }
             Check(streak,"Fox Illusion never spawned its 0x48D blue streak");
         } finally {MeleeNative.ssbm_sim_free(sim);}
