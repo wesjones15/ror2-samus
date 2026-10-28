@@ -241,7 +241,7 @@ namespace Link
             {
                 float t = i / (count - 1f);
                 var p = Vector3.Lerp(start, end, t);
-                var r = rotation * Quaternion.Euler(0f, 0f, (i & 1) == 0 ? 0f : 90f);
+                var r = rotation * Quaternion.AngleAxis((i & 1) == 0 ? 0f : 90f, Vector3.up);
                 draws.Add(new ViewDraw {
                     key = (ulong)i + 1,
                     pos = new ViewVec3(p.x / driver.Units, p.y / driver.Units, p.z / driver.Units),
