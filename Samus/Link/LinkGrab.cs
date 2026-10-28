@@ -9,7 +9,9 @@ namespace Link
     // Link's hookshot, carried by his grab button. The source launches an
     // It_Kind_Link_HShot from FtPart_RThumbNb during Catch/AirCatch
     // (ftCo_0D8E.c::fn_800D8EC8, ftCo_AirCatch.c::ftCo_AirCatch_Anim, and
-    // itlinkhookshot.c::it_802A2BA4). Here the host owns the chain because the
+    // itlinkhookshot.c::it_802A2BA4). The held launcher is public article 4;
+    // the chain links and hook head are the item's source joints x54/x58/x5C
+    // (itlinkhookshot.c::it_802A2568). Here the host owns the chain because the
     // reach is world-scale: 15 m toward Link's facing, not Melee's screen-scale
     // tether. A wall or a boss/big body is an anchor that reels Link in and
     // restores his jumps; an ordinary enemy is pulled to him and enters the
@@ -25,7 +27,8 @@ namespace Link
         internal const float PullSpeed = 26f; // reel-in speed of Link or a caught enemy
         const float ClimbSpeed = 4.5f;      // metres/s of stick-driven climb above the anchor
         const float ClimbLimit = 4f;        // how far above the anchor the chain lets him climb
-        const float ChainSpacing = 0.65f;   // one source hookshot article per link
+        const float ChainSpacing = 0.19f;   // source link length: 1.8125 units at 0.1 m/unit
+        const float LauncherLength = 0.4f;  // held item model past the hand
         const float AnchorBodyRadius = 1.8f; // bosses and bodies this big anchor Link
 
         enum State { Idle, Flying, Returning, Wall, Body, Enemy }
@@ -37,8 +40,10 @@ namespace Link
         HealthComponent anchorBody;
         float extension, climb;
         bool jumpsRestored;
-        MeleeFighterView chain;
-        readonly List<ViewDraw> draws = new List<ViewDraw>();
+        // The held launcher (article 4) and the source chain parts x54/x58/x5C.
+        MeleeFighterView held, linkA, linkB, hook;
+        readonly List<ViewDraw> drawsA = new List<ViewDraw>();
+        readonly List<ViewDraw> drawsB = new List<ViewDraw>();
 
         internal LinkHookshot(LinkDriver driver, CharacterBody owner)
         {
@@ -77,7 +82,15 @@ namespace Link
             anchorBody = null;
             extension = 0f;
             climb = 0f;
-            if (chain?.Models != null) chain.Models.HideAll();
+            Hide();
+        }
+
+        void Hide()
+        {
+            held?.Models?.HideAll();
+            linkA?.Models?.HideAll();
+            linkB?.Models?.HideAll();
+            hook?.Models?.HideAll();
         }
 
         /// The enemy reached Link; keep the capture (the shared flow holds it) but
@@ -224,39 +237,62 @@ namespace Link
         {
             if (!Active || driver.Units <= 0f)
             {
-                if (chain?.Models != null) chain.Models.HideAll();
+                Hide();
                 return;
             }
-            if (chain == null)
-                chain = new MeleeFighterView(Samus.Plugin.AssetsDir, MeleeNative.FighterLink, 2, 0);
+            if (held == null)
+            {
+                held = new MeleeFighterView(Samus.Plugin.AssetsDir, MeleeNative.FighterLink, 4, 0);
+                if (MeleeNative.HasHookshotParts)
+                {
+                    linkA = MeleeFighterView.Hookshot(Samus.Plugin.AssetsDir, 0);
+                    linkB = MeleeFighterView.Hookshot(Samus.Plugin.AssetsDir, 1);
+                    hook = MeleeFighterView.Hookshot(Samus.Plugin.AssetsDir, 2);
+                }
+            }
             var start = driver.RightHandWorld();
             var end = Tip();
             var delta = end - start;
             float length = delta.magnitude;
-            if (length < 0.02f) { chain.Models.HideAll(); return; }
-            int count = Mathf.Clamp(Mathf.CeilToInt(length / ChainSpacing) + 1, 2, 64);
-            var rotation = Quaternion.FromToRotation(Vector3.up, delta.normalized);
-            draws.Clear();
+            if (length < 0.02f) { Hide(); return; }
+            var direction = delta / length;
+            var rotation = Quaternion.LookRotation(direction, Vector3.up);
+            // The source held item is the blue launcher in Link's hand; its +Z
+            // points down the chain.
+            held.Models.Update(driver.Units, d => (start, rotation));
+            if (linkA == null) return;
+            var chainStart = start + direction * LauncherLength;
+            float chainLength = Vector3.Distance(chainStart, end);
+            int count = Mathf.Clamp(Mathf.CeilToInt(chainLength / ChainSpacing), 1, 128);
+            drawsA.Clear(); drawsB.Clear();
             for (int i = 0; i < count; i++)
             {
-                float t = i / (count - 1f);
-                var p = Vector3.Lerp(start, end, t);
-                var r = rotation * Quaternion.AngleAxis((i & 1) == 0 ? 0f : 90f, Vector3.up);
-                draws.Add(new ViewDraw {
+                float t = (i + 0.5f) / count;
+                var p = Vector3.Lerp(chainStart, end, t);
+                var draw = new ViewDraw {
                     key = (ulong)i + 1,
                     pos = new ViewVec3(p.x / driver.Units, p.y / driver.Units, p.z / driver.Units),
-                    rot_x = r.x, rot_y = r.y, rot_z = r.z, rot_w = r.w,
+                    rot_x = rotation.x, rot_y = rotation.y, rot_z = rotation.z, rot_w = rotation.w,
                     alpha = 1f,
-                });
+                };
+                if ((i & 1) == 0) drawsA.Add(draw); else drawsB.Add(draw);
             }
-            chain.InstanceDraws = draws.ToArray();
-            chain.Models.Update(driver.Units);
+            if (drawsA.Count > 0) { linkA.InstanceDraws = drawsA.ToArray(); linkA.Models.Update(driver.Units); }
+            else linkA.Models.HideAll();
+            if (drawsB.Count > 0) { linkB.InstanceDraws = drawsB.ToArray(); linkB.Models.Update(driver.Units); }
+            else linkB.Models.HideAll();
+            // The hook head's claw is local -Z (it points away from Link).
+            var hookRotation = Quaternion.LookRotation(-direction, Vector3.up);
+            hook.Models.Update(driver.Units, d => (end, hookRotation));
         }
 
         public void Dispose()
         {
             Release();
-            chain?.Dispose(); chain = null;
+            held?.Dispose(); held = null;
+            linkA?.Dispose(); linkA = null;
+            linkB?.Dispose(); linkB = null;
+            hook?.Dispose(); hook = null;
         }
     }
 }

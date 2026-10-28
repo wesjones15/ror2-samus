@@ -18,8 +18,9 @@ The separately nocked arrow and sword/shield visibility changes remain unfinishe
 
 ## Link's hookshot
 
-Link's grab button now fires a 15 m hookshot toward his facing. The chain draws
-from the extracted `It_Kind_Link_HShot` article (public article 2). A wall or a
+Link's grab button now fires a 15 m hookshot toward his facing. The held
+launcher is the extracted `It_Kind_Link_HShot` item (public article 4); the
+chain and hook are its source joints x54/x58/x5C. A wall or a
 boss/big body reels him in, restores his air jumps through
 `ssbm_sim_reset_jumps`, and lets stick up/down climb around the anchor; an
 ordinary enemy is pulled to him through the shared `EnemyCapture` and then uses

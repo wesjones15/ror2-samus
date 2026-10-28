@@ -71,12 +71,18 @@ static class Program
             Console.WriteLine("SKIP: Link hookshot (Link cache absent)");return;
         }
         Check(MeleeNative.HasJumpReset,"matching native DLL lacks the hookshot jump reset");
-        var hook=MeleeNative.ssbm_article_new(NativeLib.CString(assets),MeleeNative.FighterLink,2,0);
+        var hook=MeleeNative.ssbm_article_new(NativeLib.CString(assets),MeleeNative.FighterLink,4,0);
         Check(hook!=IntPtr.Zero,"Link hookshot article: "+MeleeNative.Error);
         try {
             Check(MeleeNative.ssbm_object_update(hook,0)==1,MeleeNative.Error);
             Check(MeleeNative.ssbm_view_model(hook,out var model)==1&&model.vertex_count>0,"hookshot article has no mesh");
         } finally { MeleeNative.ssbm_view_free(hook); }
+        for(uint part=0;part<3;part++) {
+            var view=MeleeNative.ssbm_hookshot_new(NativeLib.CString(assets),part);
+            Check(view!=IntPtr.Zero,"Link hookshot part "+part+": "+MeleeNative.Error);
+            try { Check(MeleeNative.ssbm_view_model(view,out var model)==1&&model.vertex_count>0,"empty hookshot part "+part); }
+            finally { MeleeNative.ssbm_view_free(view); }
+        }
         var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterLink);
         Check(sim!=IntPtr.Zero,MeleeNative.Error);
         try {
@@ -90,7 +96,7 @@ static class Program
             MeleeNative.ssbm_sim_state(sim,out var reset);
             Check(reset.jumps_used==0&&reset.position.y>0,"link did not get its air jump back");
         } finally { MeleeNative.ssbm_sim_free(sim); }
-        Console.WriteLine("PASS: Link hookshot article 2 loads and ssbm_sim_reset_jumps restores an air jump");
+        Console.WriteLine("PASS: Link hookshot article 4 and source chain parts load; ssbm_sim_reset_jumps restores an air jump");
     }
     static void LinkMobileBowRegression(string assets,in MeleeNative.Host host,IntPtr[] views)
     {
