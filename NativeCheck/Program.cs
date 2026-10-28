@@ -65,6 +65,33 @@ static class Program
         } finally { foreach(var view in views)if(view!=IntPtr.Zero)MeleeNative.ssbm_view_free(view); }
         Console.WriteLine("PASS: Link bow's six states, charge/release, attached mesh bounds and visibility through C#");
     }
+    static void LinkHookshotRegression(string assets,in MeleeNative.Host host)
+    {
+        if(MeleeNative.ssbm_assets_complete(NativeLib.CString(assets),MeleeNative.FighterLink)!=1) {
+            Console.WriteLine("SKIP: Link hookshot (Link cache absent)");return;
+        }
+        Check(MeleeNative.HasJumpReset,"matching native DLL lacks the hookshot jump reset");
+        var hook=MeleeNative.ssbm_article_new(NativeLib.CString(assets),MeleeNative.FighterLink,2,0);
+        Check(hook!=IntPtr.Zero,"Link hookshot article: "+MeleeNative.Error);
+        try {
+            Check(MeleeNative.ssbm_object_update(hook,0)==1,MeleeNative.Error);
+            Check(MeleeNative.ssbm_view_model(hook,out var model)==1&&model.vertex_count>0,"hookshot article has no mesh");
+        } finally { MeleeNative.ssbm_view_free(hook); }
+        var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterLink);
+        Check(sim!=IntPtr.Zero,MeleeNative.Error);
+        try {
+            var pad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(0,0,1),allowed=31};
+            for(int t=0;t<8;t++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+            pad.buttons=1;
+            for(int t=0;t<12;t++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+            MeleeNative.ssbm_sim_state(sim,out var jumped);
+            Check(jumped.jumps_used>0,"Link did not spend a jump before the hook reset (jumps="+jumped.jumps_used+", grounded="+jumped.grounded+", y="+jumped.position.y+", move="+jumped.move_id+", phase="+jumped.phase+")");
+            Check(MeleeNative.ssbm_sim_reset_jumps(sim)==1,"hookshot jump reset was refused");
+            MeleeNative.ssbm_sim_state(sim,out var reset);
+            Check(reset.jumps_used==0&&reset.position.y>0,"link did not get its air jump back");
+        } finally { MeleeNative.ssbm_sim_free(sim); }
+        Console.WriteLine("PASS: Link hookshot article 2 loads and ssbm_sim_reset_jumps restores an air jump");
+    }
     static void LinkMobileBowRegression(string assets,in MeleeNative.Host host,IntPtr[] views)
     {
         foreach(int fps in new[]{30,60,144}) {
@@ -378,6 +405,7 @@ static class Program
         MovesetChecks(assets);
         FoxIllusionRegressions(assets,in host);
         LinkBowRegressions(assets,in host);
+        LinkHookshotRegression(assets,in host);
         NudgeRegression(assets);
         FireFoxImpactRegressions(assets,in host);
         jumps=hits=throws=0;

@@ -16,6 +16,18 @@ boundary checks cover all six states, moving charge, aiming and cleanup at
 30/60/144 Hz; in-game validation is pending.
 The separately nocked arrow and sword/shield visibility changes remain unfinished.
 
+## Link's hookshot
+
+Link's grab button now fires a 15 m hookshot toward his facing. The chain draws
+from the extracted `It_Kind_Link_HShot` article (public article 2). A wall or a
+boss/big body reels him in, restores his air jumps through
+`ssbm_sim_reset_jumps`, and lets stick up/down climb around the anchor; an
+ordinary enemy is pulled to him through the shared `EnemyCapture` and then uses
+the normal pummel/throw flow. Bosses and big bodies are excluded from the close
+capture so they stay anchors. Reach, climb and pull are RoR2 adaptations. Native
+checks and a viewer capture (`libssbm/build/link-hookshot.png`) exist; in-game
+validation is pending.
+
 ## Goobo Jr. clones
 
 Every Melee survivor registers an AI master, so Goobo Jr. (and an Artifact of Vengeance umbra) can spawn a clone of any of
