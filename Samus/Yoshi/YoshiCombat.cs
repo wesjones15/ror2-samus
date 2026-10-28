@@ -217,7 +217,7 @@ namespace Yoshi
         Vector3 target;
         /// Foes this sweep has caught, so one is never counted twice and the cap holds.
         readonly HashSet<CharacterBody> caught = new HashSet<CharacterBody>();
-        bool spent;
+        bool spent, soundPlayed;
         float age;
         LineRenderer line;
         Material material;
@@ -241,7 +241,6 @@ namespace Yoshi
             if (!owner) return;
             // One lash per out window: a repeated start event must not restart its clock.
             if (Find(owner) != null) return;
-            PlayLashSound(owner);
             for (int i = active.Count - 1; i >= 0; i--)
                 if (!active[i] || active[i].owner == owner) { if (active[i]) Destroy(active[i].gameObject); active.RemoveAt(i); }
             var go = new GameObject("Yoshi tongue");
@@ -380,8 +379,11 @@ namespace Yoshi
 
         void LateUpdate()
         {
-            if (!line) { Destroy(gameObject); return; }
             if (!owner || !owner.healthComponent || !owner.healthComponent.alive) { Destroy(gameObject); return; }
+            // `Show` runs inside the native step's event callback, where playing a source
+            // sound would re-enter the sim handle; sound it here, outside the callback.
+            if (!soundPlayed) { soundPlayed = true; PlayLashSound(owner); }
+            if (!line) { Destroy(gameObject); return; }
             age += Time.deltaTime;
             if (age >= TotalSeconds) { Destroy(gameObject); return; }
             float amount = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Amount()));
