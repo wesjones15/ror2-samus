@@ -35,7 +35,6 @@ namespace Samus
         internal static ConfigEntry<bool> LogEffects;
         internal static ConfigEntry<bool> Diagnostics;
         internal static ConfigEntry<float> ScopeRange;
-        internal static ConfigEntry<bool> ScopeChargeSmoke;
         string nativePath,configuredDisc,pluginDirectory;
         bool nativeStarted,destroyed;
         void Awake()
@@ -70,7 +69,6 @@ namespace Samus
             Diagnostics=Config.Bind("Debug","Diagnostics",true,"Log each Melee move start (slot, charge, authority, whether it may deal damage), each hitbox batch and each hit dealt, as [MeleeDiag] lines in the BepInEx log. For finding why a move deals no damage. Cheap, but turn it off once everything works.");
             MeleeDiag.On=Diagnostics.Value;
             ScopeRange=Config.Bind("Luigi","ScopeRangeScale",3f,new ConfigDescription("Super Scope: how many times as fast and as far as the source's the beam flies, because an open world is bigger than a stage.",new AcceptableValueRange<float>(1f,10f)));
-            ScopeChargeSmoke=Config.Bind("Luigi","ScopeChargeSmoke",true,"Super Scope: repeat the disc's animated ground smoke and wind streaks (EfCoData model 5, cue 0x3FF) at the feet while charging on the ground. Host visual timing; smoke grows slightly with charge and finishes its animation after release.");
             // Melee multiplayer: the messages that carry a fighter to the other players (MeleeNet).
             MeleeNet.Register();
             // The shared Egg Lay, for a character outside this plugin (Sunshine Luigi's secret

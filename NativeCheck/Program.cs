@@ -103,6 +103,32 @@ static class Program
         }
         Console.WriteLine("PASS: Link runs while charging, pitches only the upper rig and fires one live-aim arrow at 30/60/144 Hz");
     }
+    // ItemScopeStart's own script (not the clip, which holds its last pose) spawns the charge's flash (cue 0x3F3, once)
+    // and ground dust (0x3FF, every eight frames from 24 to 88); the host only draws the cues the sim queues.
+    static void ScopeChargeDust(string assets,in MeleeNative.Host host)
+    {
+        var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterLuigi);
+        if(sim==IntPtr.Zero) {Console.WriteLine("SKIP: Luigi assets absent for Scope charge dust");return;}
+        try {
+            if(MeleeNative.ssbm_sim_scope(sim,1,0)!=1) {Console.WriteLine("SKIP: Scope assets absent");return;}
+            var pad=new MeleeNative.Pad {aim=new MeleeNative.Vec3(0,0,1),allowed=31,buttons=256};
+            int flashes=0,puffs=0;
+            for(int i=0;i<96;i++) {
+                MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                uint n=MeleeNative.ssbm_sim_gfx(sim,null,0);
+                if(n==0) continue;
+                var cues=new MeleeNative.Event[n];
+                Check(MeleeNative.ssbm_sim_gfx(sim,cues,n)==n,"Scope charge GFX: "+MeleeNative.Error);
+                foreach(var cue in cues) {
+                    Check(MeleeNative.ssbm_effect_target(cue.kind)!=int.MaxValue,"unresolved Scope effect "+cue.kind);
+                    if(cue.kind==0x3F3) flashes++;
+                    if(cue.kind==0x3FF) puffs++;
+                }
+            }
+            Check(flashes==1&&puffs==9,"Scope charge script cues: "+flashes+" flash(es), "+puffs+" dust puffs");
+            Console.WriteLine("PASS: the Scope's Start script spawns one flash and nine dust puffs while the charge is held");
+        } finally {MeleeNative.ssbm_sim_free(sim);}
+    }
     static void ScopePitchRegression(string assets,in MeleeNative.Host host)
     {
         var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterLuigi);
@@ -332,6 +358,7 @@ static class Program
         RebirthRegressions(assets,in host);
         AimingRegressions(assets,in host);
         ScopePitchRegression(assets,in host);
+        ScopeChargeDust(assets,in host);
         MorphBallRegressions(assets,in host);
         DefenseRegressions(assets,in host);
         PikachuRegressions(assets,in host);

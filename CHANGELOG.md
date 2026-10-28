@@ -1,5 +1,9 @@
 # Unreleased
 
+- **Super Scope charge effects now follow the disc's script.** The flash (cue `0x3F3`) at the start of a charge and nine
+  ground-smoke puffs (cue `0x3FF`, every eight frames from frame 24, scattered around Luigi) come from the real
+  `ItemScopeStart` script, which the loader had been cutting off at the clip length; the Fire and Rapid scripts' recoil dust
+  and camera kick run too. The `ScopeChargeSmoke` option is gone. Not yet played in game.
 - Link's held bow now renders during Hero's Bow in play and generated skill portraits.
   Ground/air draw, hold and release use the six native item animations and source
   hand attachment, with corrected envelope skinning. The bow hides after release

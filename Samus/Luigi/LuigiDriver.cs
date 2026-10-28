@@ -17,10 +17,6 @@ namespace Luigi
         MeleeFighterView view, entryPlatform, shieldView, scopeView; uint shieldModel;
         // The Super Scope: whether it is in hand, and the right-hand bone it is drawn on.
         bool scopeOn, scopeWarned;
-        // The held charge puffs the disc's smoke (host visual; see Plugin's Luigi config); the charge cue
-        // itself is sim-side (SFX 0xFE once, after the 15-frame Start clip's cocking chirp).
-        bool scopeSmokeStarted;
-        float scopeSmokeAt;
         readonly float[] scopeMatrix = new float[16];
         MeleeAudio audio;
         internal MeleeParticles Particles { get; private set; }
@@ -128,36 +124,8 @@ namespace Luigi
                 + rotation * (Vector3.up * 5.7f * scale);
             return true;
         }
-        // Host charge presentation: efasync.c 0x3FF -> EfCoData model 5 is animated
-        // ground smoke with trailing wind streaks. 0x405 is only the empty-click puff.
-        // Reuse the shared model-effect lifecycle and its disc texture animation.
-        void UpdateScopeSmoke()
-        {
-            bool charging = false; uint level = 0;
-            if (scopeOn && Samus.Plugin.ScopeChargeSmoke.Value
-                && MeleeNative.ssbm_sim_scope_state(sim, out var info) == 1)
-            {
-                charging = info.stage == 1 && state.grounded != 0;
-                level = info.level;
-            }
-            if (!charging) { scopeSmokeStarted = false; return; }
-            if (!scopeSmokeStarted)
-            {
-                scopeSmokeStarted = true;
-                scopeSmokeAt = Time.time + 0.2f; // the Start clip's cocking chirp and pose first
-                return;
-            }
-            if (Time.time < scopeSmokeAt) return;
-            // Each source model lasts 20 frames. Overlap at most two waves, letting
-            // released charges finish naturally instead of accumulating puff rings.
-            scopeSmokeAt = Time.time + 12f / 60f;
-            var facing = new Vector3(state.facing.x, 0, state.facing.z);
-            var rotation = facing.sqrMagnitude > 0 ? Quaternion.LookRotation(facing) : Quaternion.identity;
-            var feet = ToWorld(state.position) + Vector3.up * (0.2f * scale);
-            float size = 0.65f + 0.025f * Math.Min(level, 9u);
-            Effects?.Spawn(0x3FFu, MeleeParticles.At(feet, rotation, scale)
-                * Matrix4x4.Scale(Vector3.one * size));
-        }
+        // The charge's flash (cue 0x3F3) and ground dust (0x3FF, every eight frames) are the Start script's own
+        // GFX events: the sim queues them and MeleeEffects.Step spawns them like any other cue.
         // Gives the sim the scope while the loadout holds it (and the items archive was extracted), every step.
         void UpdateScope()
         {
@@ -171,7 +139,6 @@ namespace Luigi
                 scopeWarned = true;
                 CommonLog.Warn("Luigi: the Super Scope is selected but not available (" + (available ? MeleeNative.Error : "ItCo.dat is not extracted yet: set Paths.Disc to your Melee disc and restart") + "); RT is the Fireball.");
             }
-            UpdateScopeSmoke();
         }
         protected override void DrawHud()
         {

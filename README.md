@@ -238,11 +238,11 @@ presentation rises. Source entry colour program 0x75 is connected to the common
 renderer's overlay input, alongside local-joint
 blending for directional fall/air-fall/helpless poses.
 
-Luigi's `ScopeChargeSmoke` uses the disc's animated ground-smoke model (common
-effect 5 / cue `0x3FF`) at his feet while charging on the ground. It replaces the
-empty-click puffs at the muzzle. Waves finish their 20-frame animation after
-release; emission timing and charge scaling are host-authored. Verified in the
-local asset viewer and build/boundary checks; not yet played in RoR2.
+The Scope's charge effects are the disc's own `ItemScopeStart` script, queued by the sim: a flash (cue `0x3F3`)
+at the muzzle when the charge starts, then nine ground-smoke puffs (common effect 5 / cue `0x3FF`) every eight frames
+from frame 24, scattered within about six units of Luigi, and the fire script's recoil dust and kick. The old
+`ScopeChargeSmoke` option and host-authored timing are gone. Verified by headless and native-boundary checks; not
+yet played in RoR2.
 The Scope's upper-body pose follows camera elevation up/down (up to 60 degrees
 of torso bend), including the held weapon and firing-hand attachment. Legs keep
 their existing stance/walk animation. This is a host adaptation, verified in
