@@ -186,7 +186,11 @@ namespace Link
             Present(() => Particles?.Draw());
             Present(() => Effects?.Draw());
         }
-        protected override void DrawHud() { }
+        protected override void DrawHud()
+        {
+            if (hook != null && hook.Anchored)
+                GUI.Box(new Rect(Screen.width / 2f - 180, Screen.height - 130, 360, 30), "Jump: release hook    LS up/down: climb");
+        }
         protected override void BeginDeathPresentation(Vector3 feet, Quaternion rotation)
             => MeleeDeathSequence.Begin(new MeleeDeath(AssetsDir, FighterKind, Math.Min(body.skinIndex, 4), feet, rotation, scale));
         protected override void ApplyHitboxes(MeleeNative.HitboxSample[] samples, int count, float scale) => hits.Apply(body, samples, count, scale);
