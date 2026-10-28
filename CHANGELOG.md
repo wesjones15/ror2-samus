@@ -1,5 +1,10 @@
 # Unreleased
 
+- **Falloff recovery effects stay on the fighter.** The blast-zone KO flash (cue `0x42B`, common model 25) now plays
+  where the fighter comes back instead of where it left the stage, so the stage-high beam no longer hangs above the
+  returning fighter's head. Effects are no longer drawn in front of the camera during a fall recovery; every effect
+  keeps its world position, as it already did at death and on spawn. Not yet played in game.
+
 - **Super Scope charge effects now follow the disc's script.** The flash (cue `0x3F3`) at the start of a charge and nine
   ground-smoke puffs (cue `0x3FF`, every eight frames from frame 24, scattered around Luigi) come from the real
   `ItemScopeStart` script, which the loader had been cutting off at the clip length; the Fire and Rapid scripts' recoil dust
