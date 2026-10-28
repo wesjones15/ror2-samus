@@ -14,9 +14,8 @@ namespace Pikachu
     {
         // itpikachuthunder.c / ftpikachuspecialn.c sound ids.
         const uint ShockBounceSound = 240079; // 0x3A9CF: the jolt landing on a surface
-        // Raw Pikachu sample 1020 (sound 240082): the extracted Thunder effect, not the
-        // Jolt samples (1018/240076 and 1019/240079) or the Thunder voice (240049).
-        internal const uint ThunderSound = 240082;
+        // Thunder's rumble is not added here: its wait motion state (SpecialLwLoop0)
+        // plays SFX 0x3A9D2 / sample 1020 from the disc script when the bolt forms.
 
         internal static void Attack(PikachuDriver driver, CharacterBody body, MeleeNative.Event e, float scale)
         {
@@ -155,7 +154,6 @@ namespace Pikachu
             if (Physics.Raycast(owner.footPosition + Vector3.up * 1.2f, Vector3.up, out _,
                 16f * scale, WorldProbe.Mask, QueryTriggerInteraction.Ignore)) return;
             var at = owner.corePosition;
-            if (driver?.NativeSim != IntPtr.Zero) MeleeNative.ssbm_sim_play_sound(driver.NativeSim, PikachuCombat.ThunderSound);
             // ftPk_SpecialLwLoop0: efAsync_Spawn(1216, FtPart_TopN) when the bolt lands.
             driver?.PlayEffect(1216, at + Vector3.up * 1.2f, Quaternion.identity);
             ShakeEmitter.CreateSimpleShakeEmitter(at, new Wave { amplitude = 0.2f, frequency = 14f, cycleOffset = 0 }, 0.25f, 25f, true);
