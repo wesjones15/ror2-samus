@@ -27,9 +27,9 @@ namespace Link
         internal const float PullSpeed = 26f; // reel-in speed of Link or a caught enemy
         const float ClimbSpeed = 4.5f;      // metres/s of stick-driven climb above the anchor
         const float ClimbLimit = 4f;        // how far above the anchor the chain lets him climb
-        const float ChainSpacing = 0.19f;   // source link length: 1.8125 units at 0.1 m/unit
-        const float LauncherLength = 0.4f;  // held item model past the hand
-        const float AnchorBodyRadius = 1.8f; // bosses and bodies this big anchor Link
+        const float ChainSpacingUnits = 1.9f;   // source link length is 1.8125 units
+        const float LauncherLengthUnits = 5.6f;  // held item model ends at 5.375 units
+        const float AnchorBodyRadius = 1.8f;     // bosses and bodies this big anchor Link
 
         enum State { Idle, Flying, Returning, Wall, Body, Enemy }
 
@@ -261,9 +261,9 @@ namespace Link
             // points down the chain.
             held.Models.Update(driver.Units, d => (start, rotation));
             if (linkA == null) return;
-            var chainStart = start + direction * LauncherLength;
+            var chainStart = start + direction * (LauncherLengthUnits * driver.Units);
             float chainLength = Vector3.Distance(chainStart, end);
-            int count = Mathf.Clamp(Mathf.CeilToInt(chainLength / ChainSpacing), 1, 128);
+            int count = Mathf.Clamp(Mathf.CeilToInt(chainLength / (ChainSpacingUnits * driver.Units)), 1, 128);
             drawsA.Clear(); drawsB.Clear();
             for (int i = 0; i < count; i++)
             {
@@ -281,8 +281,8 @@ namespace Link
             else linkA.Models.HideAll();
             if (drawsB.Count > 0) { linkB.InstanceDraws = drawsB.ToArray(); linkB.Models.Update(driver.Units); }
             else linkB.Models.HideAll();
-            // The hook head's claw is local -Z (it points away from Link).
-            var hookRotation = Quaternion.LookRotation(-direction, Vector3.up);
+            // The hook head's claw is local +Z: point it away from Link.
+            var hookRotation = Quaternion.LookRotation(direction, Vector3.up);
             hook.Models.Update(driver.Units, d => (end, hookRotation));
         }
 
