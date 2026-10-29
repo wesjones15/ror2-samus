@@ -21,6 +21,8 @@ namespace Samus
         public const string Guid="com.libssbm.melee";
         internal static ManualLogSource Log;
         internal static string AssetsDir;
+        /// The shared GameCube library (GameCubeLibrary), or null.
+        internal static string LibraryRoot;
         internal static volatile bool AssetsReady,AssetsBusy,FoxReady,LuigiReady,CaptainReady,LinkReady,PikachuReady,YoshiReady,DonkeyReady;
         internal static ConfigEntry<float> MetresPerUnit,JumpScale,SpeedScale;
         internal static ConfigEntry<float> QuailScale,StompScale,AttackSpeedScale;
@@ -42,7 +44,9 @@ namespace Samus
             CommonLog.Log=Logger;Log=Logger;
             string here=Path.GetDirectoryName(Info.Location);
             var assets=Config.Bind("Paths","AssetsDir","","Extracted Melee cache. Empty uses assets_dir.txt or assets beside the plugin. Never distribute it.");
-            var disc=Config.Bind("Paths","Disc","","Your Melee GALE01 revision 2 ISO/GCM/CISO, used to extract missing assets at first launch.");
+            var disc=Config.Bind("Paths","Disc","","Your Melee GALE01 revision 2 ISO/GCM/CISO, used to extract missing assets at first launch. Empty: $SSBM_DISC, a *Melee* image near the plugin, then the GameCube library.");
+            var library=Config.Bind("Paths","Library","","A folder shared by the Olimar, Mario and Melee plugins: your disc images (any names, in it or its isos/ folder) and assets/Olimar, assets/Mario, assets/Melee for what they extract. Empty: gamecube_library.txt in this plugin's folder or the plugins folder, then $GAMECUBE_LIBRARY. An AssetsDir set above, assets_dir.txt or an assets/ folder already beside the plugin still wins; the library's cache is used for a fresh install.");
+            LibraryRoot=GameCubeLibrary.Root(library.Value,here);
             MetresPerUnit=Config.Bind("Sim","MetresPerUnit",0.1f,new ConfigDescription("World metres per Melee unit. Movement, reach and model share this scale.",new AcceptableValueRange<float>(0.03f,0.3f)));
             JumpScale=Config.Bind("Sim","JumpScale",1f,new ConfigDescription("Takeoff speed multiplier. 1 uses Melee tuning; increase for RoR2 traversal.",new AcceptableValueRange<float>(0.5f,3f)));
             SpeedScale=Config.Bind("Sim","SpeedScale",1.37f,new ConfigDescription("Walk/run speed multiplier. 1 uses raw Melee tuning; 1.37 lifts the slowest walker (Captain Falcon) to Commando's walk speed and the slowest runner to Commando's sprint, preserving each fighter's relative speed.",new AcceptableValueRange<float>(0.5f,3f)));
@@ -78,9 +82,8 @@ namespace Samus
             EggLay.Laying=owner=>YoshiFull.IsLaying(owner);
             EggLay.Show=(owner,target)=>YoshiTongue.Show(owner,target);
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
-            string hint=Path.Combine(here,"assets_dir.txt");
-            AssetsDir=Path.GetFullPath(!string.IsNullOrWhiteSpace(assets.Value)?assets.Value:
-                File.Exists(hint)?File.ReadAllText(hint).Trim():Path.Combine(here,"assets"));
+            AssetsDir=Path.GetFullPath(GameCubeLibrary.ResolveAssets(assets.Value,here,null,LibraryRoot,GameCubeLibrary.Melee,out string assetsFrom));
+            Logger.LogInfo("Melee assets "+AssetsDir+" ("+assetsFrom+")"+(LibraryRoot!=null?", GameCube library "+LibraryRoot:""));
             nativePath=Path.Combine(here,"ssbm.dll");configuredDisc=disc.Value;pluginDirectory=here;
             // Register content while RoR2 collects providers, but do no native
             // loading/extraction or Steam reflection/hooks during bootstrap.
@@ -147,7 +150,7 @@ namespace Samus
                 if(!AssetsReady||!FoxReady||!LuigiReady||!CaptainReady||!LinkReady||!PikachuReady||!YoshiReady||!DonkeyReady||itemsMissing||marioMissing) {
                     new Thread(()=> {
                         try {
-                            string image=FindDisc(configuredDisc,pluginDirectory);
+                            string image=FindDisc(configuredDisc,pluginDirectory)??GameCubeLibrary.FindDisc(LibraryRoot,"GALE01",2);
                             if(image==null&&(itemsMissing||marioMissing)&&AssetsReady&&FoxReady&&LuigiReady&&CaptainReady&&LinkReady&&PikachuReady&&YoshiReady&&DonkeyReady)
                             {
                                 // Every fighter is ready; only optional data is missing, so this is not an error.
