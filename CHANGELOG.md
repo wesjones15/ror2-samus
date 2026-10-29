@@ -1,5 +1,13 @@
 # Unreleased
 
+- **Skill cards are lit like cards, not like the stage they were baked in.** Each generated portrait now
+  renders under a fixed studio (`PortraitLight`): a key from the camera's upper left, a cool fill and a
+  fixed ambient, with the scene's directional lights, sky ambient and fog held out of the capture. Before,
+  the cards inherited whatever the main menu's lighting was at boot (near black), and their own light was
+  aimed backwards (it travelled toward the camera, lighting the fighter's back), so most fighters came out
+  as dark silhouettes. The same studio replaces the duplicated light block in the shared Mario/Olimar skill
+  cards. Also gives the card camera the depth texture it was missing. Not yet played in game.
+
 - **Falloff recovery effects stay on the fighter.** The blast-zone KO flash (cue `0x42B`, common model 25) now plays
   where the fighter comes back instead of where it left the stage, so the stage-high beam no longer hangs above the
   returning fighter's head. Effects are no longer drawn in front of the camera during a fall recovery; every effect
