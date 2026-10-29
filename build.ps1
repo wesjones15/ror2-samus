@@ -177,6 +177,9 @@ function Invoke-Logged {
     foreach($file in @($stdoutFile,$stderrFile)) { $state[$file]=@{ Position=0; Rest='' } }
     try {
         $proc=Start-Process -FilePath $exe -ArgumentList $argLine -NoNewWindow -PassThru -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile
+        # Windows PowerShell only keeps ExitCode if the handle is opened while the process runs;
+        # without this every failed step read as exit 0 and the build staged anyway.
+        $null=$proc.Handle
         $lastBeat=Get-Date
         while(-not $proc.HasExited) {
             Start-Sleep -Milliseconds 200
@@ -189,6 +192,8 @@ function Invoke-Logged {
         $proc.WaitForExit()
         foreach($file in @($stdoutFile,$stderrFile)) { Write-ChildOutput -State $state -File $file }
         $code=$proc.ExitCode
+        # An unknown exit code is a failure, never a pass.
+        if($null -eq $code) { $code=-1 }
     } finally {
         Remove-Item -LiteralPath $stdoutFile,$stderrFile -ErrorAction SilentlyContinue
     }

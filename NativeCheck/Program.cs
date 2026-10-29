@@ -973,6 +973,8 @@ static class Program
     }
     static void RebirthRegressions(string assets,in MeleeNative.Host host)
     {
+        // The KO flash plays where the fighter returns (the rebirth destination, the origin
+        // here), not where it fell (y -200): the RoR2 adaptation in libssbm rebirth.rs.
         foreach(int fps in new[]{30,60,144}) foreach(bool initial in new[]{false,true}) {
             ulong automatic=0,movement=0;
             foreach(bool move in new[]{false,true}) {
@@ -988,7 +990,7 @@ static class Program
                         uint before=MeleeNative.ssbm_sim_rebirth_flags(sim);pad.movement=move&&(before&8)!=0?new MeleeNative.Vec3(0,0,1):default;
                         MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/fps);uint flags=MeleeNative.ssbm_sim_rebirth_flags(sim);
                         uint n=MeleeNative.ssbm_sim_gfx(sim,null,0);var cues=new MeleeNative.Event[n];Check(MeleeNative.ssbm_sim_gfx(sim,cues,n)==n,MeleeNative.Error);
-                        foreach(var cue in cues){if(cue.kind==0x42b){ko++;Check(Math.Abs(cue.position.y+200)<.001f,"KO cue moved to respawn point");Check(MeleeNative.ssbm_effect_target(cue.kind)==-26,"original KO model not dispatched");}if(cue.kind==0x43e)transform++;}
+                        foreach(var cue in cues){if(cue.kind==0x42b){ko++;Check(Math.Abs(cue.position.y)<.001f,"KO cue not at the return point");Check(MeleeNative.ssbm_effect_target(cue.kind)==-26,"original KO model not dispatched");}if(cue.kind==0x43e)transform++;}
                         Check(MeleeNative.ssbm_sim_audio(sim,pcm,512)==512,MeleeNative.Error);if((flags&4)!=0)foreach(float v in pcm)koPcm|=Math.Abs(v)>.00001f;
                         if((flags&4)!=0||(flags&8)!=0) {
                             Check(MeleeNative.ssbm_view_update(view,sim,1f/fps)==1,MeleeNative.Error);var ptr=MeleeNative.ssbm_view_positions(view,out uint vertices);var positions=new float[vertices*3];Marshal.Copy(ptr,positions,0,positions.Length);bool visible=false;foreach(float v in positions)visible|=Math.Abs(v)>.001f;
