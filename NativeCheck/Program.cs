@@ -399,6 +399,7 @@ static class Program
         var host=new MeleeNative.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
         PresentationRegressions(assets,in host);
         GameCueRegressions(assets);
+        MarioAttackVoice(assets,in host);
         MobileChargeRegressions(assets,in host);
         RebirthRegressions(assets,in host);
         AimingRegressions(assets,in host);
@@ -627,6 +628,27 @@ static class Program
             }
             Console.WriteLine("PASS: ABI 5 + 14 layouts, trophy entry, grid tile, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
         } finally { if(view!=IntPtr.Zero)MeleeNative.ssbm_view_free(view);MeleeNative.ssbm_sim_free(sim); }
+    }
+    /// The Mario plugin's Melee A attacks (MarioMelee) voice each move from the lab fighter's own
+    /// mixer: the jab combo's subaction sound commands must reach PCM from main.ssm.
+    static void MarioAttackVoice(string assets,in MeleeNative.Host host)
+    {
+        if(!File.Exists(Path.Combine(assets,"PlMr.dat"))){Console.WriteLine("SKIP: Mario attack voice (no PlMr.dat)");return;}
+        var sim=MeleeNative.ssbm_sim_new_fighter(NativeLib.CString(assets),default,MeleeNative.FighterMario);Check(sim!=IntPtr.Zero,"Mario sim: "+MeleeNative.Error);
+        try {
+            var pad=new MeleeNative.Pad{aim=new MeleeNative.Vec3(0,0,1),allowed=31};
+            for(int i=0;i<10;i++)MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+            var idle=new float[1066];MeleeNative.ssbm_sim_audio(sim,idle,533);
+            bool attacked=false,pcm=false;var samples=new float[1066];
+            for(int frame=0;frame<90;frame++) {
+                pad.buttons=frame%8==0&&frame<32?2u:0u;
+                MeleeNative.ssbm_sim_step(sim,in host,in pad,1.0/60);
+                if(MeleeNative.ssbm_sim_state(sim,out var state)==1&&state.move_id!=0)attacked=true;
+                MeleeNative.ssbm_sim_audio(sim,samples,533);foreach(float s in samples)pcm|=Math.Abs(s)>0.0001f;
+            }
+            Check(attacked,"Mario's A started no attack");Check(pcm,"Mario's jab combo made no sound");
+        } finally {MeleeNative.ssbm_sim_free(sim);}
+        Console.WriteLine("PASS: Melee Mario's jab combo sounds through the lab fighter's mixer");
     }
     static void GameCueRegressions(string assets)
     {

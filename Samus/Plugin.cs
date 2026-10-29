@@ -141,12 +141,19 @@ namespace Samus
                 YoshiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterYoshi)==1;
                 DonkeyReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterDonkey)==1;
                 bool itemsMissing=MeleeNative.HasScope&&!File.Exists(Path.Combine(AssetsDir,"ItCo.dat"));
-                if(!AssetsReady||!FoxReady||!LuigiReady||!CaptainReady||!LinkReady||!PikachuReady||!YoshiReady||!DonkeyReady||itemsMissing) {
+                // Mario is not a survivor here; his files are for the Mario plugin's Melee A attacks,
+                // which read this cache. Optional, like the items archive.
+                bool marioMissing=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterMario)!=1;
+                if(!AssetsReady||!FoxReady||!LuigiReady||!CaptainReady||!LinkReady||!PikachuReady||!YoshiReady||!DonkeyReady||itemsMissing||marioMissing) {
                     new Thread(()=> {
                         try {
                             string image=FindDisc(configuredDisc,pluginDirectory);
-                            if(image==null&&itemsMissing&&AssetsReady&&FoxReady&&LuigiReady&&CaptainReady&&LinkReady&&PikachuReady&&YoshiReady&&DonkeyReady)
-                                throw new FileNotFoundException("Set Paths.Disc to your Melee disc to extract the Super Scope's data.");
+                            if(image==null&&(itemsMissing||marioMissing)&&AssetsReady&&FoxReady&&LuigiReady&&CaptainReady&&LinkReady&&PikachuReady&&YoshiReady&&DonkeyReady)
+                            {
+                                // Every fighter is ready; only optional data is missing, so this is not an error.
+                                Log.LogWarning("Set Paths.Disc to your Melee disc to extract the Super Scope's data and Mario's (the Mario plugin's A attacks).");
+                                return;
+                            }
                             if(image==null) throw new FileNotFoundException("Set Paths.Disc to your Melee GALE01 rev 2 disc image.");
                             // Each fighter extracts independently; a failure only affects that fighter.
                             if(!AssetsReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)!=1)throw new IOException(MeleeNative.Error);}
@@ -163,6 +170,12 @@ namespace Samus
                                     if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),100)!=1)throw new IOException(MeleeNative.Error);
                                     Log.LogInfo("Super Scope data extracted from your disc.");
                                 } catch(Exception e) { Log.LogWarning("Super Scope data unavailable: "+e.Message); }
+                            }
+                            if(marioMissing){
+                                try {
+                                    if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterMario)!=1)throw new IOException(MeleeNative.Error);
+                                    Log.LogInfo("Mario's Melee data extracted from your disc (for the Mario plugin's A attacks).");
+                                } catch(Exception e) { Log.LogWarning("Mario's Melee data unavailable: "+e.Message); }
                             }
                             Log.LogInfo("Melee assets extracted from your disc.");
                         } catch(Exception e) { Log.LogError("Melee assets unavailable: "+e.Message); }
