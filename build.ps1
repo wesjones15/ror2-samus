@@ -38,6 +38,9 @@ $repoRoot=[IO.Path]::GetFullPath($PSScriptRoot)
 $libraryRoot=[IO.Path]::GetFullPath((Join-Path $repoRoot '..\libssbm'))
 $gameRoot=[IO.Path]::GetFullPath($RoR2Dir)
 $commonRoot=[IO.Path]::GetFullPath($CommonDir)
+if($Deploy) {
+    & (Join-Path $commonRoot 'tests/CheckReleaseBranches.ps1') -HostDir $repoRoot -NativeDir $libraryRoot -CommonDir $commonRoot -HostBranch main -NativeBranch main
+}
 if(!(Test-Path -LiteralPath (Join-Path $commonRoot 'src\MeleeSelectDisplay.cs'))) { throw 'CommonDir must contain the shared Melee selection implementation.' }
 if(!(Test-Path -LiteralPath (Join-Path $gameRoot 'Risk of Rain 2_Data\Managed\RoR2.dll'))) { throw 'RoR2Dir must name a DLC4 game installation.' }
 
