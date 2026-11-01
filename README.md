@@ -61,10 +61,12 @@ See the sibling `libssbm/docs/reuse.md` for the ownership and remaining split.
 Character select plays Samus's down-B once, with its extracted animation,
 effects and sounds, then returns to animated idle on the UI clock. The shared
 Melee selection presenter lets each fighter choose its own intro. The preview
-starts and ends on its floor. The icon uses Samus's
-original 64x56 CSS grid tile from MnSlChr.usd,
-with its palette and aspect ratio preserved. The shared
-portrait queue installs this texture after extraction; no 3D icon capture is used.
+starts and ends on its floor. The icon is the same idle pose rendered by the
+shared portrait camera, turned 45 degrees left and cropped to the head and
+shoulders (a fraction of the fighter's height, so a wide pose cannot zoom the
+whole body out; Pikachu, Yoshi and DK use a taller crop for their larger heads).
+Samus's original 64x56 CSS grid tile from MnSlChr.usd remains the fallback while
+the disc assets are being extracted.
 Selection audio stops when the intro completes and on deselection.
 
 Status: incomplete; Rust viewer visually checked and native C# boundary tested.

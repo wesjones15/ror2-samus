@@ -1,5 +1,14 @@
 # Unreleased
 
+- **Melee character portraits are head-and-shoulders like the other survivors.** The shared portrait
+  camera now accepts a visible height as a fraction of the fighter's own height, so a wide idle pose
+  (Samus's cannon, DK's arms, a spread stance) no longer pulls the camera back to a full body.
+  Pikachu, Yoshi and DK get taller crops for their proportionally larger heads; Pikachu and DK also
+  sit a little lower in the frame. Cached Melee portraits use a new `melee-character-v1` revision, so
+  the old full-body pictures are ignored and the new ones render once on first launch. Viewer proof:
+  `libssbm/crates/viewer/examples/character_portrait.rs`, all eight fighters at Wait 0 (current vs
+  proposed). Not yet played in game.
+
 - **Skill cards are lit like cards, not like the stage they were baked in.** Each generated portrait now
   renders under a fixed studio (`PortraitLight`): a key from the camera's upper left, a cool fill and a
   fixed ambient, with the scene's directional lights, sky ambient and fog held out of the capture. Before,
