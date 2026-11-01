@@ -71,7 +71,7 @@ namespace Samus
             MeleeFighterView.GummyClones=GummyClones.Value;
             FighterBrightness=Config.Bind("Visuals","FighterBrightness",1.5f,new ConfigDescription("How much brighter than the source's material colour the fighters are drawn. Melee's models carry a diffuse colour of 0.70 and its stage lighting makes up for it; RoR2's lighting does not, so they looked dark. 1 is the source's colour; raise it if they still look dark, lower it if they look washed out.",new AcceptableValueRange<float>(0.5f,3f)));
             MeleeFighterView.FighterBrightness=FighterBrightness.Value;
-            ItemDisplays=Config.Bind("Visuals","ItemDisplays",true,"Draw RoR2's cosmetic item displays on the fighters: glasses, syringes, crowns and the rest follow the animated body instead of being hidden with Commando. Turn off to hide them.");
+            ItemDisplays=Config.Bind("Visuals","ItemDisplays",false,"Draw RoR2's cosmetic item displays on the fighters: glasses, syringes, crowns and the rest follow the animated body instead of being hidden with Commando. Turn off to hide them.");
             ItemDisplayRig.Enabled=ItemDisplays.Value;
             Diagnostics=Config.Bind("Debug","Diagnostics",true,"Log each Melee move start (slot, charge, authority, whether it may deal damage), each hitbox batch and each hit dealt, as [MeleeDiag] lines in the BepInEx log. For finding why a move deals no damage. Cheap, but turn it off once everything works.");
             MeleeDiag.On=Diagnostics.Value;
