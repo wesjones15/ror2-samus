@@ -5,6 +5,19 @@ Luigi, Pikachu, Captain Falcon, Link, Yoshi and Donkey Kong. The player guide is
 repository, and the notes below are the development record, written when Samus was the only fighter. Samus 0.2.x users must
 delete `BepInEx/plugins/MeleeSamus` before installing it (see CHANGELOG.md).
 
+## VR (`feature/vr`)
+
+With Blowntobytes' VR mod in a headset (the `[VR]` config section), every fighter plays the same
+way through ror2-common's `MeleeVr`; no fighter has VR code of its own. First person from the
+fighter's head, its body hidden for the player with its own forearms and hands on the controllers
+(cut from the disc model on the first run), `VR.ThirdPerson` from behind, the HUD on the off-hand
+wrist, a crosshair at the pointer. `VR.Controls` (on) is one layout for the roster, the pad's
+buttons on the controllers: A jump, B the fifth button, right trigger and grip RT and RB, left
+trigger and grip LT and LB, X grab (and interact), Y equipment, left stick move (head forward) with
+its click sprinting, right stick click ping. The dominant hand points the aim (tilts, smashes,
+shots). RoR2 reads this layout, not the VR mod's own buttons (`VrBank`). The pause sheet names the
+VR buttons in a headset. Nothing here has been played in a headset.
+
 ## Link's held bow
 
 Link now draws his extracted bow during Hero's Bow in play and generated skill

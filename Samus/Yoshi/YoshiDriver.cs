@@ -187,7 +187,7 @@ namespace Yoshi
             // The egg model replaces the body through the fighter's visibility table and
             // is spun about its own centre by the presentation's roll angle. Draw it a
             // little larger than the body so it reads as Yoshi curled inside.
-            view.Models.Update(state.move_id == 23 ? scale * 1.2f : scale, d => (at, rotation));
+            DrawBody(view, at, rotation, state.move_id == 23 ? scale * 1.2f : scale);
             Present(() => {
                 uint defense = MeleeNative.ssbm_sim_defense_flags(sim);
                 if ((defense & 16) != 0) {

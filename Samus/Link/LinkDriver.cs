@@ -166,7 +166,7 @@ namespace Link
         protected override void DrawPresentation(Vector3 at, Quaternion rotation)
         {
             view.Pose(sim, Time.deltaTime);
-            view.Models.Update(scale, d => (at, rotation));
+            DrawBody(view, at, rotation);
             Present(() => bow?.Draw(sim, scale, at, rotation));
             Present(() => {
                 uint defense = MeleeNative.ssbm_sim_defense_flags(sim);

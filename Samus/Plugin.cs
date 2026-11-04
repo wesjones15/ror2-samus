@@ -43,6 +43,15 @@ namespace Samus
         void Awake()
         {
             CommonLog.Log=Logger;Log=Logger;
+            // Only read with Blowntobytes' VR mod running in a headset (ror2-common's Vr, MeleeVr).
+            MeleeVr.Settings=new VrSettings(Config,"Melee");
+            MeleeVr.ControlsSetting=Config.Bind("VR","Controls",true,
+                "In VR with motion controls, every Melee fighter plays in one layout (right-handed; the VR mod's left-handed "+
+                "mode mirrors it), the pad's buttons on the controllers: A jumps, B is the fifth button (the A attack or the "+
+                "shield), the right trigger and grip are RT and RB, the left trigger and grip LT and LB, X grabs and interacts, "+
+                "Y uses equipment, the left stick moves (where you look is forward) and its click sprints, the right stick click "+
+                "pings, and the right hand points the aim. RoR2 reads this layout, not the VR mod's own buttons. Off: the VR "+
+                "mod's own buttons through RoR2's skills.");
             string here=Path.GetDirectoryName(Info.Location);
             var assets=Config.Bind("Paths","AssetsDir","","Extracted Melee cache. Empty uses assets_dir.txt or assets beside the plugin. Never distribute it.");
             var disc=Config.Bind("Paths","Disc","","Your Melee GALE01 revision 2 ISO/GCM/CISO, used to extract missing assets at first launch. Empty: $SSBM_DISC, a *Melee* image near the plugin, then the GameCube library.");
