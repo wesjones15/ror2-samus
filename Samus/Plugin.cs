@@ -198,11 +198,24 @@ namespace Samus
                             YoshiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterYoshi)==1;
                             DonkeyReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterDonkey)==1;
                             AssetsBusy=false;
+                            BakeVrArms();
                         }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
-                } else AssetsBusy=false;
+                } else { AssetsBusy=false; new Thread(BakeVrArms) { IsBackground=true,Name="Melee VR arms" }.Start(); }
                 Logger.LogInfo("Melee 0.4.10 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
                 } catch(Exception e) {AssetsReady=false;FoxReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
+        }
+        // Every extracted fighter costume's forearms and hands for the VR mod's controllers (ror2-common VrArmsBake),
+        // again whenever a fighter joins the cache.
+        static void BakeVrArms()
+        {
+            int ready=0;foreach(bool r in new[]{AssetsReady,FoxReady,LuigiReady,CaptainReady,LinkReady,PikachuReady,YoshiReady,DonkeyReady})if(r)ready++;
+            VrArmsBake.Run(AssetsDir,"Melee","0.4.10|"+ready,(buf,len)=>{
+                uint n=MeleeNative.ssbm_bake_vr_arms(NativeLib.CString(AssetsDir));
+                byte[] text=System.Text.Encoding.UTF8.GetBytes(n==0?MeleeNative.Error:n==1?"":(n-1)+" costumes cut");
+                Array.Copy(text,buf,Math.Min(text.Length,(int)len-1));
+                return (byte)(n==0?0:1);
+            });
         }
         static string FindDisc(string configured,string here)
         {
