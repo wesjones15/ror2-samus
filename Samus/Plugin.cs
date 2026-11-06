@@ -95,6 +95,10 @@ namespace Samus
             EggLay.Show=(owner,target)=>YoshiTongue.Show(owner,target);
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
             AssetsDir=Path.GetFullPath(GameCubeLibrary.ResolveAssets(assets.Value,here,null,LibraryRoot,GameCubeLibrary.Melee,out string assetsFrom));
+            string localAssets=Path.Combine(here,"assets");
+            // An icon-only assets folder would take precedence over the shared library on next launch.
+            SkillIcons.CacheRoot=string.Equals(AssetsDir,localAssets,StringComparison.OrdinalIgnoreCase)
+                ? localAssets : Path.Combine(here,"generated");
             Logger.LogInfo("Melee assets "+AssetsDir+" ("+assetsFrom+")"+(LibraryRoot!=null?", GameCube library "+LibraryRoot:""));
             nativePath=Path.Combine(here,"ssbm.dll");configuredDisc=disc.Value;pluginDirectory=here;
             // Register content while RoR2 collects providers, but do no native
