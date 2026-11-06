@@ -132,7 +132,7 @@ namespace Samus
                 shot.spawnCoefficient=shot.state.damage/3f;
             }
             catch(System.Exception e) { Plugin.Log.LogError("Samus article presentation failed: "+e.Message);Object.Destroy(go);return; }
-            if(article==2&&state==0){var lockOn=new EnemyLock { Range=Mathf.Max(45f,Plugin.MissileRange.Value) };shot.target=lockOn.Update(owner,true,false,Vector2.zero)?.healthComponent;}
+            if(article==2&&state==0){var lockOn=new EnemyLock { Range=Mathf.Max(45f,Plugin.MissileRange.Value), DistanceWeight=.00002f, FromCamera=true };shot.target=lockOn.Update(owner,true,false,Vector2.zero)?.healthComponent;}
             var transform=MeleeParticles.At(point,direction.sqrMagnitude>0?Quaternion.LookRotation(direction):Quaternion.identity,scale);
             // efAlt_Spawn: normal/smash missile source generator graphs.
             shot.SourceEffects(uint.MaxValue,0,transform);
