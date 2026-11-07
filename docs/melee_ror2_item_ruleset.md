@@ -2,7 +2,7 @@
 
 **Status:** Item audit and implementation handoff, October 2026. Complements
 `libssbm/docs/behavior-spec.md` and `libssbm/docs/first-pass-audit.md`. This document is
-a static audit of the workspace game copy (`2026 Mod Stuff/RiskOfRain2_DLC4`, DLC4 item
+a static audit of the DLC4 reference assemblies (item
 catalog) against the shared native-sim driver `ror2-common/src/MeleeDriver.cs` (the
 "generic-melee-character" adapter), plus the fixes landed there.
 

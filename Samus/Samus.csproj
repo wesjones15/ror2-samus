@@ -8,8 +8,6 @@
     <RootNamespace>Samus</RootNamespace>
     <!-- Compile against the game's own reference assemblies to match its build.
          The release is staged under the workspace target directory for manual installation. -->
-    <RoR2Dir Condition="'$(RoR2Dir)' == ''">$(MSBuildThisFileDirectory)..\..\2026 Mod Stuff\RiskOfRain2_DLC4</RoR2Dir>
-    <Managed>$(RoR2Dir)\Risk of Rain 2_Data\Managed</Managed>
     <Ror2CommonDir Condition="'$(Ror2CommonDir)' == ''">$(MSBuildThisFileDirectory)..\..\ror2-common</Ror2CommonDir>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <GenerateDependencyFile>false</GenerateDependencyFile>
@@ -58,4 +56,5 @@
     <Reference Include="com.unity.multiplayer-hlapi.Runtime"><HintPath>$(Managed)\com.unity.multiplayer-hlapi.Runtime.dll</HintPath></Reference>
   </ItemGroup>
 
+  <Import Project="$(Ror2CommonDir)/build/RoR2References.targets" />
 </Project>

@@ -11,7 +11,7 @@ a heartbeat, and writes the same lines to dist\build.log so a stalled step is ob
 Use -SkipTests for a fast iteration build (native + plugin + startup check + package).
 
 .PARAMETER RoR2Dir
-DLC4 installation to compile against. Defaults to ..\2026 Mod Stuff\RiskOfRain2_DLC4.
+Required directory containing DLC4/BepInEx compilation references; selected explicitly by the caller.
 
 .PARAMETER CommonDir
 Shared ror2-common checkout compiled into the plugin.
@@ -27,7 +27,7 @@ Run the libssbm cargo tests even when libssbm is byte-identical to the last gree
 Those tests are asset-bound and cost minutes; a C#-only change does not need them again.
 #>
 param(
-    [string]$RoR2Dir=(Join-Path $PSScriptRoot '..\2026 Mod Stuff\RiskOfRain2_DLC4'),
+    [string]$RoR2Dir,
     [string]$CommonDir=(Join-Path $PSScriptRoot '..\ror2-common'),
     [switch]$Deploy,
     [switch]$SkipTests,
@@ -36,7 +36,9 @@ param(
 $ErrorActionPreference='Stop'
 $repoRoot=[IO.Path]::GetFullPath($PSScriptRoot)
 $libraryRoot=[IO.Path]::GetFullPath((Join-Path $repoRoot '..\libssbm'))
-$gameRoot=[IO.Path]::GetFullPath($RoR2Dir)
+. (Join-Path $CommonDir 'build/BuildPaths.ps1')
+$buildPaths=Get-Ror2BuildPaths -ProjectRoot $repoRoot -RoR2Dir $RoR2Dir
+$gameRoot=$buildPaths.References
 $commonRoot=[IO.Path]::GetFullPath($CommonDir)
 if($Deploy) {
     & (Join-Path $commonRoot 'tests/CheckReleaseBranches.ps1') -HostDir $repoRoot -NativeDir $libraryRoot -CommonDir $commonRoot -HostBranch main -NativeBranch main
@@ -304,9 +306,9 @@ $checksum=(Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvaria
 End-Step $packagePrefix 0
 if($Deploy) {
     # The user copies staged files into their chosen game installation.
-    $destination=Join-Path $repoRoot ('..\target\BepInEx\plugins\'+$pluginFolder)
+    $destination=Join-Path $buildPaths.Stage ('BepInEx\plugins\'+$pluginFolder)
     # The old staged name is removed so the plugin isn't loaded twice.
-    $legacy=Join-Path $repoRoot '..\target\BepInEx\plugins\Melee'
+    $legacy=Join-Path $buildPaths.Stage 'BepInEx\plugins\Melee'
     if(Test-Path -LiteralPath $legacy) { Remove-Item -LiteralPath $legacy -Recurse -Force; Write-BuildLine "Removed the old staged folder $legacy" }
     New-Item -ItemType Directory -Force -Path $destination | Out-Null
     foreach($dll in @('Samus.dll','ssbm.dll')) {

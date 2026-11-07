@@ -18,13 +18,15 @@ The [native reuse notes](https://github.com/wesjones15/libssbm/blob/main/docs/re
 
 Use Windows, PowerShell 5.1, Rust supporting edition 2024, a .NET SDK and local DLC4/BepInEx assemblies. Keep `ror2-samus` and `libssbm` on `main`, with `ror2-common`, `libcommon` and the viewer's `libsms` dependency on `modern/1.5.0`, as sibling checkouts.
 
+Set `$referenceDirectory` to the directory containing the RoR2 and BepInEx assemblies you intend to compile against. Pass it explicitly with `-RoR2Dir`; there is no machine-specific default. Staging is resolved relative to the source checkout as workspace `target/`, independently of the reference directory.
+
 From this repository:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File build.ps1 -RoR2Dir "C:\path\to\Risk of Rain 2"
+powershell -ExecutionPolicy Bypass -File build.ps1 -RoR2Dir $referenceDirectory
 ```
 
-The script builds, checks and packages the plugin under `dist/`, with progress recorded in `dist/build.log`. `-Deploy` additionally stages `Samus.dll`, `ssbm.dll` and SharedFiles beneath the workspace's `target/BepInEx/plugins/` for manual copying into the intended game/profile. The default compile path is the workspace's `2026 Mod Stuff/RiskOfRain2_DLC4` copy.
+The script builds, checks and packages the plugin under `dist/`, with progress recorded in `dist/build.log`. `-Deploy` additionally stages `Samus.dll`, `ssbm.dll` and SharedFiles beneath the workspace's `target/BepInEx/plugins/` for manual copying into the intended game/profile.
 
 The normal build includes startup, pad, shared-host and native-boundary checks. An unchanged native tree can reuse its previous successful Rust-test stamp; `-ForceTests` reruns it. `-SkipTests` is available for iteration builds and skips Rust/native-host checks.
 
