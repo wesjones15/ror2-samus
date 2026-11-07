@@ -307,6 +307,7 @@ if($Deploy) {
         Copy-Item -LiteralPath $source -Destination $target -Force
         if((Get-FileHash -LiteralPath $source).Hash -ne (Get-FileHash -LiteralPath $target).Hash) {throw "Staged checksum mismatch: $dll"}
     }
+    & (Join-Path $commonRoot 'sharedfiles/Stage.ps1') -PluginsDir (Split-Path $destination)
     Write-BuildLine "Staged Melee for manual installation at $destination"
 }
 $total=((Get-Date)-$buildStart).TotalSeconds

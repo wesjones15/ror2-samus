@@ -81,7 +81,7 @@ namespace Donkey
             bodyColor=new Color(0.55f,0.35f,0.2f),
             baseMaxHealth=130f,levelMaxHealth=39f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
             sortPosition=109f,
-            fighterKind=MeleeNative.FighterDonkey,assetsDir=()=>Samus.Plugin.AssetsDir,assetsReady=()=>Samus.Plugin.DonkeyReady,
+            fighterKind=MeleeNative.FighterDonkey,assetsDir=()=>Samus.Plugin.AssetsDir,assetsReady=()=>Samus.Plugin.DonkeyReady,experimental=true,
             mainStateType=typeof(DonkeyMain),driverType=typeof(DonkeyDriver),
             skills=DonkeySkills.Layout,skins=DonkeySkins.Layout,
             displayFactory=DonkeyDisplay.Make,

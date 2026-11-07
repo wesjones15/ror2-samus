@@ -137,7 +137,7 @@ namespace Luigi
             if (want && !scopeOn && !scopeWarned)
             {
                 scopeWarned = true;
-                CommonLog.Warn("Luigi: the Super Scope is selected but not available (" + (available ? MeleeNative.Error : "ItCo.dat is not extracted yet: set Paths.Disc to your Melee disc and restart") + "); RT is the Fireball.");
+                CommonLog.Warn("Luigi: the Super Scope is selected but not available (" + (available ? MeleeNative.Error : "ItCo.dat is not extracted yet: put your Melee disc in wesleyasaurus-SharedFiles/put_games_here and restart") + "); RT is the Fireball.");
             }
         }
         protected override void DrawHud()

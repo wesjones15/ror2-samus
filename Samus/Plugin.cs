@@ -20,10 +20,41 @@ namespace Samus
     {
         public const string Guid="com.libssbm.melee";
         internal static ManualLogSource Log;
+        /// SharedFiles' Melee folder: every plugin's Melee files (this one's fighters, Mario's A attacks, the skins).
         internal static string AssetsDir;
-        /// The shared GameCube library (GameCubeLibrary), or null.
-        internal static string LibraryRoot;
-        internal static volatile bool AssetsReady,AssetsBusy,FoxReady,LuigiReady,CaptainReady,LinkReady,PikachuReady,YoshiReady,DonkeyReady;
+        internal static volatile bool AssetsBusy;
+        /// One row per fighter. A fighter marked `experimental` in its def is skipped everywhere (not registered,
+        /// checked, extracted or baked) unless Experimental.Enabled.
+        sealed class Fighter
+        {
+            public uint Kind;public string Name,Body;public Func<MeleeFighterDef> Def;
+            public Action<MeleeSkillSet> SetSkills;public Func<CharacterBody,ControlSheet> Sheet;
+            public volatile bool Ready;
+        }
+        static readonly Fighter[] Roster={
+            new Fighter{Kind=MeleeNative.FighterSamus,Name="Samus",Body="MeleeSamusBody",Def=SamusDef.Def,SetSkills=Skills.Set,Sheet=MeleeSheets.SamusSheet},
+            new Fighter{Kind=MeleeNative.FighterFox,Name="Fox",Body="MeleeFoxBody",Def=Fox.FoxDef.Def,SetSkills=Fox.FoxSkills.Set,Sheet=MeleeSheets.FoxSheet},
+            new Fighter{Kind=MeleeNative.FighterLuigi,Name="Luigi",Body="MeleeLuigiBody",Def=Luigi.LuigiDef.Def,SetSkills=Luigi.LuigiSkills.Set,Sheet=MeleeSheets.LuigiSheet},
+            new Fighter{Kind=MeleeNative.FighterCaptain,Name="Captain Falcon",Body="MeleeCaptainBody",Def=Captain.CaptainDef.Def,SetSkills=Captain.CaptainSkills.Set,Sheet=MeleeSheets.CaptainSheet},
+            new Fighter{Kind=MeleeNative.FighterLink,Name="Link",Body="MeleeLinkBody",Def=Link.LinkDef.Def,SetSkills=Link.LinkSkills.Set,Sheet=MeleeSheets.LinkSheet},
+            new Fighter{Kind=MeleeNative.FighterPikachu,Name="Pikachu",Body="MeleePikachuBody",Def=Pikachu.PikachuDef.Def,SetSkills=Pikachu.PikachuSkills.Set,Sheet=MeleeSheets.PikachuSheet},
+            new Fighter{Kind=MeleeNative.FighterYoshi,Name="Yoshi",Body="MeleeYoshiBody",Def=Yoshi.YoshiDef.Def,SetSkills=Yoshi.YoshiSkills.Set,Sheet=MeleeSheets.YoshiSheet},
+            new Fighter{Kind=MeleeNative.FighterDonkey,Name="Donkey Kong",Body="MeleeDonkeyBody",Def=Donkey.DonkeyDef.Def,SetSkills=Donkey.DonkeySkills.Set,Sheet=MeleeSheets.DonkeySheet},
+        };
+        /// The fighters in this game: finished ones, plus the unfinished ones when Experimental.Enabled.
+        static System.Collections.Generic.IEnumerable<Fighter> Enabled()
+        {
+            foreach(var f in Roster)if(Experimental.Allows(f.Def().experimental))yield return f;
+        }
+        static bool ReadyFor(uint kind){foreach(var f in Roster)if(f.Kind==kind)return f.Ready;return false;}
+        internal static bool AssetsReady=>ReadyFor(MeleeNative.FighterSamus);
+        internal static bool FoxReady=>ReadyFor(MeleeNative.FighterFox);
+        internal static bool LuigiReady=>ReadyFor(MeleeNative.FighterLuigi);
+        internal static bool CaptainReady=>ReadyFor(MeleeNative.FighterCaptain);
+        internal static bool LinkReady=>ReadyFor(MeleeNative.FighterLink);
+        internal static bool PikachuReady=>ReadyFor(MeleeNative.FighterPikachu);
+        internal static bool YoshiReady=>ReadyFor(MeleeNative.FighterYoshi);
+        internal static bool DonkeyReady=>ReadyFor(MeleeNative.FighterDonkey);
         internal static ConfigEntry<float> MetresPerUnit,JumpScale,SpeedScale;
         internal static ConfigEntry<float> QuailScale,StompScale,AttackSpeedScale;
         internal static ConfigEntry<float> Armor;
@@ -38,7 +69,7 @@ namespace Samus
         internal static ConfigEntry<bool> LogEffects;
         internal static ConfigEntry<bool> Diagnostics;
         internal static ConfigEntry<float> ScopeRange;
-        string nativePath,configuredDisc,pluginDirectory;
+        string nativePath;
         bool nativeStarted,destroyed;
         void Awake()
         {
@@ -53,10 +84,6 @@ namespace Samus
                 "pings, and the right hand points the aim. RoR2 reads this layout, not the VR mod's own buttons. Off: the VR "+
                 "mod's own buttons through RoR2's skills.");
             string here=Path.GetDirectoryName(Info.Location);
-            var assets=Config.Bind("Paths","AssetsDir","","Extracted Melee cache. Empty uses assets_dir.txt or assets beside the plugin. Never distribute it.");
-            var disc=Config.Bind("Paths","Disc","","Your Melee GALE01 revision 2 ISO/GCM/CISO, used to extract missing assets at first launch. Empty: $SSBM_DISC, a *Melee* image near the plugin, then the GameCube library.");
-            var library=Config.Bind("Paths","Library","","A folder shared by the Olimar, Mario and Melee plugins: your disc images (any names, in it or its isos/ folder) and assets/Olimar, assets/Mario, assets/Melee for what they extract. Empty: gamecube_library.txt in this plugin's folder or the plugins folder, then $GAMECUBE_LIBRARY. An AssetsDir set above, assets_dir.txt or an assets/ folder already beside the plugin still wins; the library's cache is used for a fresh install.");
-            LibraryRoot=GameCubeLibrary.Root(library.Value,here);
             MetresPerUnit=Config.Bind("Sim","MetresPerUnit",0.1f,new ConfigDescription("World metres per Melee unit. Movement, reach and model share this scale.",new AcceptableValueRange<float>(0.03f,0.3f)));
             JumpScale=Config.Bind("Sim","JumpScale",1f,new ConfigDescription("Takeoff speed multiplier. 1 uses Melee tuning; increase for RoR2 traversal.",new AcceptableValueRange<float>(0.5f,3f)));
             SpeedScale=Config.Bind("Sim","SpeedScale",1.37f,new ConfigDescription("Walk/run speed multiplier. 1 uses raw Melee tuning; 1.37 lifts the slowest walker (Captain Falcon) to Commando's walk speed and the slowest runner to Commando's sprint, preserving each fighter's relative speed.",new AcceptableValueRange<float>(0.5f,3f)));
@@ -94,30 +121,20 @@ namespace Samus
             EggLay.Laying=owner=>YoshiFull.IsLaying(owner);
             EggLay.Show=(owner,target)=>YoshiTongue.Show(owner,target);
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
-            AssetsDir=Path.GetFullPath(GameCubeLibrary.ResolveAssets(assets.Value,here,null,LibraryRoot,GameCubeLibrary.Melee,out string assetsFrom));
-            string localAssets=Path.Combine(here,"assets");
-            // An icon-only assets folder would take precedence over the shared library on next launch.
-            SkillIcons.CacheRoot=string.Equals(AssetsDir,localAssets,StringComparison.OrdinalIgnoreCase)
-                ? localAssets : Path.Combine(here,"generated");
-            Logger.LogInfo("Melee assets "+AssetsDir+" ("+assetsFrom+")"+(LibraryRoot!=null?", GameCube library "+LibraryRoot:""));
-            nativePath=Path.Combine(here,"ssbm.dll");configuredDisc=disc.Value;pluginDirectory=here;
+            AssetsDir=Path.GetFullPath(SharedFiles.Assets(SharedFiles.Melee));
+            SkillIcons.CacheRoot=Path.Combine(here,"generated");
+            Logger.LogInfo("Melee assets "+AssetsDir);
+            nativePath=Path.Combine(here,"ssbm.dll");
             // Register content while RoR2 collects providers, but do no native
             // loading/extraction or Steam reflection/hooks during bootstrap.
             // Displays/portraits/drivers already wait for AssetsReady/AssetsBusy.
-            AssetsReady=false;AssetsBusy=true;
+            AssetsBusy=true;
             RoR2Application.onLoad+=InitializeAssets;
             ContentProvider.Register(Guid,AddContent);
             Language.onCurrentLanguageChanged+=Tokens;
             ItemHooks.Install();GlyphOverride.Install();MeleeSkins.Install();SurvivorSelectLayout.Install();
             PauseControls.Install(gameObject);
-            PauseControls.Register("MeleeSamusBody", body => MeleeSheets.SamusSheet(body));
-            PauseControls.Register("MeleeFoxBody", body => MeleeSheets.FoxSheet(body));
-            PauseControls.Register("MeleeLuigiBody", body => MeleeSheets.LuigiSheet(body));
-            PauseControls.Register("MeleeCaptainBody", body => MeleeSheets.CaptainSheet(body));
-            PauseControls.Register("MeleeLinkBody", body => MeleeSheets.LinkSheet(body));
-            PauseControls.Register("MeleePikachuBody", body => MeleeSheets.PikachuSheet(body));
-            PauseControls.Register("MeleeYoshiBody", body => MeleeSheets.YoshiSheet(body));
-            PauseControls.Register("MeleeDonkeyBody", body => MeleeSheets.DonkeySheet(body));
+            foreach(var f in Enabled())PauseControls.Register(f.Body,f.Sheet);
             RunAudio.Initialize(MeleeAudio.StopAll);
             // End of run: the GAME! banner for whichever Melee fighter the local player played (MeleeLocal,
             // recorded by every MeleeDriver when its sim starts), voiced from that fighter's own audio bank.
@@ -131,98 +148,67 @@ namespace Samus
             Logger.LogInfo("Melee 0.4.14 registered; native initialization waits for RoR2 startup completion.");
         }
         /// Whether the extracted cache for the fighter of native kind `kind` is complete.
-        static bool AssetsFor(uint kind)
-        {
-            if(kind==MeleeNative.FighterSamus)return AssetsReady;
-            if(kind==MeleeNative.FighterFox)return FoxReady;
-            if(kind==MeleeNative.FighterLuigi)return LuigiReady;
-            if(kind==MeleeNative.FighterCaptain)return CaptainReady;
-            if(kind==MeleeNative.FighterLink)return LinkReady;
-            if(kind==MeleeNative.FighterPikachu)return PikachuReady;
-            if(kind==MeleeNative.FighterYoshi)return YoshiReady;
-            if(kind==MeleeNative.FighterDonkey)return DonkeyReady;
-            return false;
-        }
+        static bool AssetsFor(uint kind)=>ReadyFor(kind);
+        static bool Complete(uint kind)=>MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),kind)==1;
+        /// Re-reads each enabled fighter's completeness from the cache itself. A fighter that isn't enabled stays not ready.
+        static void Recheck(){foreach(var f in Enabled())f.Ready=Complete(f.Kind);}
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         void InitializeAssets()
         {
             RoR2Application.onLoad-=InitializeAssets;
             if(nativeStarted||destroyed)return;nativeStarted=true;
-            Logger.LogInfo("Samus late native initialization: RoR2 startup completed.");
+            Logger.LogInfo("Melee late native initialization: RoR2 startup completed.");
             try {
                 MeleeNative.Load(nativePath);
-                AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
-                FoxReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterFox)==1;
-                LuigiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)==1;
-                CaptainReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)==1;
-                LinkReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLink)==1;
-                PikachuReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterPikachu)==1;
-                YoshiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterYoshi)==1;
-                DonkeyReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterDonkey)==1;
-                bool itemsMissing=MeleeNative.HasScope&&!File.Exists(Path.Combine(AssetsDir,"ItCo.dat"));
-                // Mario is not a survivor here; his files are for the Mario plugin's Melee A attacks,
-                // which read this cache. Optional, like the items archive.
-                bool marioMissing=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterMario)!=1;
-                if(!AssetsReady||!FoxReady||!LuigiReady||!CaptainReady||!LinkReady||!PikachuReady||!YoshiReady||!DonkeyReady||itemsMissing||marioMissing) {
+                Recheck();
+                bool ItemsMissing()=>MeleeNative.HasScope&&!File.Exists(Path.Combine(AssetsDir,"ItCo.dat"));
+                bool anyMissing=ItemsMissing();foreach(var f in Enabled())anyMissing|=!f.Ready;
+                if(anyMissing) {
                     new Thread(()=> {
                         try {
-                            string image=FindDisc(configuredDisc,pluginDirectory)??GameCubeLibrary.FindDisc(LibraryRoot,"GALE01",2);
-                            if(image==null&&(itemsMissing||marioMissing)&&AssetsReady&&FoxReady&&LuigiReady&&CaptainReady&&LinkReady&&PikachuReady&&YoshiReady&&DonkeyReady)
-                            {
-                                // Every fighter is ready; only optional data is missing, so this is not an error.
-                                Log.LogWarning("Set Paths.Disc to your Melee disc to extract the Super Scope's data and Mario's (the Mario plugin's A attacks).");
-                                return;
+                            // Mario and Olimar extract their own Melee files into the same folder; wait for them.
+                            using(SharedFiles.Lock(SharedFiles.Melee)) {
+                                Recheck();
+                                bool fightersMissing=false;foreach(var f in Enabled())fightersMissing|=!f.Ready;
+                                if(!fightersMissing&&!ItemsMissing())return;
+                                string image=SharedFiles.FindDisc("GALE01",2);
+                                if(image==null)
+                                {
+                                    if(fightersMissing)Log.LogError("Melee: no Melee disc found. "+SharedFiles.MissingDisc("Super Smash Bros. Melee (USA, revision 1.02)"));
+                                    else Log.LogWarning("Melee: the Super Scope's data isn't extracted. "+SharedFiles.MissingDisc("Super Smash Bros. Melee (USA, revision 1.02)"));
+                                    return;
+                                }
+                                // Each fighter extracts independently; a failure only affects that fighter.
+                                foreach(var f in Enabled()) {
+                                    if(f.Ready)continue;
+                                    if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),f.Kind)!=1)
+                                        Log.LogError("Melee: "+f.Name+"'s files didn't extract: "+MeleeNative.Error);
+                                }
+                                // The items archive (the Super Scope): optional, so a failure only loses the scope.
+                                if(ItemsMissing()){
+                                    if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),100)==1)Log.LogInfo("Super Scope data extracted from your disc.");
+                                    else Log.LogWarning("Super Scope data unavailable: "+MeleeNative.Error);
+                                }
+                                Log.LogInfo("Melee assets extracted from "+image+" into "+AssetsDir+".");
                             }
-                            if(image==null) throw new FileNotFoundException("Set Paths.Disc to your Melee GALE01 rev 2 disc image.");
-                            // Each fighter extracts independently; a failure only affects that fighter.
-                            if(!AssetsReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)!=1)throw new IOException(MeleeNative.Error);}
-                            if(!FoxReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterFox)!=1)throw new IOException(MeleeNative.Error);}
-                            if(!LuigiReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)!=1)throw new IOException(MeleeNative.Error);}
-                            if(!CaptainReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)!=1)throw new IOException(MeleeNative.Error);}
-                            if(!LinkReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterLink)!=1)throw new IOException(MeleeNative.Error);}
-                            if(!PikachuReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterPikachu)!=1)throw new IOException(MeleeNative.Error);}
-                            if(!YoshiReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterYoshi)!=1)throw new IOException(MeleeNative.Error);}
-                            if(!DonkeyReady){if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterDonkey)!=1)throw new IOException(MeleeNative.Error);}
-                            // The items archive (the Super Scope): optional, so a failure only loses the scope.
-                            if(itemsMissing){
-                                try {
-                                    if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),100)!=1)throw new IOException(MeleeNative.Error);
-                                    Log.LogInfo("Super Scope data extracted from your disc.");
-                                } catch(Exception e) { Log.LogWarning("Super Scope data unavailable: "+e.Message); }
-                            }
-                            if(marioMissing){
-                                try {
-                                    if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),MeleeNative.FighterMario)!=1)throw new IOException(MeleeNative.Error);
-                                    Log.LogInfo("Mario's Melee data extracted from your disc (for the Mario plugin's A attacks).");
-                                } catch(Exception e) { Log.LogWarning("Mario's Melee data unavailable: "+e.Message); }
-                            }
-                            Log.LogInfo("Melee assets extracted from your disc.");
                         } catch(Exception e) { Log.LogError("Melee assets unavailable: "+e.Message); }
                         finally {
-                            // Re-check each from the actual cache: a missing disc or a
-                            // partial extract must not disable a fighter whose assets
-                            // were already complete.
-                            AssetsReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterSamus)==1;
-                            FoxReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterFox)==1;
-                            LuigiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLuigi)==1;
-                            CaptainReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterCaptain)==1;
-                            LinkReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterLink)==1;
-                            PikachuReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterPikachu)==1;
-                            YoshiReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterYoshi)==1;
-                            DonkeyReady=MeleeNative.ssbm_assets_complete(NativeLib.CString(AssetsDir),MeleeNative.FighterDonkey)==1;
+                            // Re-check each from the actual cache: a missing disc or a partial extract must not disable a
+                            // fighter whose assets were already complete.
+                            Recheck();
                             AssetsBusy=false;
                             BakeVrArms();
                         }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
                 } else { AssetsBusy=false; new Thread(BakeVrArms) { IsBackground=true,Name="Melee VR arms" }.Start(); }
                 Logger.LogInfo("Melee 0.4.14 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
-                } catch(Exception e) {AssetsReady=false;FoxReady=false;AssetsBusy=false;Logger.LogError("Samus disabled: "+e);}
+            } catch(Exception e) {foreach(var f in Roster)f.Ready=false;AssetsBusy=false;Logger.LogError("Melee disabled: "+e);}
         }
         // Every extracted fighter costume's forearms and hands for the VR mod's controllers (ror2-common VrArmsBake),
         // again whenever a fighter joins the cache.
         static void BakeVrArms()
         {
-            int ready=0;foreach(bool r in new[]{AssetsReady,FoxReady,LuigiReady,CaptainReady,LinkReady,PikachuReady,YoshiReady,DonkeyReady})if(r)ready++;
+            int ready=0;foreach(var f in Enabled())if(f.Ready)ready++;
             VrArmsBake.Run(AssetsDir,"Melee","0.4.14|"+ready,(buf,len)=>{
                 uint n=MeleeNative.ssbm_bake_vr_arms(NativeLib.CString(AssetsDir));
                 byte[] text=System.Text.Encoding.UTF8.GetBytes(n==0?MeleeNative.Error:n==1?"":(n-1)+" costumes cut");
@@ -230,52 +216,18 @@ namespace Samus
                 return (byte)(n==0?0:1);
             });
         }
-        static string FindDisc(string configured,string here)
-        {
-            if(!string.IsNullOrWhiteSpace(configured)) return Path.GetFullPath(configured);
-            string env=Environment.GetEnvironmentVariable("SSBM_DISC");if(!string.IsNullOrWhiteSpace(env))return Path.GetFullPath(env);
-            // Bounded discovery around this installation; content always remains local.
-            var at=new DirectoryInfo(here);
-            for(int i=0;i<7&&at!=null;i++,at=at.Parent) {
-                foreach(string folder in new[]{at.FullName,Path.Combine(at.FullName,"iso backups")}) {
-                    if(!Directory.Exists(folder))continue;
-                    foreach(string image in Directory.EnumerateFiles(folder,"*Melee*"))
-                        if(Array.Exists(new[]{".iso",".gcm",".ciso"},e=>string.Equals(Path.GetExtension(image),e,StringComparison.OrdinalIgnoreCase)))return image;
-                }
-            }
-            return null;
-        }
         static void AddContent(ContentPack pack)
         {
-            try { Skills.Set(MeleeSurvivor.Register(pack,Guid,SamusDef.Def())); }
-            catch(Exception e) { Log.LogError("Samus registration failed: "+e); }
-            try { Fox.FoxSkills.Set(MeleeSurvivor.Register(pack,Guid,Fox.FoxDef.Def())); }
-            catch(Exception e) { Log.LogError("Fox registration failed: "+e); }
-            try { Luigi.LuigiSkills.Set(MeleeSurvivor.Register(pack,Guid,Luigi.LuigiDef.Def())); }
-            catch(Exception e) { Log.LogError("Luigi registration failed: "+e); }
-            try { Captain.CaptainSkills.Set(MeleeSurvivor.Register(pack,Guid,Captain.CaptainDef.Def())); }
-            catch(Exception e) { Log.LogError("Captain Falcon registration failed: "+e); }
-            try { Link.LinkSkills.Set(MeleeSurvivor.Register(pack,Guid,Link.LinkDef.Def())); }
-            catch(Exception e) { Log.LogError("Link registration failed: "+e); }
-            try { Pikachu.PikachuSkills.Set(MeleeSurvivor.Register(pack,Guid,Pikachu.PikachuDef.Def())); }
-            catch(Exception e) { Log.LogError("Pikachu registration failed: "+e); }
-            try { Yoshi.YoshiSkills.Set(MeleeSurvivor.Register(pack,Guid,Yoshi.YoshiDef.Def())); }
-            catch(Exception e) { Log.LogError("Yoshi registration failed: "+e); }
-            try { Donkey.DonkeySkills.Set(MeleeSurvivor.Register(pack,Guid,Donkey.DonkeyDef.Def())); }
-            catch(Exception e) { Log.LogError("Donkey Kong registration failed: "+e); }
+            foreach(var f in Enabled()) {
+                try { f.SetSkills(MeleeSurvivor.Register(pack,Guid,f.Def())); }
+                catch(Exception e) { Log.LogError(f.Name+" registration failed: "+e); }
+            }
             Tokens();Log.LogInfo("Melee survivors registered");
         }
         static void Tokens()
         {
             var l=Language.currentLanguage;if(l==null)return;
-            MeleeSurvivor.Tokens(l,SamusDef.Def());
-            MeleeSurvivor.Tokens(l,Fox.FoxDef.Def());
-            MeleeSurvivor.Tokens(l,Luigi.LuigiDef.Def());
-            MeleeSurvivor.Tokens(l,Captain.CaptainDef.Def());
-            MeleeSurvivor.Tokens(l,Link.LinkDef.Def());
-            MeleeSurvivor.Tokens(l,Pikachu.PikachuDef.Def());
-            MeleeSurvivor.Tokens(l,Yoshi.YoshiDef.Def());
-            MeleeSurvivor.Tokens(l,Donkey.DonkeyDef.Def());
+            foreach(var f in Enabled())MeleeSurvivor.Tokens(l,f.Def());
         }
         void OnDestroy(){destroyed=true;RoR2Application.onLoad-=InitializeAssets;Language.onCurrentLanguageChanged-=Tokens;MeleeSkins.Uninstall();}
     }

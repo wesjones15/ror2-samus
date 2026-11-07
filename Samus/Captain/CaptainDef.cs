@@ -82,7 +82,7 @@ namespace Captain
             bodyColor=new Color(0.2f,0.35f,0.75f),
             baseMaxHealth=110f,levelMaxHealth=33f,baseArmor=Samus.Plugin.Armor.Value,baseJumpCount=2,
             sortPosition=105f,
-            fighterKind=MeleeNative.FighterCaptain,assetsDir=()=>Samus.Plugin.AssetsDir,assetsReady=()=>Samus.Plugin.CaptainReady,
+            fighterKind=MeleeNative.FighterCaptain,assetsDir=()=>Samus.Plugin.AssetsDir,assetsReady=()=>Samus.Plugin.CaptainReady,experimental=true,
             mainStateType=typeof(CaptainMain),driverType=typeof(CaptainDriver),
             skills=CaptainSkills.Layout,skins=CaptainSkins.Layout,
             displayFactory=CaptainDisplay.Make,
