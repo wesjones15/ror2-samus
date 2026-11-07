@@ -17,7 +17,7 @@ DLC4 installation to compile against. Defaults to ..\2026 Mod Stuff\RiskOfRain2_
 Shared ror2-common checkout compiled into the plugin.
 
 .PARAMETER Deploy
-Stage Samus.dll/ssbm.dll under ..\target\BepInEx\plugins\Melee for manual installation.
+Stage Samus.dll/ssbm.dll under ..\target\BepInEx\plugins\wesleyasaurus-Melee (the folder name r2modman gives the Thunderstore package) for manual installation.
 
 .PARAMETER SkipTests
 Skip cargo tests and the native/host boundary checks.
@@ -261,7 +261,12 @@ $version=[regex]::Match((Get-Content -LiteralPath (Join-Path $repoRoot 'Samus\Pl
 if(!$version) { throw 'Cannot read the Melee version from Samus\Plugin.cs.' }
 $name="Melee-modern-$version-win-x64"
 $packageRoot=Join-Path $repoRoot ('dist\'+$name)
-$pluginRoot=Join-Path $packageRoot 'BepInEx\plugins\Melee'
+# The plugin folder: the name r2modman gives the Thunderstore package, so every install has the same layout.
+$pluginFolder='wesleyasaurus-Melee'
+$pluginRoot=Join-Path $packageRoot ('BepInEx\plugins\'+$pluginFolder)
+# A package folder from an older build keeps the old name; drop it so the zip holds one copy.
+$oldPackagePlugin=Join-Path $packageRoot 'BepInEx\plugins\Melee'
+if(Test-Path -LiteralPath $oldPackagePlugin -PathType Container) { Remove-Item -LiteralPath $oldPackagePlugin -Recurse -Force }
 if(![IO.Path]::GetFullPath($packageRoot).StartsWith($distRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) { throw 'Package path is outside dist.' }
 # Remove only the obsolete helpers from previous local builds of this package.
 # Never recursively clean a package/cache or touch an installed user's assets.
@@ -274,7 +279,7 @@ New-Item -ItemType Directory -Force -Path $pluginRoot | Out-Null
 Copy-Item -LiteralPath (Join-Path $repoRoot 'Samus\bin\Release\netstandard2.1\Samus.dll') -Destination $pluginRoot
 Copy-Item -LiteralPath (Join-Path $libraryRoot 'target\release\ssbm.dll') -Destination $pluginRoot
 Copy-Item -LiteralPath (Join-Path $repoRoot 'README.md'),(Join-Path $repoRoot 'CHANGELOG.md') -Destination $packageRoot
-$payload=@('BepInEx/plugins/Melee/Samus.dll','BepInEx/plugins/Melee/ssbm.dll','README.md','CHANGELOG.md')
+$payload=@("BepInEx/plugins/$pluginFolder/Samus.dll","BepInEx/plugins/$pluginFolder/ssbm.dll",'README.md','CHANGELOG.md')
 $commits=[ordered]@{}
 foreach($source in @('libssbm','ror2-samus','ror2-common')) {
     $commits[$source]=(& git -C (Join-Path $repoRoot ('..\'+$source)) rev-parse HEAD)
@@ -299,7 +304,10 @@ $checksum=(Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvaria
 End-Step $packagePrefix 0
 if($Deploy) {
     # The user copies staged files into their chosen game installation.
-    $destination=Join-Path $repoRoot '..\target\BepInEx\plugins\Melee'
+    $destination=Join-Path $repoRoot ('..\target\BepInEx\plugins\'+$pluginFolder)
+    # The old staged name is removed so the plugin isn't loaded twice.
+    $legacy=Join-Path $repoRoot '..\target\BepInEx\plugins\Melee'
+    if(Test-Path -LiteralPath $legacy) { Remove-Item -LiteralPath $legacy -Recurse -Force; Write-BuildLine "Removed the old staged folder $legacy" }
     New-Item -ItemType Directory -Force -Path $destination | Out-Null
     foreach($dll in @('Samus.dll','ssbm.dll')) {
         $source=Join-Path $pluginRoot $dll
