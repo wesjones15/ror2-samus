@@ -309,3 +309,11 @@ validation remain unfinished. Attack speed, all item-specific effects,
 AI companions/clones and fall damage need further integration. Grabs, ledges,
 percent/stock HUD, blast-zone effects and multiplayer are not implemented. Use
 single-player offline; remote-player native simulation is not supported.
+
+## License and credits
+
+Original contributions by **wesleyasaurus** are dedicated to the public domain under
+[CC0 1.0 Universal](LICENSE), to the extent wesleyasaurus owns the relevant rights.
+Attribution for those contributions is appreciated but not required. Third-party software
+and original game content retain their respective rights and terms.
+See [CREDITS.md](CREDITS.md) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
