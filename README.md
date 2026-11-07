@@ -1,314 +1,82 @@
-# Melee for Risk of Rain 2
+# ror2-samus
 
-Since 0.3.0 this repository builds the single **Melee** plugin (`com.libssbm.melee`, folder `BepInEx/plugins/wesleyasaurus-Melee`, the name r2modman gives the package; `Melee` before the SharedFiles release): Samus, Fox,
-Luigi, Pikachu, Captain Falcon, Link, Yoshi and Donkey Kong. The player guide is `docs/Melee.md` in the ror2-characters release
-repository, and the notes below are the development record, written when Samus was the only fighter. Samus 0.2.x users must
-delete `BepInEx/plugins/MeleeSamus` before installing it (see CHANGELOG.md).
+C# host for [libssbm](https://github.com/wesjones15/libssbm). This repository builds the **Melee** plugin for Risk of Rain 2: fighter movement, contextual attacks and specials connected to RoR2's stages, enemies, health, items and progression.
 
-## VR (`feature/vr`)
+The repository name reflects the first fighter. The plugin now contains the shared roster, and its managed assembly retains the name `Samus.dll`. Native behavior and presentation come from `ssbm.dll`; the C# code handles world queries, input, combat/item adaptation, UI, extraction and networking.
 
-With Blowntobytes' VR mod in a headset (the `[VR]` config section), every fighter plays the same
-way through ror2-common's `MeleeVr`; no fighter has VR code of its own. First person from the
-fighter's head, its body hidden for the player with its own forearms and hands on the controllers
-(cut from the disc model on the first run), `VR.ThirdPerson` from behind, the HUD on the off-hand
-wrist, a crosshair at the pointer. `VR.Controls` (on) is one layout for the roster, the pad's
-buttons on the controllers: A jump, B the fifth button, right trigger and grip RT and RB, left
-trigger and grip LT and LB, X grab (and interact), Y equipment, left stick move (head forward) with
-its click sprinting, right stick click ping. The dominant hand points the aim (tilts, smashes,
-shots). RoR2 reads this layout, not the VR mod's own buttons (`VrBank`). The pause sheet names the
-VR buttons in a headset. Nothing here has been played in a headset.
+Development is on `main`, targeting the project's **RoR2 DLC4 build, Unity 2021.3 and BepInEx 5**. The installed package folder is `BepInEx/plugins/wesleyasaurus-Melee/`.
 
-## Link's held bow
+## Available fighters
 
-Link now draws his extracted bow during Hero's Bow in play and generated skill
-portraits, including ground/air draw, hold and release. He can walk or sprint
-while charging, with running legs and the bow's upper pose aimed up/down with
-the camera. The shared presenter uses libssbm's attachment and corrected
-envelope skinning. Arrows follow camera aim/crosshair convergence. The C# native
-boundary checks cover all six states, moving charge, aiming and cleanup at
-30/60/144 Hz; in-game validation is pending.
-The separately nocked arrow and sword/shield visibility changes remain unfinished.
+**Samus and Yoshi are shown by default.** Fox, Luigi, Pikachu, Captain Falcon, Link and Donkey Kong are available as unfinished content through `ShowUnfinished` in `BepInEx/config/Ror2Common.Experimental.cfg`.
 
-## Link's hookshot
+The roster shares movement, contextual attacks, defense, item handling, arrival/recovery and control conventions. Each fighter supplies its own specials, costumes and combat adapters. The [implementation audit](https://github.com/wesjones15/libssbm/blob/main/docs/first-pass-audit.md) records individual coverage and remaining work.
 
-Link's grab button now fires a 15 m hookshot toward his facing. The held
-launcher is the extracted `It_Kind_Link_HShot` item (public article 4); the
-chain and hook are its source joints x54/x58/x5C. A wall or a
-boss/big body reels him in, restores his air jumps through
-`ssbm_sim_reset_jumps`, and lets stick up/down climb around the anchor; an
-ordinary enemy is pulled to him through the shared `EnemyCapture` and then uses
-the normal pummel/throw flow. Bosses and big bodies are excluded from the close
-capture so they stay anchors. Reach, climb and pull are RoR2 adaptations. Native
-checks and a viewer capture (`libssbm/build/link-hookshot.png`) exist; in-game
-validation is pending.
+## Controls
 
-## Goobo Jr. clones
+Gamepad inputs use physical positions with Xbox-style names. Keyboard/mouse uses your RoR2 bindings, with **C** as the additional attack key. The pause-menu controls page displays the selected fighter's moves and loadout.
 
-Every Melee survivor registers an AI master, so Goobo Jr. (and an Artifact of Vengeance umbra) can spawn a clone of any of
-the eight. The AI master only walks; `MeleeBrain` in ror2-common drives the fighter's own controls. It is deliberately
-aggressive: it aims at the AI's current enemy, sprints and hops after it, closes to A reach, alternates the B A-attack
-with the next ready skill, holds charge moves through a short wind-up and releases them, and on taking a hit cancels into
-a shield (if the loadout has one) or a sideways hop. A clone is drawn in RoR2's gummy clone material by default
-(`Visuals.GummyClones`). `MeleeDriver.CreateBrain` is the per-fighter override seam for a move that needs a condition the
-slot and sim state cannot express; no fighter needs one yet. Not yet played in game.
-
-## Samus (development record)
-
-Samus LT now combines Bomb and Morph Ball Roll into **Morph Ball Bomb**: one bomb
-at startup (ground or air), then hold LT to roll in ball form with a spinning mesh
-and Yoshi's roll trail in the air as well. Release or depletion of the ball's
-25%-maximum-health armor restores normal form. Bomb damage is doubled and blast
-radius is 1.5x; recharge is 4 seconds with one stock. The separate roll alternate
-is removed; Shield remains available. Viewer and headless/native checks cover
-the change; not yet played in RoR2.
-
-Offline prototype for RoR2 DLC4 / Unity 2021.3.45f2, BepInEx 5. Uses libssbm for
-gameplay and disc presentation; ror2-common for the host. No R2API required.
-
-Shared integration: libssbm's character asset profile supplies file references,
-costumes, sound banks and article layouts to reusable readers. ror2-common owns
-model/particle rendering and PCM device output. Samus's special behavior remains
-character-specific; the gameplay state machine is not yet a generic fighter API.
-See the sibling `libssbm/docs/reuse.md` for the ownership and remaining split.
-
-Character select plays Samus's down-B once, with its extracted animation,
-effects and sounds, then returns to animated idle on the UI clock. The shared
-Melee selection presenter lets each fighter choose its own intro. The preview
-starts and ends on its floor. The icon is the same idle pose rendered by the
-shared portrait camera, turned 45 degrees left and cropped to the head and
-shoulders (a fraction of the fighter's height, so a wide pose cannot zoom the
-whole body out; Pikachu, Yoshi and DK use a taller crop for their larger heads).
-Samus's original 64x56 CSS grid tile from MnSlChr.usd remains the fallback while
-the disc assets are being extracted.
-Selection audio stops when the intro completes and on deselection.
-
-Status: incomplete; Rust viewer visually checked and native C# boundary tested.
-The user successfully started single player as Samus with the diagnostic build,
-then reported broken locomotion and placeholder attacks. The delayed return to
-Commando was traced to special GFX bone IDs being used as physical joints. Source
-bone indirections now resolve and presentation failures cannot replace gameplay.
-The user confirmed a successful Steam launch with 0.2.4 enabled on 2026-10-17,
-after removing Steam diagnostic hooks and deferring native loading to onLoad.
-The exact earlier cause is unproven; gameplay changes still need an offline
-visual/listening playtest.
-Full behavior fidelity is in
-the sibling libssbm/docs/behavior-spec.md when building from source.
-
-No game data is shipped. Supply your own GALE01 revision 2 ISO/GCM/CISO. Models,
-animation, tuning, sound banks, sequences and effect/particle archives are
-extracted locally. Old incomplete caches automatically require extraction again.
-Never share your assets folder.
-
-Install the ZIP into your RoR2 DLC4 folder with BepInEx 5 installed. Launch once
-to create `BepInEx/config/com.libssbm.samus.cfg`, then set `Paths.Disc` to your
-Melee disc image and restart. The C# plugin calls the extractor inside `ssbm.dll`
-on a worker thread, builds its local `assets/` cache, and uses that cache on later
-launches. This is the same first-run strategy as Mario and Olimar; no external
-extractor or setup script is needed or included.
-
-The plugin searches nearby folders and `SSBM_DISC` when Paths.Disc is empty.
-Native loading and cache/extraction work begin at RoR2Application.onLoad, after
-game startup; content providers register earlier and wait for asset readiness.
-Samus no longer hooks or reflects Steam initialization. The old Debug.StartupTrace
-config entry is ignored. Extraction runs on a worker thread. A missing DLL, invalid ABI or failed asset
-load logs an error; an initialized body that fails returns to Commando behavior.
-
-| Action | Xbox | Keyboard/mouse |
+| Gamepad | Keyboard/mouse | Action |
 | --- | --- | --- |
-| Move / aim | LS / RS | RoR2 movement / mouse |
-| Neutral-B / Charge Shot | RT | Primary (left mouse by default) |
-| Contextual A / smash | B; LS direction selects attack | C |
-| Side-B / missiles | RB | Utility |
-| Up-B / Screw Attack | LB | Special |
-| Fifth skill: down-B / Bomb | LT | Secondary (right mouse by default) |
-| Fifth skill alternate: Shield / Air Feint | Select in loadout; LT shields on ground, evades in air | Secondary |
-| Fifth skill alternate (Samus): Morph Ball Roll | Select in loadout; LT rolls the Morph Ball, bouncing off enemies and walls with 25% health armor | Secondary |
-| Jump | A; every jump has Commando's standard height | Jump |
-| Sprint / interrupt Charge Shot | LS click | Sprint |
-| Grab / aerial Z-air | X, except visible interact prompts | Interact, away from prompts |
-| Store Charge Shot while charging | Sprint, X or jump | Sprint, Interact or jump |
-| Throw a captured non-boss | LS direction + B/RT | WASD + C/primary |
-| Pummel a captured non-boss | Neutral B/RT | Neutral C/primary |
-| Boss grapple | Hold X to pull self / stay attached; B contextual attacks; A jumps off | Hold Interact; C attacks; jump detaches |
-| Interact / equipment | X / Y | RoR2 bindings |
+| Left stick | Movement | Walk/run. |
+| A | Jump | Jump; press again in the air for an air jump. |
+| Left stick click | Sprint | Sprint. |
+| B | `C` | Contextual A attack: jab, tilt, smash, dash attack or aerial. |
+| RT | Primary | Primary special. |
+| LT | Secondary | Secondary special or selected defensive alternate. |
+| RB | Utility | Utility special. |
+| LB | Special | Special-slot move. |
+| X | Interact | Grab/grapple; an active RoR2 interaction prompt takes priority. |
+| Y | Equipment | Use equipment. |
 
-Neutral special starts charging, another press fires, and jump/cancel stores the
-charge. Samus can walk during Charge Shot startup, hold and firing recovery;
-the original upper-body attack plays over a continuous Melee walk cycle on her
-legs. All grounded special abilities use this generic mobile pose; contextual A,
-grabs and authored dashes remain full-body. Sprint during startup or charging stores the current shot and resumes
-sprinting. `Controls.HoldCharge` optionally changes firing to hold/release. Side special
-uses missiles; a quick directional flick selects a super missile. Up special is
-Screw Attack; LT's default down-B drops a bomb. Select Shield / Air Feint in the
-fifth loadout row to replace LT's bomb with ground shielding and one air evade per
-airtime. Its other alternate, Morph Ball Roll, keeps the down-B morph animation but
-skips the bomb: hold LT to bowl the Morph Ball along, bouncing off enemies and walls.
-It deals light damage without knockback and carries 25% of maximum health as armor;
-release LT to break out. Shield drains when held/hit, regenerates when released and stuns on
-depletion. Its source models, player palette, scale, sounds and dodge hurt-state
-window are native-driven. An existing vanilla Interact prompt owns X until release.
-Flick direction + B, hold, then release for a smash. LB always remains up-B.
-Side-B rotates Samus's upper body and cannon from the disc's vertical pose
-toward the live camera aim while her legs and travel continue independently.
-After a knockdown, repeated ordinary hits are rejected through get-up and for
-one second afterward. Existing RoR2 stun extends this protection until control
-returns; a buffered B attack can start during that window. This anti-stunlock
-timing is a RoR2 adaptation and awaits an in-game playtest.
+**Contextual attacks.** Press B/C from neutral for a jab, add movement for a tilt, or flick a direction with the attack to start a smash. Hold the attack to charge a smash and release to strike. Sprinting selects a dash attack; airborne inputs select aerials. Camera aim supplies up/down direction for attacks and aims projectiles toward the crosshair.
 
-With LS held above 0.3, camera pitch selects up attacks from 20 degrees above
-level and down attacks from 50 degrees below. This applies to contextual B only;
-RT/RB/LB/B each explicitly select their assigned B move. Neutral controls remain neutral,
-and captured throws retain raw LS axes. These selection bands are a 3D adaptation.
+**Grabs.** X/Interact uses the fighter's grab or tether. A captured enemy can be pummeled with B/C and thrown using movement inputs. Samus's grapple pulls ordinary enemies toward her; large targets act as anchors that pull her toward them. Her pause sheet includes release controls.
 
-Ordinary facing uses RoR2's real CharacterBody.shouldAim decision (aim vs movement,
-including sprint/alwaysAim rules) and CharacterDirection's turn smoothing. Attacks
-set the real aim timer; held ranged actions refresh it. Native movement keeps its
-own momentum. Authored dash/back-air/spin/grab/throw/entry/reaction headings stay
-fixed; other attacks follow the game's smooth turn. Melee assets do not provide
-vanilla upper-body aim or strafe blends. Charge shots use the camera-corrected live
-crosshair ray, ignoring the owner's colliders; nearby obstructions cannot aim the
-shot backwards into Samus. Unity playtest of these changes is pending.
+The additional attack has its own loadout/HUD entry alongside the four standard skill slots. Skill names in the HUD and pause sheet follow the selected alternates.
 
-The first map spawn materializes Samus as a figure on the original entry platform.
-It enters the same automatic figurine phase as falloff recovery, skipping the KO.
-After the one-second minimum, movement transforms early; otherwise the source
-four-second wait expires. The source transformation, burst, sound and two seconds
-of flashing protection follow. There is no X/Interact prompt or indefinite wait.
+## Default loadouts
 
-Falling off the map uses common FellEarly detection at Mario's TOO BAD onset:
-more than 20 metres below last safe ground with no landing surface within 2000
-metres below, or a valid stage return zone. Long descents onto lower platforms
-remain possible. The shared Melee
-sequence plays its original downward KO effect/sound, then returns Samus as a
-figurine on verified safe ground. After a one-second minimum return phase, move
-to transform early or wait up to four more seconds. The source entry burst and
-sound play once; two seconds of source flashing/invulnerability follow release.
-This preserves RoR2 health and does not add stocks. Initial arrival shares the
-same return phase; ordinary wall/unstuck correction stays immediate. In-game
-verification is pending.
-The shared MeleeArrival state replaces the vanilla pod. Ground X grabs; air X uses
-Z-air. Both extend original tether geometry along the live camera vector to 20m,
-stopping at walls. Ordinary captured enemies enable Melee-style LS axes and B/RT
-pummel or throws; A releases to jump. Boss/champion targets pull Samus toward the
-contact instead. Hold X to remain attached and use contextual B; they never enter
-native capture or throw states and their AI/position is not changed.
-RoR2 capture stops on interruption, death, release or an eight-second timeout; player
-bodies and stationary encounter objects are excluded. Constrained tether/ledge physics
-and Melee escape/percent knockback rules remain incomplete.
+| Fighter | RT / Primary | LT / Secondary | RB / Utility | LB / Special |
+| --- | --- | --- | --- | --- |
+| Samus | Charge Shot | Morph Ball Bomb | Missile | Screw Attack |
+| Yoshi | Egg Lay | Yoshi Bomb | Egg Roll | Egg Throw |
 
-Stored Charge Shot shows a HUD indicator; full charge also uses the original white
-colour pulse. Firing aims from the cannon at the live crosshair and travels until
-collision without the source offscreen timeout. Charge article size and opacity use
-disc values. Melee and projectile damage request source elemental hit effects/sounds.
+**Samus:** Charge Shot can store charge for later use. Morph Ball Bomb drops a bomb, then holding the input rolls in ball form with a separate armor pool. Missiles and Screw Attack provide ranged pressure and a rising attack; the grapple adds capture and traversal.
 
-Five skill slots hold host charges: Charge Shot, contextual A, missiles, Screw
-Attack and Bomb/Shield. The fifth has its own loadout row and HUD stock/cooldown
-icon, above the fourth icon. Pad bindings, extra-skill registration/HUD, boss
-grapple and defensive incoming-damage adaptation live in ror2-common; libssbm owns
-fighter behavior. Ground/short/aerial jumps use the same Commando-based apex,
-including jump-power item scaling. Special-attack launch velocities stay separate.
-Cooldowns and damage coefficients are RoR2 adaptations. Four alternate disc
-costumes unlock persistently after stage 1, 2, 3 and 4 teleporter events as Samus.
-Special recharge is shorter in 0.2.13: Charge Shot 0.75s, missile 1s, Screw
-Attack 3s and Bomb 1s. B presses made during host stun or native knockdown
-are buffered briefly and execute once when Samus regains control.
+**Yoshi:** Egg Lay catches enemies with the tongue and lays them in eggs; its recharge begins on a successful swallow. Egg Roll is steered while held, Egg Throw supplies a ranged attack, and Yoshi Bomb slams down from the air or after a grounded hop.
 
-At final death Samus plays her source grounded knockdown pose, then the same
-Melee KO beam and sound as falloff recovery, and vanishes. At run end a shared
-GAME! banner plays the disc's GAME cue from the newly extracted nr_name.ssm.
-The banner typography/timing is a RoR2 rendering of Melee's UI; in-game visual
-and audio validation is pending.
+Both offer **Shield / Air Feint** as a secondary loadout alternate. Hold it on the ground to shield; airborne use evades. The shield has its own drain/recovery rules, and air evasion is limited per airtime. Fighter-specific timings, damage, travel and resource limits are adapted for RoR2.
 
-Build from this workspace with `./build.ps1`; `-Deploy` stages the two built DLLs
-in `../target/BepInEx/plugins/MeleeSamus/` for manual copying into the game folder.
-RoR2Dir supplies build references only. Default builds only the ZIP.
-The release ZIP contains only Samus.dll, ssbm.dll, README.md, CHANGELOG.md and the
-checksum manifest release.json. Its explicit allowlist excludes executables,
-setup scripts, extracted assets and Nintendo/game data. A clean build needs no
-disc or asset cache; asset-dependent harness checks skip when the cache is absent.
+## Items, costumes and recovery
 
-Verification completed: matching Melee decomp rebuild; Rust behavior/parser/ABI
-tests; five costumes and all clip transforms; rendered viewer inspection; real
-Rust DLL called through this plugin's Native.cs; C# compile against DLC4 assemblies.
+Hits use RoR2 damage, crits, proc chains and kill credit. Stats and skill stocks/recharge feed into the native driver. Item bridges cover movement/jumps, sprint effects, attack-speed scaling, Wax Quail, H3AD-5T v2 and primary-use hooks. See the [item ruleset](docs/melee_ror2_item_ruleset.md) for the integration categories and configurable scales.
 
-For the first offline playtest, check selection/skin preview, spawn/camera, analog
-movement, short/double/Feather jumps, each modifier and smash release, stored and
-airborne Charge Shot, missile/bomb damage, Screw Attack landing, chests/equipment,
-jump pads, stun/freeze and falling off the stage. Finish a teleporter and check the
-costume unlock after restarting. New controls, fifth-slot HUD/loadout, shield
-appearance and boss tether still need an in-game controller playtest. Shield tilt,
-powershield reflection, source hitlag and source escape/percent rules remain
-incomplete. Diagnostics are in BepInEx/LogOutput.log.
+Alternate costumes unlock persistently through stage 1–4 teleporter events while playing the corresponding fighter. The selected costume is used in the lobby and during the run.
 
-Disc subaction commands now drive normal/Screw Attack hit windows and posed bone
-hitboxes; gait clocks use fixed ticks and disc speed scaling. ABI 4 transfers posed
-hitboxes, particle snapshots and native projectile state. Walk/run sampling checks
-at least 18 distinct poses across 20 samples. Ground jump momentum, aerial steering,
-directional falls, aerial landings and hurt/fall/bounce/stand poses use the shared
-Melee layer. Knockdown is a RoR2 health/impulse adaptation, with automatic get-up.
+Falling off a stage uses a KO/return sequence that brings the fighter back to safe ground. Arrival and recovery share the native return presentation. Final death and run-end presentation follow the fighter's own pose, effects and sound path. AI-controlled clones use the shared fighter brain and combat controls.
 
-Disc sound cues now feed an SSM/SEM decoder and native stereo mixer, streamed
-through the shared Windows PCM queue. Playback follows action commands, supports
-sound-slot replacement/stop and follows the game's volume/pause/run lifecycle.
-In-game listening verification and remaining source audio routing are pending.
+## First run and configuration
 
-All 22 Samus particle streams execute in native checks. Source billboard textures,
-colour/size/rotation and child effect graphs now drive missile/charge presentation.
-The attack/entry/recovery effect IDs resolve, including source bone cycles and
-attached Screw Attack. Held Charge Shot has its original article and generator;
-bombs and normal/super missiles use source impact particles and sound. The
-diagnostic explosion spheres have been removed. Source article attributes now
-drive native fixed-tick speed, gravity, homing, lifetime and explosion duration.
+Install the precompiled Melee package and **wesleyasaurus-SharedFiles** with the release's required BepInEx dependencies. Then:
 
-The shared trophy platform and growing figurine entry are implemented with source
-tuning, sound and effect. Host collision feet stay on clear ground while the
-presentation rises. Source entry colour program 0x75 is connected to the common
-renderer's overlay input, alongside local-joint
-blending for directional fall/air-fall/helpless poses.
+1. Put your **Melee USA revision 1.02 disc image** (`GALE01`, revision 2) in `BepInEx/plugins/wesleyasaurus-SharedFiles/put_games_here/`. ISO, GCM and CISO are supported; convert other containers first.
+2. Launch RoR2 and let the background extraction finish. The cache is `wesleyasaurus-SharedFiles/assets/melee/`.
+3. If a lobby display is still waiting for assets, select another survivor and return to it.
 
-The Scope's charge effects are the disc's own `ItemScopeStart` script, queued by the sim: a flash (cue `0x3F3`)
-at the muzzle when the charge starts, then nine ground-smoke puffs (common effect 5 / cue `0x3FF`) every eight frames
-from frame 24, scattered within about six units of Luigi, and the fire script's recoil dust and kick. The old
-`ScopeChargeSmoke` option and host-authored timing are gone. Verified by headless and native-boundary checks; not
-yet played in RoR2.
-The Scope's upper-body pose follows camera elevation up/down (up to 60 degrees
-of torso bend), including the held weapon and firing-hand attachment. Legs keep
-their existing stance/walk animation. This is a host adaptation, verified in
-the viewer and automated pose/boundary checks; RoR2 play remains unverified.
+The plugin prepares the enabled fighters and reuses their complete caches on later launches. Filenames are arbitrary, and one level of subfolders is supported. Keep the disc available for extraction refreshes when updating. Companion plugins share the same per-game cache.
 
-Yoshi's Egg Lay tongue aims at the camera crosshair point instead of following the
-camera's parallel forward ray (the shared `MeleeAim.ProjectilePoint` fix behind
-Samus's Charge Shot and Luigi's Scope), so a mouth below the camera no longer fires
-under a close target. The lash reads the live crosshair every frame, so panning keeps
-the tip on the reticle and sweeps new foes into it; it re-aims from the animated mouth
-each frame and never locks while out. Every enemy it touches is swallowed, up to six.
-The lash's out window stays the same 0.65 s (0.18 extend, 0.22 hold, 0.25 retract);
-the lay queue runs after it and never holds the tongue out.
-On empty sky the aim point is on the camera ray at the lash's reach
-(`MeleeAim.PointOnRayAtReach`), not a parallel line below the reticle. The lash stops
-at the first terrain it meets (a narrow centre probe, so its own thickness does not
-eat it on a floor it passes over), and the drawn tongue is clamped to the same
-contact. Yoshi's upper body also pitches toward camera elevation (the Scope's bounded
-60-degree bend), moving the head and mouth with the aim. Egg Lay's 3 s cooldown starts
-only when the tongue swallows an enemy: a miss or a lash stopped by terrain costs no
-stock or cooldown. The swallowed enemies reel in together, then Yoshi lays them one at
-a time: each gets its own `SpecialN2` animation, swallow cue, egg model and lay cue,
-with the eggs fanned out behind him. Each egg holds for 5 s (7 s for large enemies,
-10 s for bosses), and a breakout puts the victim back on clear ground. The laid egg's
-ground and wall probes ignore every character body, including the victim inside it:
-the probe mask contains `EnemyBody`, and a small victim's capsule sat above the egg,
-so the ground clamp lifted the egg on the victim's head every tick. Large eggs were
-unaffected only because the probe started inside their taller capsule. Small and
-large eggs now fall at gravity. Shared camera/sweep, damage-permission, real-disc
-pose checks and viewer captures at 45/0/-45 degrees pass and the plugin builds; not
-yet played in RoR2.
+Configuration is in `BepInEx/config/com.libssbm.melee.cfg`. It includes simulation scale/speed, combat and projectile scaling, item bridges, presentation, diagnostics, VR and fighter-specific options. The shared `ShowUnfinished` setting controls roster availability; co-op peers need compatible settings.
 
-Known limits: full TEV/animated texture and UV fidelity, other source transition blending,
-complete particle trail/mirror/alpha-compare semantics, and gameplay visual/audio
-validation remain unfinished. Attack speed, all item-specific effects,
-AI companions/clones and fall damage need further integration. Grabs, ledges,
-percent/stock HUD, blast-zone effects and multiplayer are not implemented. Use
-single-player offline; remote-player native simulation is not supported.
+For extraction or native-loading problems, inspect `BepInEx/LogOutput.log` and use the plugin/native DLL pair from the same build. The [SharedFiles guide](https://github.com/wesjones15/ror2-common/blob/modern/1.5.0/SHARED-FILES.md) describes discovery, caches and extraction versions.
+
+## VR and multiplayer
+
+Optional VR integration provides pointer aiming, controller arms, a wrist HUD and first/third-person settings through the shared `MeleeVr` layer. A jumps, B attacks, right trigger/grip map to RT/RB, left trigger/grip map to LT/LB, X grabs/interacts and Y uses equipment. The pause sheet labels the controller inputs. Headset validation remains pending.
+
+The owning player runs the fighter simulation and records calls for remote shadow simulations to replay. Peers need matching builds, compatible roster settings and their own local assets. Use offline play or private friends-only co-op. Current replication and integration changes need further co-op playtesting.
+
+Source overview and contributor instructions: [Development](https://github.com/wesjones15/ror2-samus/blob/main/docs/Development.md).
 
 ## License and credits
 
