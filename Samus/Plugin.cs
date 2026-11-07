@@ -74,6 +74,7 @@ namespace Samus
         void Awake()
         {
             CommonLog.Log=Logger;Log=Logger;
+            Experimental.ShareWithLobby();
             // Only read with Blowntobytes' VR mod running in a headset (ror2-common's Vr, MeleeVr).
             MeleeVr.Settings=new VrSettings(Config,"Melee");
             MeleeVr.ControlsSetting=Config.Bind("VR","Controls",true,
@@ -161,32 +162,44 @@ namespace Samus
             try {
                 MeleeNative.Load(nativePath);
                 Recheck();
+                // A set written by an older extractor (SharedFiles extracted.txt) is extracted again when the disc is
+                // there; without the disc its files are used as they are.
+                bool Current(uint kind)=>SharedFiles.Current(SharedFiles.Melee,MeleeNative.ExtractSet(kind),MeleeNative.ExtractorVersion);
                 bool ItemsMissing()=>MeleeNative.HasScope&&!File.Exists(Path.Combine(AssetsDir,"ItCo.dat"));
-                bool anyMissing=ItemsMissing();foreach(var f in Enabled())anyMissing|=!f.Ready;
+                bool ItemsStale()=>MeleeNative.HasScope&&!ItemsMissing()&&!Current(100);
+                bool anyMissing=ItemsMissing()||ItemsStale();foreach(var f in Enabled())anyMissing|=!f.Ready||!Current(f.Kind);
                 if(anyMissing) {
                     new Thread(()=> {
                         try {
                             // Mario and Olimar extract their own Melee files into the same folder; wait for them.
                             using(SharedFiles.Lock(SharedFiles.Melee)) {
                                 Recheck();
-                                bool fightersMissing=false;foreach(var f in Enabled())fightersMissing|=!f.Ready;
-                                if(!fightersMissing&&!ItemsMissing())return;
+                                bool fightersMissing=false,fightersStale=false;
+                                foreach(var f in Enabled()){fightersMissing|=!f.Ready;fightersStale|=f.Ready&&!Current(f.Kind);}
+                                if(!fightersMissing&&!fightersStale&&!ItemsMissing()&&!ItemsStale())return;
                                 string image=SharedFiles.FindDisc("GALE01",2);
                                 if(image==null)
                                 {
                                     if(fightersMissing)Log.LogError("Melee: no Melee disc found. "+SharedFiles.MissingDisc("Super Smash Bros. Melee (USA, revision 1.02)"));
-                                    else Log.LogWarning("Melee: the Super Scope's data isn't extracted. "+SharedFiles.MissingDisc("Super Smash Bros. Melee (USA, revision 1.02)"));
+                                    else if(ItemsMissing())Log.LogWarning("Melee: the Super Scope's data isn't extracted. "+SharedFiles.MissingDisc("Super Smash Bros. Melee (USA, revision 1.02)"));
+                                    else Log.LogWarning("Melee: files extracted by an older version of the mod are used as they are. "+SharedFiles.MissingDisc("Super Smash Bros. Melee (USA, revision 1.02)"));
                                     return;
                                 }
                                 // Each fighter extracts independently; a failure only affects that fighter.
                                 foreach(var f in Enabled()) {
-                                    if(f.Ready)continue;
-                                    if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),f.Kind)!=1)
-                                        Log.LogError("Melee: "+f.Name+"'s files didn't extract: "+MeleeNative.Error);
+                                    if(f.Ready&&Current(f.Kind))continue;
+                                    if(f.Ready)Log.LogInfo("Melee: "+f.Name+"'s files are from an older version of the mod; extracting them again.");
+                                    f.Ready=false; // nothing reads them while they're rewritten
+                                    if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),f.Kind)==1)
+                                        SharedFiles.MarkCurrent(SharedFiles.Melee,MeleeNative.ExtractSet(f.Kind),MeleeNative.ExtractorVersion);
+                                    else Log.LogError("Melee: "+f.Name+"'s files didn't extract: "+MeleeNative.Error);
                                 }
                                 // The items archive (the Super Scope): optional, so a failure only loses the scope.
-                                if(ItemsMissing()){
-                                    if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),100)==1)Log.LogInfo("Super Scope data extracted from your disc.");
+                                if(ItemsMissing()||ItemsStale()){
+                                    if(MeleeNative.ssbm_extract(NativeLib.CString(image),NativeLib.CString(AssetsDir),100)==1){
+                                        SharedFiles.MarkCurrent(SharedFiles.Melee,MeleeNative.ExtractSet(100),MeleeNative.ExtractorVersion);
+                                        Log.LogInfo("Super Scope data extracted from your disc.");
+                                    }
                                     else Log.LogWarning("Super Scope data unavailable: "+MeleeNative.Error);
                                 }
                                 Log.LogInfo("Melee assets extracted from "+image+" into "+AssetsDir+".");
