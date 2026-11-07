@@ -14,7 +14,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Melee","0.4.14")]
+    [BepInPlugin(Guid,"Melee","0.5.0")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -145,7 +145,7 @@ namespace Samus
                 try{MeleeGameBanner.Show(new MeleeGameEffect(AssetsDir, kind, MetresPerUnit.Value));}
                 catch(Exception e){Logger.LogError("Melee GAME presentation: "+e);MeleeGameBanner.Show(null);}
             };
-            Logger.LogInfo("Melee 0.4.14 registered; native initialization waits for RoR2 startup completion.");
+            Logger.LogInfo("Melee 0.5.0 registered; native initialization waits for RoR2 startup completion.");
         }
         /// Whether the extracted cache for the fighter of native kind `kind` is complete.
         static bool AssetsFor(uint kind)=>ReadyFor(kind);
@@ -213,7 +213,7 @@ namespace Samus
                         }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
                 } else { AssetsBusy=false; new Thread(BakeVrArms) { IsBackground=true,Name="Melee VR arms" }.Start(); }
-                Logger.LogInfo("Melee 0.4.14 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Melee 0.5.0 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
             } catch(Exception e) {foreach(var f in Roster)f.Ready=false;AssetsBusy=false;Logger.LogError("Melee disabled: "+e);}
         }
         // Every extracted fighter costume's forearms and hands for the VR mod's controllers (ror2-common VrArmsBake),
@@ -221,7 +221,7 @@ namespace Samus
         static void BakeVrArms()
         {
             int ready=0;foreach(var f in Enabled())if(f.Ready)ready++;
-            VrArmsBake.Run(AssetsDir,"Melee","0.4.14|"+ready,(buf,len)=>{
+            VrArmsBake.Run(AssetsDir,"Melee","0.5.0|"+ready,(buf,len)=>{
                 uint n=MeleeNative.ssbm_bake_vr_arms(NativeLib.CString(AssetsDir));
                 byte[] text=System.Text.Encoding.UTF8.GetBytes(n==0?MeleeNative.Error:n==1?"":(n-1)+" costumes cut");
                 Array.Copy(text,buf,Math.Min(text.Length,(int)len-1));
