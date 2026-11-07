@@ -123,7 +123,6 @@ namespace Samus
             EggLay.Show=(owner,target)=>YoshiTongue.Show(owner,target);
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
             AssetsDir=Path.GetFullPath(SharedFiles.Assets(SharedFiles.Melee));
-            SkillIcons.CacheRoot=Path.Combine(here,"generated");
             Logger.LogInfo("Melee assets "+AssetsDir);
             nativePath=Path.Combine(here,"ssbm.dll");
             // Register content while RoR2 collects providers, but do no native
