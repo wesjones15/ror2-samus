@@ -58,7 +58,7 @@ Falling off a stage uses a KO/return sequence that brings the fighter back to sa
 
 ## First run and configuration
 
-Install the precompiled Melee package and **wesleyasaurus-SharedFiles** with the release's required BepInEx dependencies. Then:
+Install Melee with the release's required BepInEx dependencies and play. No disc or asset setup is required. Missing game assets use colored fighters, generic projectiles/held objects, authored approximate move schedules and RoR2 drop pods; missing audio/effects are omitted. To add original presentation and disc-derived gameplay data, use the optional **wesleyasaurus-SharedFiles** package and:
 
 1. Put your **Melee USA revision 1.02 disc image** (`GALE01`, revision 2) in `BepInEx/plugins/wesleyasaurus-SharedFiles/put_games_here/`. ISO, GCM and CISO are supported; convert other containers first.
 2. Launch RoR2 and let the background extraction finish. The cache is `wesleyasaurus-SharedFiles/assets/melee/`.
@@ -74,7 +74,7 @@ For extraction or native-loading problems, inspect `BepInEx/LogOutput.log` and u
 
 Optional VR integration provides pointer aiming, controller arms, a wrist HUD and first/third-person settings through the shared `MeleeVr` layer. A jumps, B attacks, right trigger/grip map to RT/RB, left trigger/grip map to LT/LB, X grabs/interacts and Y uses equipment. The pause sheet labels the controller inputs. Headset validation remains pending.
 
-The owning player runs the fighter simulation and records calls for remote shadow simulations to replay. Peers need matching builds, compatible roster settings and their own local assets. Use offline play or private friends-only co-op. Current replication and integration changes need further co-op playtesting.
+The owning player runs the fighter simulation and records calls for remote shadow simulations to replay. Peers need matching builds and compatible roster settings. Use offline play or private friends-only co-op. Asset-free replication and sessions with differing asset availability require manual co-op playtesting; native checks do not establish that validation.
 
 Source overview and contributor instructions: [Development](https://github.com/wesjones15/ror2-samus/blob/main/docs/Development.md).
 

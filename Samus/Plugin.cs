@@ -14,7 +14,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Melee","0.5.0")]
+    [BepInPlugin(Guid,"Melee","0.5.1")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -46,7 +46,7 @@ namespace Samus
         {
             foreach(var f in Roster)if(Experimental.Allows(f.Def().experimental))yield return f;
         }
-        static bool ReadyFor(uint kind){foreach(var f in Roster)if(f.Kind==kind)return f.Ready;return false;}
+        static bool ReadyFor(uint kind){if(OptionalAssets.BuiltinOnly)return false;foreach(var f in Roster)if(f.Kind==kind)return f.Ready;return false;}
         internal static bool AssetsReady=>ReadyFor(MeleeNative.FighterSamus);
         internal static bool FoxReady=>ReadyFor(MeleeNative.FighterFox);
         internal static bool LuigiReady=>ReadyFor(MeleeNative.FighterLuigi);
@@ -122,7 +122,7 @@ namespace Samus
             EggLay.Laying=owner=>YoshiFull.IsLaying(owner);
             EggLay.Show=(owner,target)=>YoshiTongue.Show(owner,target);
             LogEffects=Config.Bind("Debug","LogEffects",false,"Log each Melee model effect (Screw Attack burst etc.) when it spawns and ends, with how often its texture changed while drawn. For diagnosing static effects.");
-            AssetsDir=Path.GetFullPath(SharedFiles.Assets(SharedFiles.Melee));
+            AssetsDir=OptionalAssets.BuiltinOnly ? "" : Path.GetFullPath(SharedFiles.Assets(SharedFiles.Melee));
             Logger.LogInfo("Melee assets "+AssetsDir);
             nativePath=Path.Combine(here,"ssbm.dll");
             // Register content while RoR2 collects providers, but do no native
@@ -145,7 +145,7 @@ namespace Samus
                 try{MeleeGameBanner.Show(new MeleeGameEffect(AssetsDir, kind, MetresPerUnit.Value));}
                 catch(Exception e){Logger.LogError("Melee GAME presentation: "+e);MeleeGameBanner.Show(null);}
             };
-            Logger.LogInfo("Melee 0.5.0 registered; native initialization waits for RoR2 startup completion.");
+            Logger.LogInfo("Melee 0.5.1 registered; native initialization waits for RoR2 startup completion.");
         }
         /// Whether the extracted cache for the fighter of native kind `kind` is complete.
         static bool AssetsFor(uint kind)=>ReadyFor(kind);
@@ -160,6 +160,7 @@ namespace Samus
             Logger.LogInfo("Melee late native initialization: RoR2 startup completed.");
             try {
                 MeleeNative.Load(nativePath);
+                if (OptionalAssets.BuiltinOnly) { AssetsBusy = false; return; }
                 Recheck();
                 // A set written by an older extractor (SharedFiles extracted.txt) is extracted again when the disc is
                 // there; without the disc its files are used as they are.
@@ -179,7 +180,7 @@ namespace Samus
                                 string image=SharedFiles.FindDisc("GALE01",2);
                                 if(image==null)
                                 {
-                                    if(fightersMissing)Log.LogError("Melee: no Melee disc found. "+SharedFiles.MissingDisc("Super Smash Bros. Melee (USA, revision 1.02)"));
+                                    if(fightersMissing)Log.LogInfo("Melee uses built-in gameplay and generic shapes; no optional Melee disc was found.");
                                     else if(ItemsMissing())Log.LogWarning("Melee: the Super Scope's data isn't extracted. "+SharedFiles.MissingDisc("Super Smash Bros. Melee (USA, revision 1.02)"));
                                     else Log.LogWarning("Melee: files extracted by an older version of the mod are used as they are. "+SharedFiles.MissingDisc("Super Smash Bros. Melee (USA, revision 1.02)"));
                                     return;
@@ -213,7 +214,7 @@ namespace Samus
                         }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
                 } else { AssetsBusy=false; new Thread(BakeVrArms) { IsBackground=true,Name="Melee VR arms" }.Start(); }
-                Logger.LogInfo("Melee 0.5.0 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Melee 0.5.1 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
             } catch(Exception e) {foreach(var f in Roster)f.Ready=false;AssetsBusy=false;Logger.LogError("Melee disabled: "+e);}
         }
         // Every extracted fighter costume's forearms and hands for the VR mod's controllers (ror2-common VrArmsBake),

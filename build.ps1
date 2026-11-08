@@ -258,6 +258,9 @@ if($runChecks) {
 }
 
 # --- package -------------------------------------------------------------------------------
+dotnet run --project (Join-Path $commonRoot 'tests/NoAssetsCheck') -c Release -- ssbm (Join-Path $libraryRoot 'target/release/ssbm.dll')
+if($LASTEXITCODE) { throw 'Melee no-assets boundary check failed; nothing staged.' }
+
 $packagePrefix=Begin-Step 'package and audit'
 $version=[regex]::Match((Get-Content -LiteralPath (Join-Path $repoRoot 'Samus\Plugin.cs') -Raw),'\[BepInPlugin\([^,]+,"Melee","([0-9.]+)"\)\]').Groups[1].Value
 if(!$version) { throw 'Cannot read the Melee version from Samus\Plugin.cs.' }

@@ -393,7 +393,7 @@ static class Program
         }
         if(MeleeNative.ssbm_assets_complete(NativeLib.CString(assets),MeleeNative.FighterSamus)!=1) {
             // Clean release builds, like Mario/Olimar, need neither a disc nor a cache.
-            Console.WriteLine("PASS: ABI 5 + 14 layouts; SKIP: asset-dependent checks (no complete local cache)");
+            Console.WriteLine($"PASS: ABI {MeleeNative.AbiVersion} + 14 layouts; SKIP: asset-dependent checks (no complete local cache)");
             return;
         }
         var host=new MeleeNative.Host { collide=Marshal.GetFunctionPointerForDelegate(collide),evt=Marshal.GetFunctionPointerForDelegate(evt) };
@@ -626,7 +626,7 @@ static class Program
                 foreach(var effect in effectViews.Values)MeleeNative.ssbm_view_free(effect);
                 MeleeNative.ssbm_particles_free(longParticles);MeleeNative.ssbm_sim_free(longRun);
             }
-            Console.WriteLine("PASS: ABI 5 + 14 layouts, trophy entry, grid tile, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
+            Console.WriteLine($"PASS: ABI {MeleeNative.AbiVersion} + 14 layouts, trophy entry, grid tile, callbacks, jump/landing, posed hitboxes, disc attack PCM, all 22 Samus emitters, 16 article states, 5 costumes and texture transfers");
         } finally { if(view!=IntPtr.Zero)MeleeNative.ssbm_view_free(view);MeleeNative.ssbm_sim_free(sim); }
     }
     /// The Mario plugin's Melee A attacks (MarioMelee) voice each move from the lab fighter's own
