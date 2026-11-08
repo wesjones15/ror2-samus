@@ -14,7 +14,7 @@ using Path=System.IO.Path;
 
 namespace Samus
 {
-    [BepInPlugin(Guid,"Melee","0.5.1")]
+    [BepInPlugin(Guid,"Melee","0.5.2")]
     [BepInDependency("___riskofthunder.RoR2BepInExPack",BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -145,7 +145,7 @@ namespace Samus
                 try{MeleeGameBanner.Show(new MeleeGameEffect(AssetsDir, kind, MetresPerUnit.Value));}
                 catch(Exception e){Logger.LogError("Melee GAME presentation: "+e);MeleeGameBanner.Show(null);}
             };
-            Logger.LogInfo("Melee 0.5.1 registered; native initialization waits for RoR2 startup completion.");
+            Logger.LogInfo("Melee 0.5.2 registered; native initialization waits for RoR2 startup completion.");
         }
         /// Whether the extracted cache for the fighter of native kind `kind` is complete.
         static bool AssetsFor(uint kind)=>ReadyFor(kind);
@@ -214,7 +214,7 @@ namespace Samus
                         }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
                 } else { AssetsBusy=false; new Thread(BakeVrArms) { IsBackground=true,Name="Melee VR arms" }.Start(); }
-                Logger.LogInfo("Melee 0.5.1 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Melee 0.5.2 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
             } catch(Exception e) {foreach(var f in Roster)f.Ready=false;AssetsBusy=false;Logger.LogError("Melee disabled: "+e);}
         }
         // Every extracted fighter costume's forearms and hands for the VR mod's controllers (ror2-common VrArmsBake),

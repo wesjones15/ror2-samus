@@ -1,5 +1,11 @@
 # Unreleased
 
+- Luigi's Super Scope uses native built-in support without requiring `ItCo.dat`.
+  Missing original art uses the existing generated held item and beam; equip and
+  beam travel are covered by the real-DLL no-assets check.
+- Version 0.5.2 includes shared mod-presence, optional-session and generated surface
+  helpers. No new native ABI; not yet played in RoR2.
+
 - GameCube assets are optional: authored built-in fighter profiles, generic body/projectile/held-object models and standard RoR2 drop pods. Missing game audio/effects no longer disable gameplay. Shared primitive displays and mandatory no-assets native-boundary checks cover the release fallback. Not yet played in RoR2.
 
 - **Melee character portraits are head-and-shoulders like the other survivors.** The shared portrait
