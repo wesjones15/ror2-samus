@@ -58,7 +58,7 @@ Falling off a stage uses a KO/return sequence that brings the fighter back to sa
 
 ## First run and configuration
 
-Install Melee with the release's required BepInEx dependencies and play. No disc or asset setup is required. Missing game assets use colored fighters, generic projectiles/held objects, authored approximate move schedules and RoR2 drop pods; missing audio/effects are omitted. To add original presentation and disc-derived gameplay data, use the optional **wesleyasaurus-SharedFiles** package and:
+Install Melee with the release's required BepInEx dependencies and play. No disc or asset setup is required. Missing game assets use colored fighters, generic projectiles/held objects, authored approximate move schedules and RoR2 drop pods; missing audio/effects are omitted. While a stand-in is shown, the character overview names the missing game and tells you to put its disc image in `BepInEx/plugins/wesleyasaurus-SharedFiles/put_games_here/`. To add original presentation and disc-derived gameplay data, use the optional **wesleyasaurus-SharedFiles** package and:
 
 1. Put your **Melee USA revision 1.02 disc image** (`GALE01`, revision 2) in `BepInEx/plugins/wesleyasaurus-SharedFiles/put_games_here/`. ISO, GCM and CISO are supported; convert other containers first.
 2. Launch RoR2 and let the background extraction finish. The cache is `wesleyasaurus-SharedFiles/assets/melee/`.
