@@ -214,7 +214,7 @@ namespace Samus
                         }
                     }) { IsBackground=true,Name="Melee first-run extraction" }.Start();
                 } else { AssetsBusy=false; new Thread(BakeVrArms) { IsBackground=true,Name="Melee VR arms" }.Start(); }
-                Logger.LogInfo("Melee 0.5.2 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
+                Logger.LogInfo("Melee 0.6.0 / libssbm ABI "+MeleeNative.AbiVersion+" loaded after RoR2 startup.");
             } catch(Exception e) {foreach(var f in Roster)f.Ready=false;AssetsBusy=false;Logger.LogError("Melee disabled: "+e);}
         }
         // Every extracted fighter costume's forearms and hands for the VR mod's controllers (ror2-common VrArmsBake),
