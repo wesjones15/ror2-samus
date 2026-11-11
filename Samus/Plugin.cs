@@ -75,6 +75,8 @@ namespace Samus
         {
             CommonLog.Log=Logger;Log=Logger;
             Experimental.ShareWithLobby();
+            PreparingNotice.Attach(gameObject, "Melee", "Super Smash Bros. Melee",
+                "until they finish fighters are drawn as stand-ins with no Melee sounds, and arrivals are skipped.", () => AssetsBusy);
             // Only read with Blowntobytes' VR mod running in a headset (ror2-common's Vr, MeleeVr).
             MeleeVr.Settings=new VrSettings(Config,"Melee");
             MeleeVr.ControlsSetting=Config.Bind("VR","Controls",true,
